@@ -1,44 +1,48 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
 # dependencies
 node_modules/
 
-# expo
+# Expo
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
-# native builds
-ios/build/
-android/build/
-android/app/build/
-*.ipa
-*.apk
-*.aab
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
 
-# metro
+# Metro
 .metro-health-check*
 
-# environment
-.env
-.env.*
-!.env.example
-
-# macos
-.DS_Store
-
-# logs
+# debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-*.log
 
-# contestant dirs are standalone git repos - never tracked here
-ai-chat-app/fable-5/
-ai-chat-app/gpt-5-6/
-ai-chat-app/gpt-5-5/
-ai-calorie-tracker/fable-5/
-ai-calorie-tracker/gpt-5-6/
-ai-calorie-tracker/gpt-5-5/
-swift-rewrite/fable-5/
-swift-rewrite/gpt-5-6/
-swift-rewrite/gpt-5-5/
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+example
+
+# generated native folders
+/ios
+/android
+
+# agent local state
+.claude/settings.local.json
+
+.env
