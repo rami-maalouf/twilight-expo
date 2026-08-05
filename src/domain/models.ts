@@ -21,6 +21,7 @@ export type ThemePalette = 'twilight' | 'amethyst';
 
 export interface SleepSettingsData {
   isOnboarded: boolean;
+  isDemoDataActive: boolean;
   // minutes since midnight; defaults 22:00 / 07:00 per SleepSettings.swift
   optimalSleepMinutes: number;
   optimalWakeMinutes: number;
@@ -33,6 +34,7 @@ export interface SleepSettingsData {
 
 export const DEFAULT_SETTINGS: SleepSettingsData = {
   isOnboarded: false,
+  isDemoDataActive: false,
   optimalSleepMinutes: 22 * 60,
   optimalWakeMinutes: 7 * 60,
   windDownReminderEnabled: true,

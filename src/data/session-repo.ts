@@ -120,6 +120,17 @@ export class SessionRepo {
     this.db.runSync('delete from sleep_sessions where id = ?', [id]);
   }
 
+  replaceSessionsWithPrefix(prefix: string, sessions: readonly SleepSession[]): void {
+    this.deleteSessionsWithPrefix(prefix);
+    for (const session of sessions) {
+      this.insert(session);
+    }
+  }
+
+  deleteSessionsWithPrefix(prefix: string): void {
+    this.db.runSync('delete from sleep_sessions where id like ?', [`${prefix}%`]);
+  }
+
   getSession(id: string): SleepSession | null {
     const row = this.db.getFirstSync<SessionRow>('select * from sleep_sessions where id = ?', [
       id,

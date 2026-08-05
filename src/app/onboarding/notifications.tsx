@@ -8,7 +8,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { FadeInSlide } from '@/components/common/FadeInSlide';
 import { Screen } from '@/components/common/Screen';
-import { useSettings } from '@/state/settings-state';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const FEATURES: { icon: SymbolViewProps['name']; title: string; subtitle: string }[] = [
@@ -31,7 +30,6 @@ const FEATURES: { icon: SymbolViewProps['name']; title: string; subtitle: string
 
 export default function NotificationsStep() {
   const theme = useTheme();
-  const setSetting = useSettings((s) => s.setSetting);
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
@@ -44,8 +42,7 @@ export default function NotificationsStep() {
   };
 
   const finish = () => {
-    setSetting('isOnboarded', true);
-    router.replace('/');
+    router.push('./demo');
   };
 
   return (

@@ -1,9 +1,11 @@
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { View } from 'react-native';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { settingsStore } from '@/data/app-db';
+import { DemoExitControl } from '@/components/demo/DemoExitControl';
 import { updateWindDownNotification } from '@/services/notifications';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
 import { useSleepStore } from '@/state/app-sleep-store';
@@ -34,29 +36,32 @@ export default function RootLayout() {
     <ThemeProvider store={settingsStore} desaturated={isSleeping}>
       <StatusBar style="light" />
       <GestureHandlerRootView style={{ flex: 1 }}>
-        {!isOnboarded && <Redirect href="/onboarding" />}
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
-          <Stack.Screen name="log-editor" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="sleep-tips" options={{ presentation: 'modal' }} />
-          <Stack.Screen
-            name="timeline-sheet"
-            options={{
-              presentation: 'formSheet',
-              sheetAllowedDetents: [0.82, 1.0],
-              sheetGrabberVisible: true,
-            }}
-          />
-          <Stack.Screen
-            name="metrics-explanation"
-            options={{
-              presentation: 'formSheet',
-              sheetAllowedDetents: [0.6, 1.0],
-              sheetGrabberVisible: true,
-            }}
-          />
-        </Stack>
+        <View style={{ flex: 1 }}>
+          {!isOnboarded && <Redirect href="/onboarding" />}
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="log-editor" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="sleep-tips" options={{ presentation: 'modal' }} />
+            <Stack.Screen
+              name="timeline-sheet"
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.82, 1.0],
+                sheetGrabberVisible: true,
+              }}
+            />
+            <Stack.Screen
+              name="metrics-explanation"
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.6, 1.0],
+                sheetGrabberVisible: true,
+              }}
+            />
+          </Stack>
+          <DemoExitControl />
+        </View>
       </GestureHandlerRootView>
     </ThemeProvider>
   );

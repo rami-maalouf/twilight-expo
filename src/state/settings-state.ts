@@ -8,6 +8,7 @@ import type { SleepSettingsData } from '../domain/models';
 
 interface SettingsState extends SleepSettingsData {
   setSetting: <K extends keyof SleepSettingsData>(key: K, value: SleepSettingsData[K]) => void;
+  refresh: () => void;
 }
 
 export const useSettings = create<SettingsState>((set) => ({
@@ -17,4 +18,5 @@ export const useSettings = create<SettingsState>((set) => ({
     // read back so clamping in the store is reflected
     set({ [key]: settingsStore.get(key) } as Partial<SettingsState>);
   },
+  refresh: () => set(settingsStore.load()),
 }));
