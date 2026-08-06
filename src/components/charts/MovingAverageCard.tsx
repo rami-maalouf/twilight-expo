@@ -168,13 +168,6 @@ export function MovingAverageCard({
   const yTicks = Array.from({ length: 4 }, (_, i) => lower + ((upper - lower) * i) / 3);
   const ticks = xTickIndexes(plotted.length);
 
-  const scrub = Gesture.Pan()
-    .minDistance(0)
-    .runOnJS(true)
-    .onBegin((e) => setSelectedIndex(nearestIndex(e.x)))
-    .onUpdate((e) => setSelectedIndex(nearestIndex(e.x)))
-    .onFinalize(() => setSelectedIndex(null));
-
   const nearestIndex = (px: number) => {
     if (plotted.length === 0) return null;
     // the gesture view starts at MARGIN.left, so shift into chart coords
@@ -190,6 +183,13 @@ export function MovingAverageCard({
     }
     return best;
   };
+
+  const scrub = Gesture.Pan()
+    .minDistance(0)
+    .runOnJS(true)
+    .onBegin((e) => setSelectedIndex(nearestIndex(e.x)))
+    .onUpdate((e) => setSelectedIndex(nearestIndex(e.x)))
+    .onFinalize(() => setSelectedIndex(null));
 
   if (plotted.length === 0) {
     return (
