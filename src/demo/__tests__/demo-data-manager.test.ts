@@ -107,7 +107,7 @@ describe('Twilight demo data', () => {
     expect(settings.get('isDemoDataActive')).toBe(true);
     expect(settings.get('isOnboarded')).toBe(true);
     expect(settings.get('optimalSleepMinutes')).toBe(0);
-    expect(settings.get('optimalWakeMinutes')).toBe(7 * 60);
+    expect(settings.get('optimalWakeMinutes')).toBe(7 * 60 + 20);
 
     manager.exitDemoData();
 

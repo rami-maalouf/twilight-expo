@@ -6,13 +6,15 @@ import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+const SHOW_DEMO_EXIT_CONTROL = false;
+
 export function DemoExitControl() {
   const theme = useTheme();
   const isDemoDataActive = useSettings((state) => state.isDemoDataActive);
   const refreshSettings = useSettings((state) => state.refresh);
   const [isExiting, setIsExiting] = useState(false);
 
-  if (!isDemoDataActive) return null;
+  if (!SHOW_DEMO_EXIT_CONTROL || !isDemoDataActive) return null;
 
   const exitDemoData = () => {
     if (isExiting) return;

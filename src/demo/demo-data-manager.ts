@@ -18,7 +18,7 @@ export class DemoDataManager {
 
     this.sessionRepo.replaceSessionsWithPrefix(DEMO_SESSION_ID_PREFIX, createDemoSleepSessions(now));
     this.settingsStore.set('optimalSleepMinutes', 0);
-    this.settingsStore.set('optimalWakeMinutes', 7 * 60);
+    this.settingsStore.set('optimalWakeMinutes', 7 * 60 + 20);
     this.settingsStore.set('isDemoDataActive', true);
     this.settingsStore.set('isOnboarded', true);
   }
