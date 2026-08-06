@@ -4,15 +4,17 @@ export const isDemoMode = process.env.EXPO_PUBLIC_DEMO_MODE === '1';
 export const DEMO_SESSION_ID_PREFIX = 'rami-demo-session-';
 
 const MINUTES_PER_DAY = 24 * 60;
-const HEALTHY_DURATION_MINIMUM = 395;
-const HEALTHY_DURATION_MAXIMUM = 505;
-const HEALTHY_DURATION_SHORTENING_MINUTES = 35;
-const HEALTHY_DURATION_DIP_ONE_MINUTES = 20;
-const HEALTHY_DURATION_DIP_TWO_MINUTES = 20;
-const HEALTHY_DURATION_BOOST_MINUTES = 15;
+const HEALTHY_DURATION_MINIMUM = 300;
+const HEALTHY_DURATION_MAXIMUM = 570;
 
-const bedtimePattern = [1410, 15, 1430, 35, 10, 85, 55, 1425, 25, 75, 100, 45, 1405, 60];
-const durationPattern = [455, 440, 475, 430, 460, 420, 495, 445, 470, 435, 485, 450, 465, 425];
+const bedtimeVariationPattern = [
+  -35, 10, 55, -15, 80, 25, -45, 40, -5, 65, -30, 15, 95, -55, 35, 0, 50, -20,
+  70, 20, -40, 45, -10, 85, -25, 30, 110, -60,
+];
+const durationPattern = [
+  470, 420, 455, 385, 510, 360, 445, 495, 405, 435, 540, 330, 465, 390, 500, 410,
+  450, 370, 520, 430, 475, 345, 490, 400, 455, 380, 530, 425,
+];
 
 interface DemoSleepSessionSource {
   startMinute: number;
@@ -37,43 +39,41 @@ function softenedNormalizedStartMinute(minute: number): number {
   return normalizedMinute;
 }
 
-function healthySessionSource(index: number): DemoSleepSessionSource {
-  let startMinute = bedtimePattern[index % bedtimePattern.length];
+function healthySessionSource(index: number, wakeDay: Date): DemoSleepSessionSource {
+  const wakeWeekday = wakeDay.getDay();
+  const isWeekendWake = wakeWeekday === 0 || wakeWeekday === 6;
+  let startMinute = 23 * 60 + 45 + bedtimeVariationPattern[index % bedtimeVariationPattern.length];
   let durationMinutes = durationPattern[index % durationPattern.length];
 
-  if (index < 18) {
-    startMinute += 25;
+  if (isWeekendWake) {
+    startMinute += 65;
+    durationMinutes += 30;
+  } else if (wakeWeekday === 1) {
+    durationMinutes -= 25;
+  }
+
+  if (index < 25) {
+    startMinute += 35;
     durationMinutes -= 20;
-  } else if (index >= 70) {
+  } else if (index >= 75) {
     startMinute -= 15;
-    durationMinutes += 20;
-  } else if (index >= 45) {
-    startMinute -= 5;
     durationMinutes += 10;
   }
 
-  startMinute += ((index * 19) % 7 - 3) * 5;
-  durationMinutes += ((index * 11) % 5 - 2) * 5;
-
-  if (index % 16 === 5) {
-    startMinute += 25;
-    durationMinutes -= 15;
+  if (index % 18 === 4) {
+    startMinute += 70;
+    durationMinutes -= 90;
   }
-  if (index % 19 === 8) {
-    startMinute -= 15;
+  if (index % 23 === 8) {
+    durationMinutes += 65;
+  }
+  if (index % 27 === 14) {
+    startMinute -= 40;
+    durationMinutes += 50;
+  }
+  if (index % 31 === 22) {
+    startMinute += 100;
     durationMinutes += 20;
-  }
-  if (index % 21 === 13) {
-    startMinute += 15;
-  }
-  if (index % 9 === 4) {
-    durationMinutes -= HEALTHY_DURATION_DIP_ONE_MINUTES;
-  }
-  if (index % 13 === 7) {
-    durationMinutes += HEALTHY_DURATION_BOOST_MINUTES;
-  }
-  if (index % 17 === 6) {
-    durationMinutes -= HEALTHY_DURATION_DIP_TWO_MINUTES;
   }
 
   const boundedDurationMinutes = Math.min(
@@ -83,7 +83,7 @@ function healthySessionSource(index: number): DemoSleepSessionSource {
 
   return {
     startMinute: wrappedClockMinute(startMinute),
-    durationMinutes: boundedDurationMinutes - HEALTHY_DURATION_SHORTENING_MINUTES,
+    durationMinutes: boundedDurationMinutes,
   };
 }
 
@@ -112,10 +112,10 @@ export function createDemoSleepSessions(now = Date.now()): SleepSession[] {
   const importedAt = now;
 
   return Array.from({ length: 100 }, (_, index) => {
-    const source = healthySessionSource(index);
+    const endDay = addLocalDays(latestSleepDay, index - 99);
+    const source = healthySessionSource(index, endDay);
     const startMinute = roundedToNearestFiveMinutes(softenedNormalizedStartMinute(source.startMinute));
     const endMinute = startMinute + source.durationMinutes;
-    const endDay = addLocalDays(latestSleepDay, index - 99);
     const startDay = endMinute >= MINUTES_PER_DAY ? addLocalDays(endDay, -1) : endDay;
 
     return {

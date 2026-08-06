@@ -20,11 +20,40 @@ function localTime(epochMs: number): { hour: number; minute: number } {
   return { hour: date.getHours(), minute: date.getMinutes() };
 }
 
+function average(values: number[]): number {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function standardDeviation(values: number[]): number {
+  const mean = average(values);
+  return Math.sqrt(average(values.map((value) => (value - mean) ** 2)));
+}
+
+function normalizedBedtime(epochMs: number): number {
+  const { hour, minute } = localTime(epochMs);
+  const clockMinute = hour * 60 + minute;
+  return clockMinute < 18 * 60 ? clockMinute + 24 * 60 : clockMinute;
+}
+
 describe('Twilight demo data', () => {
   const importedAt = new Date(2026, 7, 5, 12, 0, 0, 0).getTime();
 
-  test('ports the active healthy preset as 100 consecutive sleep logs', () => {
+  test('creates 100 consecutive sleep logs with realistic variation', () => {
     const sessions = createDemoSleepSessions(importedAt);
+    const durations = sessions.map((session) => (session.endTime! - session.startTime) / 60_000);
+    const bedtimes = sessions.map((session) => normalizedBedtime(session.startTime));
+    const wakeTimes = sessions.map((session) => {
+      const { hour, minute } = localTime(session.endTime!);
+      return hour * 60 + minute;
+    });
+    const weekendIndexes = sessions
+      .map((session, index) => ({ index, weekday: new Date(session.endTime!).getDay() }))
+      .filter(({ weekday }) => weekday === 0 || weekday === 6)
+      .map(({ index }) => index);
+    const weekdayIndexes = sessions
+      .map((session, index) => ({ index, weekday: new Date(session.endTime!).getDay() }))
+      .filter(({ weekday }) => weekday !== 0 && weekday !== 6)
+      .map(({ index }) => index);
 
     expect(sessions).toHaveLength(100);
     expect(sessions[0]).toMatchObject({
@@ -33,15 +62,27 @@ describe('Twilight demo data', () => {
       startTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     });
     expect(sessions[99]).toMatchObject({ id: `${DEMO_SESSION_ID_PREFIX}100` });
-    expect(sessions[0].endTime! - sessions[0].startTime).toBe(390 * 60_000);
-    expect(sessions[99].endTime! - sessions[99].startTime).toBe(435 * 60_000);
-    expect(localTime(sessions[0].startTime)).toEqual({ hour: 23, minute: 40 });
-    expect(localTime(sessions[99].endTime!)).toEqual({ hour: 7, minute: 25 });
+    expect(Math.min(...durations)).toBe(300);
+    expect(Math.max(...durations)).toBe(570);
+    expect(standardDeviation(durations)).toBeGreaterThan(55);
+    expect(Math.max(...bedtimes) - Math.min(...bedtimes)).toBeGreaterThan(240);
+    expect(Math.max(...wakeTimes) - Math.min(...wakeTimes)).toBeGreaterThan(360);
+    expect(average(weekendIndexes.map((index) => bedtimes[index]))).toBeGreaterThan(
+      average(weekdayIndexes.map((index) => bedtimes[index])) + 30
+    );
+    expect(average(weekendIndexes.map((index) => wakeTimes[index]))).toBeGreaterThan(
+      average(weekdayIndexes.map((index) => wakeTimes[index])) + 60
+    );
+    expect(average(weekendIndexes.map((index) => durations[index]))).toBeGreaterThan(
+      average(weekdayIndexes.map((index) => durations[index])) + 20
+    );
 
     for (let index = 1; index < sessions.length; index += 1) {
       const priorEnd = new Date(sessions[index - 1].endTime!);
       const nextEnd = new Date(sessions[index].endTime!);
-      expect(nextEnd.getDate()).not.toBe(priorEnd.getDate());
+      const expectedEnd = new Date(priorEnd);
+      expectedEnd.setDate(expectedEnd.getDate() + 1);
+      expect(nextEnd.toDateString()).toBe(expectedEnd.toDateString());
     }
   });
 
