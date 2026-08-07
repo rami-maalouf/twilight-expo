@@ -52,9 +52,24 @@ function sleepProps(session: SleepSession): SleepActivityProps {
 
 export async function startSleepActivity(session: SleepSession): Promise<void> {
   if (!isEnabled() || !SleepActivity) return;
-  await endAll();
+  const props = sleepProps(session);
+  const existing = instances();
+  if (existing.length > 0) {
+    try {
+      if (settingsStore.get('liveActivityId') !== 'warmup') {
+        await existing[0].update(props);
+      }
+      for (const extra of existing.slice(1)) {
+        await extra.end('immediate');
+      }
+      settingsStore.set('liveActivityId', 'sleep');
+      return;
+    } catch {
+      await endAll();
+    }
+  }
   try {
-    const instance = SleepActivity.start(sleepProps(session), 'twilight://');
+    const instance = SleepActivity.start(props, 'twilight://');
     settingsStore.set('liveActivityId', instance ? 'sleep' : null);
   } catch {
     // live activities unavailable (permission off / unsupported device)
