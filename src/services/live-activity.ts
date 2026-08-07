@@ -56,9 +56,7 @@ export async function startSleepActivity(session: SleepSession): Promise<void> {
   const existing = instances();
   if (existing.length > 0) {
     try {
-      if (settingsStore.get('liveActivityId') !== 'warmup') {
-        await existing[0].update(props);
-      }
+      await existing[0].update(props);
       for (const extra of existing.slice(1)) {
         await extra.end('immediate');
       }

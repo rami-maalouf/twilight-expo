@@ -192,6 +192,12 @@ export default function DashboardScreen() {
 
   const onToggle = () => {
     const result = toggleSleep();
+    const startedSession = result.started;
+    if (startedSession) {
+      void import('@/services/live-activity').then(({ startSleepActivity }) =>
+        startSleepActivity(startedSession)
+      );
+    }
     if (result.joke) {
       Alert.alert('Pause...', result.joke);
     }
