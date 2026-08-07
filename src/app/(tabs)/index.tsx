@@ -17,6 +17,7 @@ import { AlignmentCard } from '@/components/charts/AlignmentCard';
 import { MovingAverageCard } from '@/components/charts/MovingAverageCard';
 import { WeekChart, type WeekChartDay } from '@/components/charts/WeekChart';
 import { getGreeting, getShuffledGreeting } from '@/copy/greetings';
+import { isDemoMode } from '@/demo/demo-mode';
 import { SleepMetricsAnalyzer, type AlignmentScorePoint, type MovingAveragePoint } from '@/domain/metrics/analyzer';
 import {
   averageWeekDurationSeconds,
@@ -66,7 +67,7 @@ export default function DashboardScreen() {
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
   const optimalWakeMinutes = useSettings((s) => s.optimalWakeMinutes);
 
-  const [viewMode, setViewMode] = useState<ViewMode>('Week');
+  const [viewMode, setViewMode] = useState<ViewMode>(isDemoMode ? '7-Night Avg' : 'Week');
   const [historyRange, setHistoryRange] = useState<'90D' | 'All'>('90D');
   const [greeting, setGreeting] = useState(() => {
     const { minutes } = nowMinutesAndToday();
