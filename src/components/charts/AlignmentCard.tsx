@@ -317,6 +317,7 @@ export function AlignmentCard({
           ))}
           <GestureDetector gesture={scrub}>
             <View
+              testID="demo.dashboard.chart.score"
               style={{
                 position: 'absolute',
                 left: MARGIN.left,

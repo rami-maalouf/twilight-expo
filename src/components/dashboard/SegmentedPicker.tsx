@@ -8,10 +8,12 @@ export function SegmentedPicker<T extends string>({
   options,
   value,
   onChange,
+  testIDPrefix,
 }: {
   options: readonly T[];
   value: T;
   onChange: (value: T) => void;
+  testIDPrefix?: string;
 }) {
   const theme = useTheme();
   const isLight = theme.name === 'sunset';
@@ -22,6 +24,11 @@ export function SegmentedPicker<T extends string>({
         return (
           <Pressable
             key={option}
+            testID={
+              testIDPrefix
+                ? `${testIDPrefix}.${option.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+                : undefined
+            }
             onPress={() => onChange(option)}
             style={[
               styles.segment,

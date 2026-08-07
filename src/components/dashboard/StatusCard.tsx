@@ -19,13 +19,18 @@ function BigActionButton({
   label,
   color,
   onPress,
+  testID,
 }: {
   label: string;
   color: string;
   onPress: () => void;
+  testID?: string;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.actionButton, { backgroundColor: color }]}>
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      style={[styles.actionButton, { backgroundColor: color }]}>
       <Text style={styles.actionLabel}>{label}</Text>
     </Pressable>
   );
@@ -115,7 +120,12 @@ export function StatusCard({
                 </View>
               )}
             </View>
-            <BigActionButton label="Go to Sleep" color={theme.actionPrimary} onPress={onToggle} />
+            <BigActionButton
+              label="Go to Sleep"
+              color={theme.actionPrimary}
+              onPress={onToggle}
+              testID="demo.dashboard.go-to-sleep"
+            />
             <Text style={[styles.caption, { color: theme.textSecondary }]}>Tap to start</Text>
           </>
         )}

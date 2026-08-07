@@ -193,7 +193,10 @@ export default function MetricsScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        testID="demo.metrics.scroll"
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Metrics</Text>
           <View style={styles.toolbar}>

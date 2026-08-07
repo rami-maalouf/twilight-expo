@@ -271,6 +271,7 @@ export function WeekChart({
       {/* chartXSelection: scrub while pressing, cleared on release */}
       <GestureDetector gesture={scrubGesture}>
         <View
+          testID="demo.dashboard.chart.week"
           style={{
             position: 'absolute',
             left: MARGIN.left,

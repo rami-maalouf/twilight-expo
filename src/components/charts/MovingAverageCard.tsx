@@ -273,6 +273,7 @@ export function MovingAverageCard({
           ))}
           <GestureDetector gesture={scrub}>
             <View
+              testID="demo.dashboard.chart.moving-average"
               style={{
                 position: 'absolute',
                 left: MARGIN.left,

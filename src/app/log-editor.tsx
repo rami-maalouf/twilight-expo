@@ -157,6 +157,7 @@ export default function LogEditorScreen() {
           </View>
           <View style={styles.pickerWrap}>
             <CircularTimePicker
+              testID="circular-time-picker"
               size={220}
               sleepMinutes={sleepMinutes}
               wakeMinutes={wakeMinutes}

@@ -106,11 +106,13 @@ export function CircularTimePicker({
   wakeMinutes,
   onChange,
   size = 280,
+  testID,
 }: {
   sleepMinutes: number;
   wakeMinutes: number;
   onChange: (sleepMinutes: number, wakeMinutes: number) => void;
   size?: number;
+  testID?: string;
 }) {
   const theme = useTheme();
   const fixed = useFixedColor();
@@ -176,7 +178,7 @@ export function CircularTimePicker({
 
   return (
     <GestureDetector gesture={pan}>
-      <View style={{ width: box, height: box }}>
+      <View testID={testID} style={{ width: box, height: box }}>
         <Canvas style={StyleSheet.absoluteFill}>
           {/* outer glow ring */}
           <Group opacity={0.6}>

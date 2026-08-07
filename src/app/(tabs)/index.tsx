@@ -241,7 +241,12 @@ export default function DashboardScreen() {
                   </Text>
                 </Pressable>
               )}
-              <SegmentedPicker options={VIEW_MODES} value={viewMode} onChange={setViewMode} />
+              <SegmentedPicker
+                options={VIEW_MODES}
+                value={viewMode}
+                onChange={setViewMode}
+                testIDPrefix="demo.dashboard.mode"
+              />
             </View>
 
             {viewMode === 'Week' &&
