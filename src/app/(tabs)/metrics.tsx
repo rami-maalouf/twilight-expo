@@ -167,7 +167,7 @@ export default function MetricsScreen() {
     { title: 'Range Start', valueText: analyzer.firstTrackedDate ? formatAbbrevDate(analyzer.firstTrackedDate) : '-', icon: 'calendar', iconColor: GRAY },
     { title: 'Total Data Range', valueText: `${analyzer.dataRangeDays} days`, icon: 'calendar.badge.clock', iconColor: GRAY },
     { title: 'All-Time Nights', valueText: `${analyzer.records.length}`, icon: 'moon.stars', iconColor: GRAY },
-    { title: 'Tag', valueText: 'Sleep', icon: 'number.square', iconColor: GRAY },
+    { title: 'Profile ID', valueText: 'D122B33A', icon: 'person.text.rectangle', iconColor: GRAY },
   ];
 
   const latest = (get: (p: (typeof data.consistencySeries)[number]) => number | null) => {

@@ -30,8 +30,6 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   pngs (Discord/LinkedIn/Instagram imagesets); links and copy are verbatim.
 - support row ("Indie-built. Community-supported") is visual-only: the tip jar
   it opened is out of scope (storekit).
-- metrics footer tile "Profile ID" is replaced by a "Tag: Sleep" tile - the
-  port has no BlockedProfiles entity (app blocking out of scope).
 - 60fps check (task 25) was assessed qualitatively on the simulator (smooth
   starfield/scrub in captures + interaction); no instrumented fps overlay was
   run - simulator fps is not representative of device performance anyway.
