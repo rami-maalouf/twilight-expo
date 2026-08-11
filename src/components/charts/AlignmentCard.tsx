@@ -9,6 +9,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Card } from '@/components/common/Card';
+import { HistoryRangeChip, type DashboardHistoryRange } from '@/components/dashboard/HistoryRangeChip';
 import { InsightPills, type InsightItem } from '@/components/dashboard/InsightPills';
 import type { AlignmentScorePoint } from '@/domain/metrics/analyzer';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
@@ -81,11 +82,15 @@ export function AlignmentCard({
   title,
   includesTimingAndPhase,
   width,
+  historyRange,
+  onHistoryRangeToggle,
 }: {
   series: AlignmentScorePoint[];
   title: string;
   includesTimingAndPhase: boolean;
   width: number;
+  historyRange: DashboardHistoryRange;
+  onHistoryRangeToggle: () => void;
 }) {
   const theme = useTheme();
   const fixed = useFixedColor();
@@ -220,7 +225,10 @@ export function AlignmentCard({
     return (
       <Card>
         <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]} numberOfLines={1}>
+            {title}
+          </Text>
+          <HistoryRangeChip range={historyRange} onToggle={onHistoryRangeToggle} />
         </View>
         <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
           Track a completed night with an ideal sleep and wake time to unlock your alignment trend.
@@ -233,10 +241,13 @@ export function AlignmentCard({
     <Card>
       <View style={styles.stack}>
         <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>{title}</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]} numberOfLines={1}>
+            {title}
+          </Text>
           <Text style={[styles.headline, { color: theme.actionPrimary }]}>
             {fmtScore(latest?.trendScore ?? null)}
           </Text>
+          <HistoryRangeChip range={historyRange} onToggle={onHistoryRangeToggle} />
         </View>
 
         <View style={styles.pillsRow}>
@@ -388,8 +399,8 @@ export function AlignmentCard({
 
 const styles = StyleSheet.create({
   stack: { gap: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 17, fontWeight: '600' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  title: { flex: 1, fontSize: 17, fontWeight: '600', minWidth: 0 },
   headline: { fontSize: 17, fontWeight: '600' },
   emptyText: { fontSize: 15, paddingVertical: 24 },
   pillsRow: { flexDirection: 'row', gap: 8 },

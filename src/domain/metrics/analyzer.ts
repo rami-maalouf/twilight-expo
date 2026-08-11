@@ -47,6 +47,13 @@ export interface MovingAveragePoint {
   movingAverageHours: number | null;
 }
 
+// ports: SleepTimingAveragePoint
+export interface TimingAveragePoint {
+  date: CalendarDay;
+  actualOffset: number;
+  movingAverageOffset: number | null;
+}
+
 export interface ConsistencyPoint {
   date: CalendarDay;
   sleepConsistency: number | null;
@@ -254,6 +261,30 @@ export class SleepMetricsAnalyzer {
         date: records[index].date,
         durationHours: records[index].durationHours,
         movingAverageHours: index + 1 >= window ? rollingSum / window : null,
+      });
+    }
+    return result;
+  }
+
+  // ports: timingMovingAverageSeries(_:keyPath:window:)
+  timingMovingAverageSeries(
+    records: readonly SleepNightRecord[],
+    key: 'bedtimeOffset' | 'wakeOffset',
+    window = 7
+  ): TimingAveragePoint[] {
+    if (records.length === 0) return [];
+    const result: TimingAveragePoint[] = [];
+    let rollingSum = 0;
+    for (let index = 0; index < records.length; index++) {
+      const actualOffset = records[index][key];
+      rollingSum += actualOffset;
+      if (index >= window) {
+        rollingSum -= records[index - window][key];
+      }
+      result.push({
+        date: records[index].date,
+        actualOffset,
+        movingAverageOffset: index + 1 >= window ? rollingSum / window : null,
       });
     }
     return result;

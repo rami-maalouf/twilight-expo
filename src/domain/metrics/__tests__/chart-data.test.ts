@@ -2,6 +2,8 @@
 import {
   BASE_HOUR,
   calculateYAxisDomain,
+  formatClockTime,
+  formatClockTime24Hour,
   formatDurationHm,
   formatDurationShort,
   formatTimeLabel,
@@ -82,5 +84,17 @@ describe('labels', () => {
     expect(formatDurationHm(6 * 3600 + 36 * 60)).toBe('6h 36min');
     expect(formatDurationHm(7 * 3600)).toBe('7h');
     expect(formatDurationHm(45 * 60)).toBe('45min');
+  });
+
+  test('formatClockTime uses 12h with minutes', () => {
+    expect(formatClockTime(0)).toBe('6:00 PM');
+    expect(formatClockTime(6)).toBe('12:00 AM');
+    expect(formatClockTime(13.5)).toBe('7:30 AM');
+  });
+
+  test('formatClockTime24Hour pads hours and minutes', () => {
+    expect(formatClockTime24Hour(0)).toBe('18:00');
+    expect(formatClockTime24Hour(6)).toBe('00:00');
+    expect(formatClockTime24Hour(13.5)).toBe('07:30');
   });
 });

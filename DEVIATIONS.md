@@ -51,3 +51,7 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   the system dialog on demand - ios keeps the native compact style. the glowing
   moon renders without its halo on android (the glow is built from ios shadow
   layers). no further android polish, per spec.
+- charts use @shopify/react-native-skia instead of Swift Charts. Aug 11
+  dashboard features (Trend 7/30 window, Time Sleep/Wake/Both chart, duration-
+  tinted averages, in-card history chip, Dev settings demo onboarding) match
+  Swift math/copy/colors; rendering stays Skia.

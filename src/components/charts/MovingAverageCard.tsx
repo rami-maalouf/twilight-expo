@@ -1,14 +1,16 @@
 // ports: Views/SleepDashboardView.swift (HomeMovingAverageCard)
-// 7-night moving average: green/red 0.22 area segments split at target
-// crossings, actionPrimary lw3 catmullRom line, dashed target rule, scrub
-// selection with white point, dynamic y domain clamped 0-12 (min span 0.9)
+// trend card with 7-Night / Monthly window toggle, green/red 0.22 area
+// segments split at target, actionPrimary lw3 catmullRom line, dashed
+// target rule, scrub selection, dynamic y domain clamped 0-12 (min span 0.9)
 import { Canvas, Circle, DashPathEffect, Line, Path, Skia, vec } from '@shopify/react-native-skia';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { Card } from '@/components/common/Card';
+import { HistoryRangeChip, type DashboardHistoryRange } from '@/components/dashboard/HistoryRangeChip';
 import { InsightPills, type InsightItem } from '@/components/dashboard/InsightPills';
+import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import type { MovingAveragePoint } from '@/domain/metrics/analyzer';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 import { catmullRomPath } from './path-utils';
@@ -19,6 +21,13 @@ const RED = '#ff3b30';
 const ORANGE = '#ff9500';
 const CHART_HEIGHT = 220;
 const MARGIN = { top: 8, bottom: 24, left: 38, right: 8 };
+
+export const MOVING_AVERAGE_WINDOWS = ['7-Night', 'Monthly'] as const;
+export type MovingAverageWindowLabel = (typeof MOVING_AVERAGE_WINDOWS)[number];
+
+export function nightCountForWindow(window: MovingAverageWindowLabel): number {
+  return window === 'Monthly' ? 30 : 7;
+}
 
 function fmtHours(value: number | null): string {
   return value == null ? '-' : `${value.toFixed(1)}h`;
@@ -90,14 +99,27 @@ export function MovingAverageCard({
   series,
   targetDurationHours,
   width,
+  window,
+  onWindowChange,
+  historyRange,
+  onHistoryRangeToggle,
 }: {
   series: MovingAveragePoint[];
   targetDurationHours: number;
   width: number;
+  window: MovingAverageWindowLabel;
+  onWindowChange: (window: MovingAverageWindowLabel) => void;
+  historyRange: DashboardHistoryRange;
+  onHistoryRangeToggle: () => void;
 }) {
   const theme = useTheme();
   const fixed = useFixedColor();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const nightCount = nightCountForWindow(window);
+
+  useEffect(() => {
+    setSelectedIndex(null);
+  }, [window]);
 
   const plotted = series.filter((p) => p.movingAverageHours != null);
   const values = plotted.map((p) => p.movingAverageHours!);
@@ -105,40 +127,53 @@ export function MovingAverageCard({
   const maxX = xs.length > 0 ? Math.max(xs[xs.length - 1], 1) : 1;
 
   const latest = plotted.length > 0 ? plotted[plotted.length - 1] : null;
-  const weekAgo = plotted.length > 7 ? plotted[plotted.length - 8] : null;
+  const lookback =
+    plotted.length > nightCount ? plotted[plotted.length - nightCount - 1] : null;
   const selected = selectedIndex != null ? plotted[selectedIndex] : latest;
 
-  const weekDelta =
-    latest?.movingAverageHours != null && weekAgo?.movingAverageHours != null
-      ? latest.movingAverageHours - weekAgo.movingAverageHours
+  const lookbackDelta =
+    latest?.movingAverageHours != null && lookback?.movingAverageHours != null
+      ? latest.movingAverageHours - lookback.movingAverageHours
       : null;
   const targetDelta =
     latest?.movingAverageHours != null ? latest.movingAverageHours - targetDurationHours : null;
   const range =
     values.length > 0 ? `${Math.min(...values).toFixed(1)}-${Math.max(...values).toFixed(1)}h` : '-';
 
+  const needMoreNightsText = `Need >${nightCount * 2} nights`;
   const trendDirection =
-    weekDelta == null
-      ? 'Need >14 nights'
-      : weekDelta > 0.05
+    lookbackDelta == null
+      ? needMoreNightsText
+      : lookbackDelta > 0.05
         ? 'Improving'
-        : weekDelta < -0.05
+        : lookbackDelta < -0.05
           ? 'Declining'
           : 'Stable';
   const trendColor =
-    weekDelta == null
+    lookbackDelta == null
       ? theme.textSecondary
-      : weekDelta > 0.05
+      : lookbackDelta > 0.05
         ? fixed(GREEN)
-        : weekDelta < -0.05
+        : lookbackDelta < -0.05
           ? fixed(RED)
           : fixed(ORANGE);
   const targetColor =
     targetDelta == null ? theme.textSecondary : targetDelta >= 0 ? fixed(GREEN) : fixed(ORANGE);
 
+  const lookbackLabel = `vs ${nightCount}d ago`;
   const pills: InsightItem[] = [
-    { title: 'vs 7d ago', value: fmtSignedHours(weekDelta), subtitle: trendDirection, tint: trendColor },
-    { title: 'vs target', value: fmtSignedHours(targetDelta), subtitle: targetDelta == null ? '-' : targetDelta >= 0 ? 'Above target' : 'Below target', tint: targetColor },
+    {
+      title: lookbackLabel,
+      value: fmtSignedHours(lookbackDelta),
+      subtitle: trendDirection,
+      tint: trendColor,
+    },
+    {
+      title: 'vs target',
+      value: fmtSignedHours(targetDelta),
+      subtitle: targetDelta == null ? '-' : targetDelta >= 0 ? 'Above target' : 'Below target',
+      tint: targetColor,
+    },
     { title: 'range', value: range, subtitle: 'selected span', tint: theme.actionPrimary },
   ];
 
@@ -164,13 +199,11 @@ export function MovingAverageCard({
     return builder.build();
   };
 
-  // 4 evenly spaced y labels inside the domain
   const yTicks = Array.from({ length: 4 }, (_, i) => lower + ((upper - lower) * i) / 3);
   const ticks = xTickIndexes(plotted.length);
 
   const nearestIndex = (px: number) => {
     if (plotted.length === 0) return null;
-    // the gesture view starts at MARGIN.left, so shift into chart coords
     const target = px + MARGIN.left;
     let best = 0;
     let bestDist = Infinity;
@@ -191,31 +224,47 @@ export function MovingAverageCard({
     .onUpdate((e) => setSelectedIndex(nearestIndex(e.x)))
     .onFinalize(() => setSelectedIndex(null));
 
+  const header = (
+    <View style={styles.headerRow}>
+      <View style={styles.windowPicker}>
+        <SegmentedPicker
+          options={MOVING_AVERAGE_WINDOWS}
+          value={window}
+          onChange={onWindowChange}
+          testIDPrefix="demo.dashboard.trend.window"
+        />
+      </View>
+      <Text style={[styles.headline, { color: theme.actionPrimary }]}>
+        {fmtHours(latest?.movingAverageHours ?? null)}
+      </Text>
+      <HistoryRangeChip range={historyRange} onToggle={onHistoryRangeToggle} />
+    </View>
+  );
+
   if (plotted.length === 0) {
     return (
       <Card>
-        <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>7-Night Moving Average</Text>
+        <View style={styles.stack}>
+          {header}
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            Track at least {nightCount} nights to unlock your rolling average trend.
+          </Text>
         </View>
-        <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-          Track at least 7 nights to unlock your rolling average trend.
-        </Text>
       </Card>
     );
   }
 
   const selectedHours = selected?.movingAverageHours ?? null;
   const selectedDelta = selectedHours != null ? selectedHours - targetDurationHours : null;
+  const lookbackTrendText =
+    lookbackDelta == null
+      ? '-'
+      : `${fmtSignedHours(lookbackDelta)} ${lookbackLabel}`;
 
   return (
     <Card>
       <View style={styles.stack}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>7-Night Moving Average</Text>
-          <Text style={[styles.headline, { color: theme.actionPrimary }]}>
-            {fmtHours(latest?.movingAverageHours ?? null)}
-          </Text>
-        </View>
+        {header}
 
         <InsightPills items={pills} />
 
@@ -273,7 +322,7 @@ export function MovingAverageCard({
           ))}
           <GestureDetector gesture={scrub}>
             <View
-              testID="demo.dashboard.chart.moving-average"
+              testID="demo.dashboard.chart.trend"
               style={{
                 position: 'absolute',
                 left: MARGIN.left,
@@ -305,9 +354,7 @@ export function MovingAverageCard({
             </View>
           )}
         </View>
-        <Text style={[styles.caption, { color: theme.textSecondary }]}>
-          {weekDelta != null ? `${fmtSignedHours(weekDelta)} vs 7d ago` : '-'}
-        </Text>
+        <Text style={[styles.caption, { color: theme.textSecondary }]}>{lookbackTrendText}</Text>
       </View>
     </Card>
   );
@@ -315,8 +362,8 @@ export function MovingAverageCard({
 
 const styles = StyleSheet.create({
   stack: { gap: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 17, fontWeight: '600' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  windowPicker: { flex: 1, maxWidth: 188 },
   headline: { fontSize: 17, fontWeight: '600' },
   emptyText: { fontSize: 15, paddingVertical: 24 },
   yLabel: {

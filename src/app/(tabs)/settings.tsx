@@ -4,14 +4,18 @@
 // toggle, routine link, live activity toggle), community links.
 // NFC & QR / apple health / data sections are out of scope per the spec.
 import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
+import { DemoDataStepContent } from '@/components/demo/DemoDataStepContent';
+import { demoDataManager } from '@/data/app-db';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
   Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -25,6 +29,7 @@ import {
 
 import { Screen } from '@/components/common/Screen';
 import type { ThemeMode, ThemePalette } from '@/domain/models';
+import { appSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { useFixedColor, useTheme, useThemeControls } from '@/theme/ThemeProvider';
 
@@ -79,10 +84,28 @@ export default function SettingsScreen() {
   const windDownEnabled = useSettings((s) => s.windDownReminderEnabled);
   const liveActivityEnabled = useSettings((s) => s.liveActivityEnabled);
   const setSetting = useSettings((s) => s.setSetting);
+  const refreshSettings = useSettings((s) => s.refresh);
+  const [showingDemoDataOnboarding, setShowingDemoDataOnboarding] = useState(false);
+  const [isImportingDemoData, setIsImportingDemoData] = useState(false);
 
   const isLight = theme.name === 'sunset';
   const rowBg = isLight ? 'rgba(255, 255, 255, 0.75)' : '#1c1c1e';
   const pickerVariant = isLight ? ('light' as const) : ('dark' as const);
+
+  const importDemoFromSettings = () => {
+    if (isImportingDemoData) return;
+    setIsImportingDemoData(true);
+    try {
+      demoDataManager.importDemoData();
+      refreshSettings();
+      appSleepStore.getState().refresh();
+      setShowingDemoDataOnboarding(false);
+    } catch {
+      Alert.alert("Couldn't Load Demo Data", 'An unknown error occurred. Please try again.');
+    } finally {
+      setIsImportingDemoData(false);
+    }
+  };
 
   const pickMode = () => {
     const options: ThemeMode[] = ['system', 'light', 'dark'];
@@ -283,6 +306,15 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <SectionHeader title="Development" color={theme.textSecondary} />
             <Pressable
+              testID="open-demo-onboarding"
+              onPress={() => setShowingDemoDataOnboarding(true)}>
+              <Row rowBg={rowBg} style={styles.rowWithSeparator}>
+                <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>
+                  Open Onboarding Demo Data
+                </Text>
+              </Row>
+            </Pressable>
+            <Pressable
               testID="restart-onboarding"
               onPress={() => {
                 setSetting('isOnboarded', false);
@@ -314,6 +346,20 @@ export default function SettingsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={showingDemoDataOnboarding}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowingDemoDataOnboarding(false)}>
+        <Screen starCount={35}>
+          <DemoDataStepContent
+            isImporting={isImportingDemoData}
+            onExplore={importDemoFromSettings}
+            onSkip={() => setShowingDemoDataOnboarding(false)}
+          />
+        </Screen>
+      </Modal>
     </Screen>
   );
 }

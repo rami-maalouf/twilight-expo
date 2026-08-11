@@ -162,6 +162,36 @@ describe('7-day moving average series', () => {
   });
 });
 
+describe('timing moving average series', () => {
+  test('null until the window fills, then rolling mean of offsets', () => {
+    const sessions: SleepSession[] = [];
+    // wake days 2..9 with bedtime 22:00 + i hours on each start day
+    for (let i = 0; i < 8; i++) {
+      sessions.push(session(i + 1, 22, i + 2, 6));
+    }
+    const a = analyzer(sessions);
+    const series = a.timingMovingAverageSeries(a.records, 'bedtimeOffset', 7);
+    expect(series).toHaveLength(8);
+    expect(series[5].movingAverageOffset).toBeNull();
+    const firstSeven = series.slice(0, 7).map((p) => p.actualOffset);
+    const mean7 = firstSeven.reduce((s, v) => s + v, 0) / 7;
+    expect(series[6].movingAverageOffset).toBeCloseTo(mean7, 10);
+    const nextSeven = series.slice(1, 8).map((p) => p.actualOffset);
+    const meanNext = nextSeven.reduce((s, v) => s + v, 0) / 7;
+    expect(series[7].movingAverageOffset).toBeCloseTo(meanNext, 10);
+  });
+
+  test('supports wakeOffset key and custom window', () => {
+    const sessions: SleepSession[] = [];
+    for (let i = 0; i < 5; i++) sessions.push(session(i + 1, 22, i + 2, 6 + i));
+    const a = analyzer(sessions);
+    const series = a.timingMovingAverageSeries(a.records, 'wakeOffset', 3);
+    expect(series[1].movingAverageOffset).toBeNull();
+    expect(series[2].movingAverageOffset).not.toBeNull();
+    expect(series[2].actualOffset).toBe(a.records[2].wakeOffset);
+  });
+});
+
 describe('streaks', () => {
   test('current streak counts back from today or yesterday', () => {
     // nights waking jan 18, 19, 20 (today)

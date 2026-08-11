@@ -57,6 +57,30 @@ export function formatTimeLabel(offset: number): string {
   return `${displayHour} ${ampm}`;
 }
 
+function wrappedMinutesFromOffset(offset: number): number {
+  const totalMinutes = Math.round((BASE_HOUR + offset) * 60);
+  const minutesInDay = 24 * 60;
+  return ((totalMinutes % minutesInDay) + minutesInDay) % minutesInDay;
+}
+
+// ports SleepDataUtils.formatClockTime
+export function formatClockTime(offset: number): string {
+  const wrapped = wrappedMinutesFromOffset(offset);
+  const hour24 = Math.trunc(wrapped / 60);
+  const minute = wrapped % 60;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${hour12}:${String(minute).padStart(2, '0')} ${ampm}`;
+}
+
+// ports SleepDataUtils.formatClockTime24Hour
+export function formatClockTime24Hour(offset: number): string {
+  const wrapped = wrappedMinutesFromOffset(offset);
+  const hour24 = Math.trunc(wrapped / 60);
+  const minute = wrapped % 60;
+  return `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
 // ports formatDurationShort: decimal hours with one fraction digit
 export function formatDurationShort(durationSeconds: number): string {
   return (durationSeconds / 3600).toFixed(1);

@@ -1,7 +1,7 @@
 // ports: Views/SleepDashboardView.swift - the home dashboard
 // greeting (tap to shuffle) + info button, date line, view-mode segmented
-// picker with the 90D/All history toggle, per-mode analytics card, status
-// card with streak, fadeInSlide entrances
+// picker, per-mode analytics cards (Week | Trend | Time | Score | Core),
+// status card with streak, fadeInSlide entrances
 import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useMemo, useState } from 'react';
@@ -14,11 +14,20 @@ import { InsightPills } from '@/components/dashboard/InsightPills';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import { StatusCard } from '@/components/dashboard/StatusCard';
 import { AlignmentCard } from '@/components/charts/AlignmentCard';
-import { MovingAverageCard } from '@/components/charts/MovingAverageCard';
+import {
+  MovingAverageCard,
+  type MovingAverageWindowLabel,
+} from '@/components/charts/MovingAverageCard';
+import { TimingCard, type TimingMetric } from '@/components/charts/TimingCard';
 import { WeekChart, type WeekChartDay } from '@/components/charts/WeekChart';
 import { getGreeting, getShuffledGreeting } from '@/copy/greetings';
 import { isDemoMode } from '@/demo/demo-mode';
-import { SleepMetricsAnalyzer, type AlignmentScorePoint, type MovingAveragePoint } from '@/domain/metrics/analyzer';
+import {
+  SleepMetricsAnalyzer,
+  type AlignmentScorePoint,
+  type MovingAveragePoint,
+  type TimingAveragePoint,
+} from '@/domain/metrics/analyzer';
 import {
   averageWeekDurationSeconds,
   formatAvgDuration,
@@ -34,7 +43,7 @@ import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
-const VIEW_MODES = ['Week', '7-Night Avg', 'Score', 'Core'] as const;
+const VIEW_MODES = ['Week', 'Trend', 'Time', 'Score', 'Core'] as const;
 type ViewMode = (typeof VIEW_MODES)[number];
 
 const INDIGO = '#5856d6';
@@ -67,8 +76,11 @@ export default function DashboardScreen() {
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
   const optimalWakeMinutes = useSettings((s) => s.optimalWakeMinutes);
 
-  const [viewMode, setViewMode] = useState<ViewMode>(isDemoMode ? '7-Night Avg' : 'Week');
+  const [viewMode, setViewMode] = useState<ViewMode>(isDemoMode ? 'Trend' : 'Week');
   const [historyRange, setHistoryRange] = useState<'90D' | 'All'>('90D');
+  const [movingAverageWindow, setMovingAverageWindow] =
+    useState<MovingAverageWindowLabel>('7-Night');
+  const [timingMetric, setTimingMetric] = useState<TimingMetric>('Sleep');
   const [greeting, setGreeting] = useState(() => {
     const { minutes } = nowMinutesAndToday();
     return getGreeting(minutes, optimalSleepMinutes, optimalWakeMinutes, isSleeping);
@@ -92,103 +104,125 @@ export default function DashboardScreen() {
     );
   };
 
+  const toggleHistoryRange = () => setHistoryRange((r) => (r === '90D' ? 'All' : '90D'));
+
   // analytics data
-  const { weekData, weekDays, insights, streak, changePercent, lastSession, movingAverageSeries, alignmentSeries, targetDurationHours, today } =
-    useMemo(() => {
-      const { today } = nowMinutesAndToday();
-      const analyzer = new SleepMetricsAnalyzer(sessions, {
-        optimalSleepMinutes,
-        optimalWakeMinutes,
-        today,
-      });
-      const weekData = processWeekData(sessions);
-      const tracked = trackedDataPoints(weekData);
+  const {
+    weekData,
+    weekDays,
+    insights,
+    streak,
+    changePercent,
+    lastSession,
+    sevenNightSeries,
+    thirtyNightSeries,
+    sleepTimingSeries,
+    wakeTimingSeries,
+    alignmentSeries,
+    targetDurationHours,
+    targetSleepOffset,
+    targetWakeOffset,
+    today,
+  } = useMemo(() => {
+    const { today } = nowMinutesAndToday();
+    const analyzer = new SleepMetricsAnalyzer(sessions, {
+      optimalSleepMinutes,
+      optimalWakeMinutes,
+      today,
+    });
+    const weekData = processWeekData(sessions);
+    const tracked = trackedDataPoints(weekData);
 
-      const weekDays: WeekChartDay[] = weekData.map((d, index) => {
-        const previous = tracked.filter(
-          (t) => weekData.indexOf(t) < index && t.durationSeconds > 0
-        );
-        const prev = previous[previous.length - 1];
-        return {
-          dayLabel: d.dayLabel,
-          dateLabel: new Date(Date.UTC(d.day.year, d.day.month - 1, d.day.day)).toLocaleDateString(
-            'en-US',
-            { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }
-          ),
-          startOffset: d.startOffset,
-          endOffset: d.endOffset,
-          durationSeconds: d.durationSeconds,
-          changePercent:
-            prev && prev.durationSeconds > 0 && d.durationSeconds > 0
-              ? ((d.durationSeconds - prev.durationSeconds) / prev.durationSeconds) * 100
-              : null,
-        };
-      });
-
-      const avg = formatAvgDuration(averageWeekDurationSeconds(weekData));
-      const insights = [
-        {
-          title: 'avg sleep',
-          value: `${avg.hours}h ${avg.minutes}m`,
-          subtitle: 'last 7 nights',
-          tint: theme.actionPrimary,
-        },
-        {
-          title: 'sleep cons.',
-          value: `${weekSleepConsistency(weekData)}%`,
-          subtitle: 'bedtime rhythm',
-          tint: fixed(INDIGO),
-        },
-        {
-          title: 'wake cons.',
-          value: `${weekWakeConsistency(weekData)}%`,
-          subtitle: 'wake rhythm',
-          tint: fixed(ORANGE),
-        },
-        {
-          title: 'accuracy',
-          value: `${weekAccuracy(weekData, optimalSleepMinutes, optimalWakeMinutes)}%`,
-          subtitle: 'target match',
-          tint: fixed(GREEN),
-        },
-      ];
-
-      // latest tracked night vs the prior tracked night (from the 7-day set)
-      let changePercent: number | null = null;
-      if (tracked.length >= 2) {
-        const latest = tracked[tracked.length - 1];
-        const previous = tracked[tracked.length - 2];
-        changePercent =
-          previous.durationSeconds > 0
-            ? ((latest.durationSeconds - previous.durationSeconds) / previous.durationSeconds) * 100
-            : null;
-      }
-
-      const allRecords = analyzer.recordsIn('All');
+    const weekDays: WeekChartDay[] = weekData.map((d, index) => {
+      const previous = tracked.filter(
+        (t) => weekData.indexOf(t) < index && t.durationSeconds > 0
+      );
+      const prev = previous[previous.length - 1];
       return {
-        weekData,
-        weekDays,
-        insights,
-        streak: analyzer.currentStreak(),
-        changePercent,
-        lastSession: sessions.length > 0 ? sessions[0] : null,
-        movingAverageSeries: analyzer.movingAverageSeries(allRecords, 7),
-        alignmentSeries: analyzer.sleepAlignmentSeries(allRecords),
-        targetDurationHours: analyzer.targetDurationHours,
-        today,
+        dayLabel: d.dayLabel,
+        dateLabel: new Date(Date.UTC(d.day.year, d.day.month - 1, d.day.day)).toLocaleDateString(
+          'en-US',
+          { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }
+        ),
+        startOffset: d.startOffset,
+        endOffset: d.endOffset,
+        durationSeconds: d.durationSeconds,
+        changePercent:
+          prev && prev.durationSeconds > 0 && d.durationSeconds > 0
+            ? ((d.durationSeconds - prev.durationSeconds) / prev.durationSeconds) * 100
+            : null,
       };
-    }, [sessions, optimalSleepMinutes, optimalWakeMinutes, theme, fixed]);
+    });
 
-  // dashboard 90D/All history toggle: keep points from the last 90 days
+    const avg = formatAvgDuration(averageWeekDurationSeconds(weekData));
+    const insights = [
+      {
+        title: 'avg sleep',
+        value: `${avg.hours}h ${avg.minutes}m`,
+        subtitle: 'last 7 nights',
+        tint: theme.actionPrimary,
+      },
+      {
+        title: 'sleep cons.',
+        value: `${weekSleepConsistency(weekData)}%`,
+        subtitle: 'bedtime rhythm',
+        tint: fixed(INDIGO),
+      },
+      {
+        title: 'wake cons.',
+        value: `${weekWakeConsistency(weekData)}%`,
+        subtitle: 'wake rhythm',
+        tint: fixed(ORANGE),
+      },
+      {
+        title: 'accuracy',
+        value: `${weekAccuracy(weekData, optimalSleepMinutes, optimalWakeMinutes)}%`,
+        subtitle: 'target match',
+        tint: fixed(GREEN),
+      },
+    ];
+
+    let changePercent: number | null = null;
+    if (tracked.length >= 2) {
+      const latest = tracked[tracked.length - 1];
+      const previous = tracked[tracked.length - 2];
+      changePercent =
+        previous.durationSeconds > 0
+          ? ((latest.durationSeconds - previous.durationSeconds) / previous.durationSeconds) * 100
+          : null;
+    }
+
+    const allRecords = analyzer.recordsIn('All');
+    return {
+      weekData,
+      weekDays,
+      insights,
+      streak: analyzer.currentStreak(),
+      changePercent,
+      lastSession: sessions.length > 0 ? sessions[0] : null,
+      sevenNightSeries: analyzer.movingAverageSeries(allRecords, 7),
+      thirtyNightSeries: analyzer.movingAverageSeries(allRecords, 30),
+      sleepTimingSeries: analyzer.timingMovingAverageSeries(allRecords, 'bedtimeOffset', 7),
+      wakeTimingSeries: analyzer.timingMovingAverageSeries(allRecords, 'wakeOffset', 7),
+      alignmentSeries: analyzer.sleepAlignmentSeries(allRecords),
+      targetDurationHours: analyzer.targetDurationHours,
+      targetSleepOffset: analyzer.targetSleepOffset,
+      targetWakeOffset: analyzer.targetWakeOffset,
+      today,
+    };
+  }, [sessions, optimalSleepMinutes, optimalWakeMinutes, theme, fixed]);
+
   const rangeStartKey = dayKey(addDays(today, -89));
-  const visibleMovingAverage: MovingAveragePoint[] =
-    historyRange === '90D'
-      ? movingAverageSeries.filter((p) => dayKey(p.date) >= rangeStartKey)
-      : movingAverageSeries;
-  const visibleAlignment: AlignmentScorePoint[] =
-    historyRange === '90D'
-      ? alignmentSeries.filter((p) => dayKey(p.date) >= rangeStartKey)
-      : alignmentSeries;
+  const inRange = <T extends { date: CalendarDay }>(points: T[]): T[] =>
+    historyRange === '90D' ? points.filter((p) => dayKey(p.date) >= rangeStartKey) : points;
+
+  const visibleSevenNight: MovingAveragePoint[] = inRange(sevenNightSeries);
+  const visibleThirtyNight: MovingAveragePoint[] = inRange(thirtyNightSeries);
+  const visibleSleepTiming: TimingAveragePoint[] = inRange(sleepTimingSeries);
+  const visibleWakeTiming: TimingAveragePoint[] = inRange(wakeTimingSeries);
+  const visibleAlignment: AlignmentScorePoint[] = inRange(alignmentSeries);
+  const activeMovingAverage =
+    movingAverageWindow === 'Monthly' ? visibleThirtyNight : visibleSevenNight;
 
   const onToggle = () => {
     const result = toggleSleep();
@@ -216,7 +250,6 @@ export default function DashboardScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* header */}
         <View style={styles.header}>
           <View style={styles.greetingRow}>
             <Pressable onPress={shuffleGreeting} hitSlop={6}>
@@ -234,27 +267,14 @@ export default function DashboardScreen() {
           <Text style={[styles.date, { color: theme.textSecondary }]}>{dateLine}</Text>
         </View>
 
-        {/* analytics section */}
         <FadeInSlide delay={0.05}>
           <View style={styles.analytics}>
-            <View style={styles.pickerRow}>
-              {viewMode !== 'Week' && (
-                <Pressable
-                  onPress={() => setHistoryRange((r) => (r === '90D' ? 'All' : '90D'))}
-                  style={[styles.rangeToggle, { borderColor: `${theme.actionPrimary}59` }]}>
-                  <SymbolView name="calendar" size={11} weight="semibold" tintColor={theme.textPrimary} />
-                  <Text style={[styles.rangeToggleText, { color: theme.textPrimary }]}>
-                    {historyRange}
-                  </Text>
-                </Pressable>
-              )}
-              <SegmentedPicker
-                options={VIEW_MODES}
-                value={viewMode}
-                onChange={setViewMode}
-                testIDPrefix="demo.dashboard.mode"
-              />
-            </View>
+            <SegmentedPicker
+              options={VIEW_MODES}
+              value={viewMode}
+              onChange={setViewMode}
+              testIDPrefix="demo.dashboard.mode"
+            />
 
             {viewMode === 'Week' &&
               (hasWeekData ? (
@@ -282,11 +302,29 @@ export default function DashboardScreen() {
                   </View>
                 </Card>
               ))}
-            {viewMode === '7-Night Avg' && (
+            {viewMode === 'Trend' && (
               <MovingAverageCard
-                series={visibleMovingAverage}
+                series={activeMovingAverage}
                 targetDurationHours={targetDurationHours}
                 width={chartWidth}
+                window={movingAverageWindow}
+                onWindowChange={setMovingAverageWindow}
+                historyRange={historyRange}
+                onHistoryRangeToggle={toggleHistoryRange}
+              />
+            )}
+            {viewMode === 'Time' && (
+              <TimingCard
+                sleepSeries={visibleSleepTiming}
+                wakeSeries={visibleWakeTiming}
+                targetSleepOffset={targetSleepOffset}
+                targetWakeOffset={targetWakeOffset}
+                targetDurationHours={targetDurationHours}
+                width={chartWidth}
+                metric={timingMetric}
+                onMetricChange={setTimingMetric}
+                historyRange={historyRange}
+                onHistoryRangeToggle={toggleHistoryRange}
               />
             )}
             {viewMode === 'Score' && (
@@ -295,6 +333,8 @@ export default function DashboardScreen() {
                 title="Sleep Alignment Score"
                 includesTimingAndPhase
                 width={chartWidth}
+                historyRange={historyRange}
+                onHistoryRangeToggle={toggleHistoryRange}
               />
             )}
             {viewMode === 'Core' && (
@@ -303,12 +343,13 @@ export default function DashboardScreen() {
                 title="Core Sleep Score"
                 includesTimingAndPhase={false}
                 width={chartWidth}
+                historyRange={historyRange}
+                onHistoryRangeToggle={toggleHistoryRange}
               />
             )}
           </View>
         </FadeInSlide>
 
-        {/* status card */}
         <FadeInSlide delay={0.12}>
           <StatusCard
             isSleeping={isSleeping}
@@ -330,19 +371,6 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 34, fontWeight: '700' },
   date: { fontSize: 15 },
   analytics: { gap: 16 },
-  pickerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  rangeToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    width: 58,
-    height: 32,
-    borderRadius: 10,
-    borderWidth: 1,
-    backgroundColor: 'rgba(28, 28, 30, 0.55)',
-  },
-  rangeToggleText: { fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
   chartSpacer: { height: 12 },
   emptyChart: { alignItems: 'center', gap: 8, paddingVertical: 40 },
   emptyTitle: { fontSize: 17, fontWeight: '600' },
