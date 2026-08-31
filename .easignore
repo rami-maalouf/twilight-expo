@@ -1,0 +1,40 @@
+# dependencies and generated output
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+/ios/
+/android/
+
+# local tooling and evidence
+.artifacts/
+evidence/
+.cursor/
+.gemini/
+.zed/
+.opencode/
+.codex/
+.vscode/
+.claude/settings.local.json
+.metro-health-check*
+
+# local environment and logs
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# platform and compiler state
+.DS_Store
+*.pem
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.tsbuildinfo

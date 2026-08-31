@@ -46,3 +46,7 @@ example
 .claude/settings.local.json
 
 .env
+.env.eas-simulator
+
+# disposable eas simulator evidence
+.artifacts/eas-simulator/
