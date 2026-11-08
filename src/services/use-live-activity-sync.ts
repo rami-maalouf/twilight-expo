@@ -103,9 +103,8 @@ export function useLiveActivitySync() {
     if (!SUPPORTED) return;
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'active') {
-        const state = appSleepStore.getState();
-        state.refresh();
-        if (!state.activeSession) maybeStartWindDown();
+        appSleepStore.getState().refresh();
+        if (!appSleepStore.getState().activeSession) maybeStartWindDown();
       }
     });
     if (!activeSession) maybeStartWindDown();

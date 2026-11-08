@@ -8,6 +8,7 @@ import { settingsStore } from '@/data/app-db';
 import { DemoExitControl } from '@/components/demo/DemoExitControl';
 import { HomeWidgetSync } from '@/components/widgets/HomeWidgetSync';
 import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
+import { useForegroundRefresh } from '@/services/use-foreground-refresh';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
 import { useSleepLinkActions } from '@/services/use-sleep-link-actions';
 import { useSleepStore } from '@/state/app-sleep-store';
@@ -35,6 +36,8 @@ export default function RootLayout() {
   useLiveActivitySync();
   // twilight://sleep/start|stop from widgets and other surfaces
   useSleepLinkActions();
+  // reread sessions and settings on every return to the foreground
+  useForegroundRefresh();
 
   // wind-down reminder: (re)schedule on launch, bedtime change, and toggle
   const windDownEnabled = useSettings((s) => s.windDownReminderEnabled);

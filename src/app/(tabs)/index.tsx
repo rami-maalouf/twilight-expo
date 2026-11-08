@@ -4,7 +4,7 @@
 // status card with streak, fadeInSlide entrances
 import { router, useFocusEffect } from 'expo-router';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { Card } from '@/components/common/Card';
@@ -13,6 +13,7 @@ import { Screen } from '@/components/common/Screen';
 import { InsightPills } from '@/components/dashboard/InsightPills';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import { StatusCard } from '@/components/dashboard/StatusCard';
+import { useForegroundRefresh } from '@/services/use-foreground-refresh';
 import { AlignmentCard } from '@/components/charts/AlignmentCard';
 import {
   MovingAverageCard,
@@ -93,6 +94,16 @@ export default function DashboardScreen() {
     const { minutes } = nowMinutesAndToday();
     setGreeting(getGreeting(minutes, optimalSleepMinutes, optimalWakeMinutes, isSleeping));
   }, [optimalSleepMinutes, optimalWakeMinutes, isSleeping]);
+
+  // swift recomputes the greeting on scene activation and whenever the
+  // session or the schedule changes, from any surface (dashboard, widget link)
+  const greetingFor = useRef(updateGreeting);
+  useEffect(() => {
+    if (greetingFor.current === updateGreeting) return;
+    greetingFor.current = updateGreeting;
+    updateGreeting();
+  }, [updateGreeting]);
+  useForegroundRefresh(updateGreeting);
 
   useFocusEffect(
     useCallback(() => {
@@ -246,7 +257,6 @@ export default function DashboardScreen() {
     if (result.joke) {
       Alert.alert('Pause...', result.joke);
     }
-    updateGreeting();
   };
 
   const dateLine = new Date().toLocaleDateString('en-US', {
