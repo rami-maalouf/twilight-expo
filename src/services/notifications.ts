@@ -6,6 +6,21 @@ import { WIND_DOWN_MESSAGES, WIND_DOWN_TITLE, windDownReminderTime } from '../co
 
 const NOTIFICATION_IDENTIFIER = 'wind-down-reminder';
 
+// the original has no UNUserNotificationCenterDelegate, so ios keeps a
+// reminder out of the foreground. sdk 58 shows foreground notifications by
+// default when no handler is set; this handler keeps the original behavior
+// on both platforms. call once at module load, before any notification arrives.
+export function configureForegroundNotifications(): void {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: false,
+      shouldShowList: false,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+}
+
 export async function cancelWindDownNotification(): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_IDENTIFIER);
 }
