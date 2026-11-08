@@ -4,6 +4,7 @@ export default function OnboardingLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
+      <Stack.Screen name="health-connect" />
       <Stack.Screen name="schedule" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="demo" />

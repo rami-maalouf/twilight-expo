@@ -14,14 +14,18 @@ const DETAILS: { icon: SymbolViewProps['name']; text: string }[] = [
 
 export function DemoDataStepContent({
   isImporting,
+  isFinishing = false,
   onExplore,
   onSkip,
 }: {
   isImporting: boolean;
+  // onboarding waits for the health connect import before it finishes
+  isFinishing?: boolean;
   onExplore: () => void;
   onSkip: () => void;
 }) {
   const theme = useTheme();
+  const busy = isImporting || isFinishing;
 
   return (
     <View style={styles.root}>
@@ -63,11 +67,11 @@ export function DemoDataStepContent({
       <FadeInSlide delay={0.34} slideOffset={18} style={styles.actionArea}>
         <Pressable
           testID="explore-demo-data"
-          disabled={isImporting}
+          disabled={busy}
           onPress={onExplore}
           style={[
             styles.primaryButton,
-            { backgroundColor: theme.actionPrimary, opacity: isImporting ? 0.7 : 1 },
+            { backgroundColor: theme.actionPrimary, opacity: busy ? 0.7 : 1 },
           ]}>
           {isImporting ? (
             <ActivityIndicator color="#ffffff" />
@@ -78,8 +82,11 @@ export function DemoDataStepContent({
             {isImporting ? 'Loading your future data...' : 'Explore my data'}
           </Text>
         </Pressable>
-        <Pressable testID="skip-demo-data" disabled={isImporting} onPress={onSkip} hitSlop={8}>
-          <Text style={[styles.skipLabel, { color: theme.textSecondary }]}>Skip for now</Text>
+        <Pressable testID="skip-demo-data" disabled={busy} onPress={onSkip} hitSlop={8} style={styles.skipRow}>
+          {isFinishing ? <ActivityIndicator size="small" color={theme.textSecondary} /> : null}
+          <Text style={[styles.skipLabel, { color: theme.textSecondary }]}>
+            {isFinishing ? 'Importing sleep...' : 'Skip for now'}
+          </Text>
         </Pressable>
       </FadeInSlide>
     </View>
@@ -124,5 +131,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   primaryLabel: { color: '#ffffff', fontSize: 17, fontWeight: '600' },
+  skipRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   skipLabel: { fontSize: 15, fontWeight: '600' },
 });

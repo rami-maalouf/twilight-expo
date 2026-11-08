@@ -1,4 +1,6 @@
 import { demoDataManager } from '@/data/app-db';
+import { finishOnboardingHealthSync } from '@/services/health-connect/app-health-sync';
+import { useHealthSyncState } from '@/services/health-connect/health-connect-state';
 import { appSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { router } from 'expo-router';
@@ -11,10 +13,24 @@ import { Screen } from '@/components/common/Screen';
 export default function DemoDataStep() {
   const refreshSettings = useSettings((state) => state.refresh);
   const setSetting = useSettings((state) => state.setSetting);
+  const healthSyncEnabled = useHealthSyncState((state) => state.enabled);
   const [isImporting, setIsImporting] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
-  const exploreDemoData = () => {
-    if (isImporting) return;
+  // swift importIfNeeded: the health connect import finishes before the
+  // dashboard opens, and before demo data pauses sync (5.2)
+  const finishHealthSync = async () => {
+    setIsFinishing(true);
+    try {
+      await finishOnboardingHealthSync(healthSyncEnabled);
+    } finally {
+      setIsFinishing(false);
+    }
+  };
+
+  const exploreDemoData = async () => {
+    if (isImporting || isFinishing) return;
+    await finishHealthSync();
     setIsImporting(true);
 
     try {
@@ -29,7 +45,9 @@ export default function DemoDataStep() {
     }
   };
 
-  const skipDemoData = () => {
+  const skipDemoData = async () => {
+    if (isImporting || isFinishing) return;
+    await finishHealthSync();
     setSetting('isOnboarded', true);
     router.replace('/');
   };
@@ -38,6 +56,7 @@ export default function DemoDataStep() {
     <Screen starCount={35}>
       <DemoDataStepContent
         isImporting={isImporting}
+        isFinishing={isFinishing}
         onExplore={exploreDemoData}
         onSkip={skipDemoData}
       />
