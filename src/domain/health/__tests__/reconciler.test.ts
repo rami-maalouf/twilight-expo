@@ -256,6 +256,8 @@ describe('planInbound', () => {
     const b = mirrorRecord(BASE + 10 * 60_000, BASE + 7 * H, { recordId: 'b', dataOrigin: AUTOSLEEP });
     const plan = planInbound(input({ mirror: [a, b], tombstones: [{ nightKey: 'k', deletedAt: BASE, recordIds: ['a', 'b'] }] }));
     expect(plan.inserts).toHaveLength(0);
+    // pull copy still counts the deleted nights ("Found 2 ... in 2 night(s)")
+    expect(plan.counts.nightCount).toBe(2);
   });
 
   test('superseded: a manual log over an imported night removes the import; deleting the log brings it back', () => {

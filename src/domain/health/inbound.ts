@@ -131,7 +131,8 @@ export function planInbound(input: InboundInput): InboundPlan {
     detaches: [...detaches],
     counts: {
       recordCount: input.mirror.length,
-      nightCount: nights.length,
+      // swift counts tombstoned nights too; count before the tombstone filter
+      nightCount: tombstonedRecords.size > 0 ? clusterNights(input.mirror, { deviceZone: input.deviceZone }).length : nights.length,
       inserted: inserts.length,
       updated: updates.filter((u) => u.changed).length,
     },
