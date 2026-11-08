@@ -25,7 +25,7 @@ import {
   type Tombstone,
 } from '../domain/health/types';
 import { zoneForOffset } from '../domain/health/zones';
-import { inTransaction, type SqlDatabase, type SqlParam } from './db';
+import { inTransaction, type SqlDatabase } from './db';
 import { makeId } from './ids';
 
 export interface HealthSessionRow {
@@ -555,9 +555,5 @@ export class HealthStore {
       'update hc_pending_deletions set attempts = attempts + 1, last_error = ? where client_record_id = ?',
       [error, clientRecordId]
     );
-  }
-
-  run(sql: string, params: SqlParam[] = []): void {
-    this.db.runSync(sql, params);
   }
 }
