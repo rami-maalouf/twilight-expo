@@ -2,7 +2,12 @@
 // last night and the 7-night average, goal captions, palette resolution
 import type { SleepSession } from '../../domain/models';
 import { PALETTES } from '../../theme/palettes';
-import { buildHomeWidgetSnapshot, widgetColors, type HomeWidgetInput } from '../home-widget-snapshot';
+import {
+  buildHomeWidgetSnapshot,
+  initialHomeWidgetProps,
+  widgetColors,
+  type HomeWidgetInput,
+} from '../home-widget-snapshot';
 
 const TZ = 'America/Denver';
 const HOUR = 3600_000;
@@ -114,6 +119,18 @@ describe('buildHomeWidgetSnapshot', () => {
       NIGHT0 + 31 * HOUR
     );
     expect(JSON.parse(JSON.stringify(props))).toEqual(props);
+  });
+});
+
+describe('initialHomeWidgetProps', () => {
+  test('pre-launch widgets show the default schedule, awake, in night sky', () => {
+    const props = initialHomeWidgetProps();
+    expect(props.sleeping).toBe(false);
+    expect(props.bedtime).toBe('10:00 PM');
+    expect(props.wake).toBe('7:00 AM');
+    expect(props.lastNight).toBe('');
+    expect(props.scheme).toBe('dark');
+    expect(props.night.sky).toBe('twilight_widget_sky_twilight');
   });
 });
 

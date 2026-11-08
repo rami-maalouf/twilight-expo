@@ -37,6 +37,55 @@
         }
       ],
       "expo-widgets",
+      [
+        "./plugins/android-widgets/index.cjs",
+        {
+          "widgets": [
+            {
+              "name": "TwilightSleepStatus",
+              "displayName": "Sleep Status",
+              "description": "See whether you are asleep, how long you have slept, and start or end sleep from your home screen.",
+              "ios": null,
+              "android": {
+                "minWidth": 110,
+                "minHeight": 110,
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "both",
+                "initialLayout": "widgets/sleep-status.android.tsx"
+              }
+            },
+            {
+              "name": "TwilightSleepMode",
+              "displayName": "Sleep Mode",
+              "description": "Open Twilight and start or stop sleep mode.",
+              "ios": null,
+              "android": {
+                "minWidth": 110,
+                "minHeight": 40,
+                "targetCellWidth": 2,
+                "targetCellHeight": 1,
+                "resizeMode": "horizontal",
+                "initialLayout": "widgets/sleep-mode.android.tsx"
+              }
+            },
+            {
+              "name": "TwilightSleepOverview",
+              "displayName": "Sleep Overview",
+              "description": "Last night's sleep against your goal, your 7-night average, and your bedtime and wake targets.",
+              "ios": null,
+              "android": {
+                "minWidth": 250,
+                "minHeight": 110,
+                "targetCellWidth": 4,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal",
+                "initialLayout": "widgets/sleep-overview.android.tsx"
+              }
+            }
+          ]
+        }
+      ],
       "expo-sqlite",
       "@react-native-community/datetimepicker",
       "expo-font",

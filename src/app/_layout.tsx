@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { settingsStore } from '@/data/app-db';
 import { DemoExitControl } from '@/components/demo/DemoExitControl';
+import { HomeWidgetSync } from '@/components/widgets/HomeWidgetSync';
 import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
 import { useSleepLinkActions } from '@/services/use-sleep-link-actions';
@@ -48,6 +49,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider store={settingsStore} desaturated={isSleeping}>
       <ThemedStatusBar />
+      <HomeWidgetSync />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View style={{ flex: 1 }}>
           {!isOnboarded && <Redirect href="/onboarding" />}

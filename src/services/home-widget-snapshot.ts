@@ -3,7 +3,7 @@
 // "avg sleep" pill) so the widget and the app never disagree.
 // no react, react-native or expo imports: unit-tested in node.
 import type { HomeWidgetColors, HomeWidgetProps } from '../../widgets/home-widget-props';
-import type { SleepSession, ThemeMode, ThemePalette } from '../domain/models';
+import { DEFAULT_SETTINGS, type SleepSession, type ThemeMode, type ThemePalette } from '../domain/models';
 import {
   formatClockTime,
   formatDurationHm,
@@ -98,4 +98,20 @@ export function buildHomeWidgetSnapshot(
     day: widgetColors(PALETTES.sunset),
     night: widgetColors(night),
   };
+}
+
+// what a widget shows before the app has ever published (fresh install,
+// cleared storage): default schedule, no history, awake
+export function initialHomeWidgetProps(): HomeWidgetProps {
+  return buildHomeWidgetSnapshot(
+    {
+      activeSession: null,
+      sessions: [],
+      optimalSleepMinutes: DEFAULT_SETTINGS.optimalSleepMinutes,
+      optimalWakeMinutes: DEFAULT_SETTINGS.optimalWakeMinutes,
+      themeMode: DEFAULT_SETTINGS.themeMode,
+      themePalette: DEFAULT_SETTINGS.themePalette,
+    },
+    0
+  );
 }
