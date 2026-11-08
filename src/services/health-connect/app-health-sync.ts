@@ -1,10 +1,10 @@
 // app-level health connect sync engine singleton and its triggers
 // (docs/health-connect.md 1.4, 4.3, 4.4). ios, web and builds without the
 // native module get the unsupported adapter, and sync never leaves 'off'.
-import { AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
 
 import { demoDataManager, sessionRepo, settingsStore } from '../../data/app-db';
-import { connectionState, isConnectionVisible } from '../../domain/health/connection-state';
+import { connectionState, isConnectionVisible, OPEN_FAILED } from '../../domain/health/connection-state';
 import { appSleepStore, onLocalSessionsChanged } from '../../state/app-sleep-store';
 import { useSettings } from '../../state/settings-state';
 import { healthSyncStore } from './health-connect-state';
@@ -41,15 +41,16 @@ export function refreshHealthStatus(): void {
 }
 
 // "Open Health Connect": the per-app page is closed to third-party apps on
-// android 14+, so the module falls back to "Data and access" (2.11)
+// android 14+, so the module falls back to "Data and access" (2.11). when the
+// user disabled the health connect app itself both fail, so say where to look
 export async function openHealthConnect(): Promise<void> {
   if (!isHealthConnectSupported) return;
-  await healthConnect.openPermissionSettings().catch(() => undefined);
+  await healthConnect.openPermissionSettings().catch(() => Alert.alert(OPEN_FAILED.title, OPEN_FAILED.settings));
 }
 
 export async function openHealthConnectUpdate(): Promise<void> {
   if (!isHealthConnectSupported) return;
-  await healthConnect.openProviderInstall().catch(() => undefined);
+  await healthConnect.openProviderInstall().catch(() => Alert.alert(OPEN_FAILED.title, OPEN_FAILED.store));
 }
 
 // welcome -> health connect step only where health connect is visible and no

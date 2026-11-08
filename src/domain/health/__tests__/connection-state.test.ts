@@ -8,6 +8,7 @@ import {
   heldDeletionBody,
   heldDeletionTitle,
   heldRemovalPrompt,
+  heroSubtitle,
   isConnectionVisible,
   lastSyncedLabel,
   onboardingCopy,
@@ -194,6 +195,18 @@ describe('row copy', () => {
       'Twilight needs Health Connect permission to sync sleep sessions.'
     );
     expect(rowSummary(view, null)).toBe('Health Connect access is off for Twilight.');
+  });
+
+  test('the hero subtitle never promises a direction that is not granted', () => {
+    expect(heroSubtitle(connectionState(input({ write: true, enabled: true })))).toBe(
+      'Twilight saves your nights to Health Connect. Allow read access to import sleep from other apps.'
+    );
+    expect(heroSubtitle(connectionState(input({ read: true, enabled: true })))).toBe(
+      'Twilight imports sleep from Health Connect. Allow write access to save your nights back.'
+    );
+    expect(heroSubtitle(connectionState(input({ read: true, write: true, enabled: true })))).toMatch(
+      /^Twilight can import sleep from Health Connect and save/
+    );
   });
 
   test('held deletion title pluralizes', () => {

@@ -27,8 +27,8 @@ import {
   heldDeletionBody,
   heldDeletionTitle,
   heldRemovalPrompt,
-  HERO_SUBTITLE,
   HERO_TITLE,
+  heroSubtitle,
   lastSyncedLabel,
   SCREEN_STATUS_LABEL,
   screenPrimaryAction,
@@ -179,7 +179,7 @@ export default function HealthConnectScreen() {
                   <StatusBadge label={SCREEN_STATUS_LABEL[state]} color={accent} />
                 </View>
               </View>
-              <Text style={[styles.body, { color: theme.textSecondary }]}>{HERO_SUBTITLE[state]}</Text>
+              <Text style={[styles.body, { color: theme.textSecondary }]}>{heroSubtitle(connection)}</Text>
               <View
                 style={[
                   styles.privacyNote,

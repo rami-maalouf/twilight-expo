@@ -161,6 +161,12 @@ export const HERO_SUBTITLE: Record<HcConnectionState, string> = {
   denied: 'Twilight cannot sync sleep until sleep access is allowed in Health Connect.',
 };
 
+// a partial grant must not promise the missing direction (2.8)
+export function heroSubtitle(view: ConnectionView): string {
+  if (view.state === 'connected' && (view.importOnly || view.exportOnly)) return rowSummary(view, null);
+  return HERO_SUBTITLE[view.state];
+}
+
 export const STATUS_SUMMARY: Record<HcConnectionState, string> = {
   loading: '',
   hidden: '',
@@ -283,6 +289,14 @@ export function heldDeletionBody(count: number): string {
     ? 'This night was deleted in Health Connect. Twilight still has it and will not send it back unless you edit it.'
     : 'These nights were deleted in Health Connect. Twilight still has them and will not send them back unless you edit them.';
 }
+
+// "Open Health Connect" / "Update Health Connect" could not start any screen
+export const OPEN_FAILED = {
+  title: 'Health Connect',
+  settings:
+    "Twilight couldn't open Health Connect. Find it in your phone's Settings under Security and privacy, then Privacy, and check that the app is turned on.",
+  store: "Twilight couldn't open Google Play. Update Health Connect from Google Play, then come back to Twilight.",
+} as const;
 
 // confirmation for "Remove from Twilight"
 export function heldRemovalPrompt(count: number): { title: string; message: string } {
