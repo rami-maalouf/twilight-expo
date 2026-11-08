@@ -13,3 +13,8 @@ android {
     versionName '1.0.0'
   }
 }
+
+dependencies {
+  // HeadlessJsTaskService for the session notification buttons
+  implementation 'com.facebook.react:react-android'
+}
