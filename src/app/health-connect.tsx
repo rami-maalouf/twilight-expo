@@ -150,7 +150,8 @@ export default function HealthConnectScreen() {
           testID="health-connect-back"
           accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() => router.back()}
+          // a deep link can open this screen as the root, with nothing to go back to
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/settings'))}
           android_ripple={{ color: withAlpha(theme.textPrimary, 0.16), borderless: true, radius: 22 }}
           style={styles.backButton}>
           <NativeSymbol name="chevron.left" size={24} tintColor={theme.textPrimary} />
