@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- dark: the twilight night palette (src/theme/palettes.ts) -->
+  <color name="twilight_hc_background">#0A1520</color>
+  <color name="twilight_hc_card">#14233A</color>
+  <color name="twilight_hc_text_primary">#FFFFFF</color>
+  <color name="twilight_hc_text_secondary">#8B9DC3</color>
+  <color name="twilight_hc_accent">#00D4FF</color>
+  <color name="twilight_hc_on_accent">#0A1520</color>
+  <color name="twilight_hc_divider">#1FFFFFFF</color>
+</resources>
