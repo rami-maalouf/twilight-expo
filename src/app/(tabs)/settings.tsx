@@ -6,6 +6,7 @@
 import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
 import { NativeSymbol } from '@/components/common/NativeSymbol';
 import { DemoDataStepContent } from '@/components/demo/DemoDataStepContent';
+import { LiveActivitySettingRows } from '@/components/settings/LiveActivitySettingRows';
 import { MenuPicker } from '@/components/settings/MenuPicker';
 import { demoDataManager } from '@/data/app-db';
 import * as Notifications from 'expo-notifications';
@@ -82,7 +83,6 @@ export default function SettingsScreen() {
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
   const optimalWakeMinutes = useSettings((s) => s.optimalWakeMinutes);
   const windDownEnabled = useSettings((s) => s.windDownReminderEnabled);
-  const liveActivityEnabled = useSettings((s) => s.liveActivityEnabled);
   const setSetting = useSettings((s) => s.setSetting);
   const refreshSettings = useSettings((s) => s.refresh);
   const isDemoDataActive = useSettings((s) => s.isDemoDataActive);
@@ -260,30 +260,14 @@ export default function SettingsScreen() {
             />
           </Row>
           <Pressable onPress={() => router.push('/sleep-tips')} testID="sleep-tips-link">
-            <Row
-              rowBg={rowBg}
-              style={Platform.OS === 'ios' ? styles.rowWithSeparator : undefined}>
+            <Row rowBg={rowBg} style={styles.rowWithSeparator}>
               <Text style={[styles.routineLink, { color: theme.accent }]}>
                 View wind-down routine
               </Text>
               <NativeSymbol name="arrow.right" size={12} tintColor={theme.accent} />
             </Row>
           </Pressable>
-          {Platform.OS === 'ios' && (
-            <Row rowBg={rowBg} style={styles.toggleRow}>
-              <View style={styles.toggleTexts}>
-                <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Live Activity</Text>
-                <Text style={styles.rowDescription}>
-                  Shows a live activity on your lock screen with some inspirational quote
-                </Text>
-              </View>
-              <Switch
-                value={liveActivityEnabled}
-                onValueChange={(v) => setSetting('liveActivityEnabled', v)}
-                trackColor={{ true: theme.actionPrimary }}
-              />
-            </Row>
-          )}
+          <LiveActivitySettingRows rowBg={rowBg} />
         </View>
 
         {/* community */}
