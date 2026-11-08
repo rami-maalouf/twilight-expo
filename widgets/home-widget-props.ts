@@ -12,13 +12,16 @@ export interface HomeWidgetColors {
   textPrimary: string;
   textSecondary: string;
   accent: string;
-  // moon icon tint on idle surfaces (swift ProfileWidgetEntryView uses teal)
+  // moon icon tint on idle surfaces (swift ProfileWidgetEntryView uses teal;
+  // sunset uses its accent for contrast)
   moon: string;
   // primary action pill ("Start Sleep") fill and label
   action: string;
   actionText: string;
-  // progress track and icon halo fills
+  // progress track fill
   track: string;
+  // circle behind the sleep mode widget icon
+  halo: string;
 }
 
 export interface HomeWidgetProps {
@@ -47,6 +50,9 @@ export interface HomeWidgetProps {
   scheme: 'system' | 'light' | 'dark';
   day: HomeWidgetColors;
   night: HomeWidgetColors;
+  // set by the publisher on every publish: expo-widgets re-renders only when
+  // the stored props change. layouts ignore it
+  renderKey?: number;
 }
 
 // widget names: must match the "name" fields in app.json's android widgets

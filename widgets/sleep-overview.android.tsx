@@ -5,9 +5,11 @@
 import { Box, Button, Column, Image, LinearProgressIndicator, Row, Spacer, Text } from '@expo/ui/jetpack-compose';
 import {
   background,
+  cornerRadius,
   fillMaxSize,
   fillMaxWidth,
   height,
+  padding,
   paddingAll,
   size,
   width,
@@ -20,7 +22,8 @@ import { SLEEP_OVERVIEW_WIDGET, type HomeWidgetProps } from './home-widget-props
 const SleepOverview = (props: HomeWidgetProps, environment: WidgetEnvironment) => {
   'widget';
   // note: the 'widget' compiler captures only this function body - constants inline
-  const GREEN = '#34c759';
+  // the status widget's active green (plugins/android-widgets/sky.cjs)
+  const GREEN = '#24a148';
   const SUN = '#ffbf00';
   const light = props.scheme === 'light' || (props.scheme === 'system' && environment.colorScheme === 'light');
   const c = light ? props.day : props.night;
@@ -47,9 +50,11 @@ const SleepOverview = (props: HomeWidgetProps, environment: WidgetEnvironment) =
           </Row>
           <Row modifiers={[fillMaxWidth()]} horizontalAlignment="end" verticalAlignment="center">
             {props.sleeping ? (
-              <Text color={GREEN} style={{ fontSize: 12, fontWeight: 'bold' }} maxLines={1}>
-                {`Sleeping · ${elapsed}`}
-              </Text>
+              <Box modifiers={[cornerRadius(10), background(GREEN), padding(8, 3, 8, 3)]}>
+                <Text color="#ffffff" style={{ fontSize: 12, fontWeight: 'bold' }} maxLines={1}>
+                  {`Sleeping · ${elapsed}`}
+                </Text>
+              </Box>
             ) : (
               <Text color={c.textSecondary} style={{ fontSize: 12 }} maxLines={1}>
                 {`Goal ${props.goal}`}
@@ -97,7 +102,7 @@ const SleepOverview = (props: HomeWidgetProps, environment: WidgetEnvironment) =
         <Spacer modifiers={[height(10)]} />
         <Box modifiers={[fillMaxWidth()]}>
           <Row verticalAlignment="center">
-            <Image source={{ uri: 'twilight_widget_icon_moon' }} tint={light ? c.textSecondary : c.moon} modifiers={[size(14, 14)]} />
+            <Image source={{ uri: 'twilight_widget_icon_moon' }} tint={c.moon} modifiers={[size(14, 14)]} />
             <Spacer modifiers={[width(4)]} />
             <Text color={c.textPrimary} style={{ fontSize: 12 }} maxLines={1}>
               {`Bedtime ${props.bedtime}`}

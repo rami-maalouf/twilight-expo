@@ -30,7 +30,8 @@ export interface HomeWidgetInput {
 }
 
 // swift ProfileWidgetEntryView tints the idle moon `.teal`; the port uses the
-// twilight accent (#00D4FF) on every surface, like the live activity
+// twilight accent (#00D4FF) like the live activity. on the sunset gradient
+// teal loses contrast, so light mode uses the sunset accent instead
 const MOON_TEAL = '#00d4ff';
 
 // one drawable per background gradient (plugins/android/drawable)
@@ -47,10 +48,11 @@ export function widgetColors(theme: AppTheme): HomeWidgetColors {
     textPrimary: theme.textPrimary,
     textSecondary: theme.textSecondary,
     accent: theme.accent,
-    moon: MOON_TEAL,
+    moon: light ? theme.accent : MOON_TEAL,
     action: theme.actionPrimary,
     actionText: '#ffffff',
     track: light ? 'rgba(45, 27, 46, 0.14)' : 'rgba(255, 255, 255, 0.14)',
+    halo: light ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.12)',
   };
 }
 

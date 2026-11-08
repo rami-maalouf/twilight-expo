@@ -39,7 +39,3 @@ function each(run: (widget: Widget<HomeWidgetProps>) => void): void {
 export function publishHomeWidgets(props: HomeWidgetProps): void {
   each((widget) => widget.updateSnapshot(props));
 }
-
-export function reloadHomeWidgets(): void {
-  each((widget) => widget.reload());
-}

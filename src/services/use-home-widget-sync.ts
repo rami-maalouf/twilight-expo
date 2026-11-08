@@ -1,18 +1,19 @@
 // keeps the android home-screen widgets in step with the app (swift:
 // StrategyManager reloads widget timelines on every session change).
 // publishes on session, history, schedule and theme changes; re-renders on
-// foreground, system light/dark changes and every minute while asleep so the
-// elapsed time stays fresh (glance has no ticking timer). runs inside
+// foreground, system light/dark changes and about every minute while asleep
+// so the elapsed time stays fresh (glance has no ticking timer). runs inside
 // ThemeProvider because display mode and palette live there.
 import { useEffect, useState } from 'react';
 import { AppState, useColorScheme } from 'react-native';
 
 import { useSleepStore } from '../state/app-sleep-store';
 import { useSettings } from '../state/settings-state';
+import { setWidgetTicking } from '../../modules/twilight-widget-actions';
 import { useThemeControls } from '../theme/ThemeProvider';
 import { createHomeWidgetPublisher } from './home-widget-publisher';
 import { buildHomeWidgetSnapshot } from './home-widget-snapshot';
-import { HOME_WIDGETS_SUPPORTED, publishHomeWidgets, reloadHomeWidgets } from './home-widgets';
+import { HOME_WIDGETS_SUPPORTED, publishHomeWidgets } from './home-widgets';
 
 const MINUTE_MS = 60_000;
 
@@ -27,9 +28,7 @@ export function useHomeWidgetSync() {
   const optimalWakeMinutes = useSettings((s) => s.optimalWakeMinutes);
   const { mode, palette } = useThemeControls();
   const systemScheme = useColorScheme();
-  const [publisher] = useState(() =>
-    createHomeWidgetPublisher({ publish: publishHomeWidgets, reload: reloadHomeWidgets }, warn)
-  );
+  const [publisher] = useState(() => createHomeWidgetPublisher(publishHomeWidgets, warn));
 
   useEffect(() => {
     if (!HOME_WIDGETS_SUPPORTED) return;
@@ -63,9 +62,13 @@ export function useHomeWidgetSync() {
     return () => sub.remove();
   }, [publisher]);
 
+  // while asleep: a js timer covers the foreground, a native inexact alarm
+  // the background (react native timers stop when the app is not visible)
   const sleeping = activeSession != null;
   useEffect(() => {
-    if (!HOME_WIDGETS_SUPPORTED || !sleeping) return;
+    if (!HOME_WIDGETS_SUPPORTED) return;
+    setWidgetTicking(sleeping);
+    if (!sleeping) return;
     const timer = setInterval(() => publisher.refresh(), MINUTE_MS);
     return () => clearInterval(timer);
   }, [publisher, sleeping]);

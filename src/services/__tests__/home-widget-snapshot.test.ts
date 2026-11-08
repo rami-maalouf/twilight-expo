@@ -135,10 +135,12 @@ describe('initialHomeWidgetProps', () => {
 });
 
 describe('widgetColors', () => {
-  test('moon stays teal and action text white on every palette', () => {
+  test('teal moon at night, sunset accent by day, white action text everywhere', () => {
+    expect(widgetColors(PALETTES.twilight).moon).toBe('#00d4ff');
+    expect(widgetColors(PALETTES.amethyst).moon).toBe('#00d4ff');
+    expect(widgetColors(PALETTES.sunset).moon).toBe(PALETTES.sunset.accent);
     for (const theme of Object.values(PALETTES)) {
       const colors = widgetColors(theme);
-      expect(colors.moon).toBe('#00d4ff');
       expect(colors.actionText).toBe('#ffffff');
       expect(colors.action).toBe(theme.actionPrimary);
     }

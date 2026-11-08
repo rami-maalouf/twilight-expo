@@ -13,5 +13,11 @@ class TwilightWidgetActionsModule : Module() {
       val context = appContext.reactContext ?: throw Exceptions.ReactContextLost()
       TwilightWidgetActions.consume(context)
     }
+
+    // minute re-renders while a session runs (TwilightWidgetTicker)
+    Function("setTicking") { enabled: Boolean ->
+      val context = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+      TwilightWidgetTicker.setTicking(context.applicationContext, enabled)
+    }
   }
 }

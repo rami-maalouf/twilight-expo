@@ -38,7 +38,7 @@ const SleepMode = (props: HomeWidgetProps, environment: WidgetEnvironment) => {
         <Row modifiers={[fillMaxSize(), paddingAll(12)]} verticalAlignment="center">
           <Box
             contentAlignment="center"
-            modifiers={[size(40, 40), cornerRadius(20), background(on ? 'rgba(255, 191, 0, 0.2)' : c.track)]}>
+            modifiers={[size(40, 40), cornerRadius(20), background(on ? 'rgba(255, 191, 0, 0.22)' : c.halo)]}>
             <Image
               source={{ uri: on ? 'twilight_widget_icon_sun' : 'twilight_widget_icon_moon' }}
               tint={on ? SUN : MOON}

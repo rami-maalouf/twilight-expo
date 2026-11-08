@@ -49,6 +49,36 @@ bun run start:demo
 
 Then: **Go to Sleep** / **Wake Up** on Home, or add manual logs from Logs.
 
+## Android home-screen widgets
+
+Long-press the home screen, open **Widgets**, and pick **Twilight**:
+
+| Widget | Size | Shows | Tap |
+|--------|------|-------|-----|
+| **Sleep Status** | 2x2 | "Gn" + moon; last night, bedtime and wake targets while awake; green with elapsed time, start and wake target while asleep | **Start Sleep** / **Wake Up** pill, anywhere else opens Twilight |
+| **Sleep Mode** | 2x1 | Start Sleep (moon, Off) or Wake Up (sun, On), like the Swift control | Opens Twilight and starts or ends sleep |
+| **Sleep Overview** | 4x2 | Last night's sleep vs goal, 7-night average, bedtime and wake targets | Opens Twilight |
+
+Widgets follow Display Mode and Theme Color, and refresh on every session or
+settings change, theme change, app foreground, and about once a minute while
+asleep. Layouts live in `widgets/*.android.tsx`, the snapshot they render in
+`src/services/home-widget-snapshot.ts`, the native config in
+`plugins/android-widgets/` and `modules/twilight-widget-actions/`. iOS has no
+home-screen widget (live activity only). After changing a layout, rebuild or
+reload the app so it re-registers the layout; after changing the plugin or the
+module, run `bunx expo prebuild --clean --platform android`.
+
+## Sleep links
+
+`twilight://sleep/start` and `twilight://sleep/stop` start or end a session
+from outside the app (Swift parity, both platforms), with the Swift
+"Pause..." messages when sleep is already active or not active:
+
+```bash
+adb shell am start -a android.intent.action.VIEW -d twilight://sleep/start com.rami.twilight.port
+xcrun simctl openurl booted twilight://sleep/stop
+```
+
 ## Scope notes
 
 Onboarding, dashboard, logs, metrics, and settings for sleep tracking are ported.
@@ -56,4 +86,5 @@ The home dashboard matches Swift 0.10: `Week | Trend | Time | SRI | Score`. SRI 
 the Sleep Regularity Index (`src/domain/metrics/sleep-regularity.ts`), ported with
 its Swift unit tests.
 App blocking, HealthKit, NFC, tip jar, and related Swift extras are out of scope
-(see `DEVIATIONS.md`).
+(see `DEVIATIONS.md`). The Swift home-screen widget and Control Center control
+are ported as Android home-screen widgets only.

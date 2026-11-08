@@ -7,8 +7,10 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
 
 - app blocking (FamilyControls/ManagedSettings), healthkit sync, NFC/QR flows,
   storekit tip jar, telemetrydeck, BGTaskScheduler, demo-data manager, data
-  export/archive, app intents/shortcuts/control-center widget, break-glass flow,
-  session breaks: all out of scope per the spec's decisions section.
+  export/archive, app intents/shortcuts, break-glass flow, session breaks: all
+  out of scope per the spec's decisions section. the ios home-screen widget
+  and control-center control stay unported (ios keeps only the live
+  activity); android gets home-screen widgets instead (see below).
 - go-to-sleep caption omitted (swift's "Tap to start" / "or scan your NFC tag..."
   clause dropped; nfc out of scope and home UI matches current product direction).
 - settings: NFC & QR shortcuts section not ported (out of scope).
@@ -54,7 +56,7 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   expired/out-of-window countdown is cleared on foreground (the original's
   ActivityKit flow has no equivalent state to leak).
 - android (original is ios-only): live activities stay ios-only (hidden in
-  settings, sync no-ops). compact inline date/time pickers do not exist, so
+  settings, sync no-ops); home-screen widgets are android-only. compact inline date/time pickers do not exist, so
   settings and the log editor use a value chip that opens the system dialog.
   ios keeps the native compact style. icons use Material Symbols via NativeSymbol
   (SF string names render nothing on android). dashboard and metrics segmented
@@ -80,3 +82,51 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   minute-oracle and both dst transitions. the guide's SRI copy drops "including
   imported Apple Health sleep envelopes" because there is no health import.
   metrics "Regularity Score" is renamed "Timing Consistency" like swift.
+- android home-screen widgets (expo-widgets 58 + glance, `widgets/*.android.tsx`,
+  `plugins/android-widgets`, `modules/twilight-widget-actions`). ios gets no
+  widget target (`ios: null`; the bare `expo-widgets` entry still only builds
+  the live activity extension).
+  - "Sleep Status" (2x2) ports ProfileControlWidget: "Gn" + moon header, green
+    container with white text and a clock + elapsed time while asleep, whole
+    widget opens twilight. the blocking-profile rows (blocked count, options,
+    break, "Unavailable / Different profile active") are out of scope; in
+    their place it shows last night / bedtime / wake rows (awake) or since /
+    wake rows (asleep), and a Start Sleep / Wake Up pill replaces "Tap to
+    open". swift's `Color.green` container is deepened to a #2fb855 to
+    #1c8a3e gradient so the white text stays readable.
+  - "Sleep Mode" (2x1) stands in for SleepModeControlWidget (android has no
+    control center): "Start Sleep" + moon rgb(0,212,255) / "Wake Up" + sun
+    rgb(255,191,0), status "Off" / "On".
+  - "Sleep Overview" (4x2) is an android addition: last night's sleep against
+    the goal (progress bar), the dashboard's 7-night average, bedtime and wake
+    targets.
+  - picker copy is sleep-specific instead of swift's profile copy ("Twilight
+    Profile" / "Monitor and control your selected focus profile"): "Sleep
+    Status", "Sleep Mode" (swift "Twilight Sleep Mode"; the picker already
+    groups widgets under Twilight), "Sleep Overview", with matching
+    descriptions in app.json.
+  - buttons open the app like swift's `openAppWhenRun` intents: the press is
+    stored natively as a pending start/stop and the app runs it on launch or
+    foreground through the dashboard toggle (including the "Pause..." short
+    sleep joke). a press older than 2 minutes is dropped instead of firing by
+    surprise later. starting or stopping from a widget never goes through an
+    activity url, so android cannot replay it after process death.
+  - elapsed time reads "2h 14m" and is computed when the widget renders (glance
+    has no ticking timer like swift's `.timer` text, and swift's 60 one-minute
+    timeline entries have no expo-widgets equivalent on android). widgets
+    re-render on every foreground and about once a minute while asleep: a js
+    timer while the app is visible, a non-waking inexact alarm otherwise, so
+    the value is current whenever the screen is on and may jump after doze.
+  - colors follow the display mode and palette (night sky twilight/amethyst
+    gradient with a few stars, sunset in light mode). in "system" mode the
+    widget picks light or dark when it renders, so a system theme switch shows
+    on the next re-render (app foreground, session change, minute tick).
+  - a force-stopped app shows the launcher's placeholder until it is opened
+    again (android masks widgets of stopped packages).
+- twilight://sleep/start and twilight://sleep/stop (swift handleSleepModeLink)
+  run through the dashboard toggle with swift's "Pause..." messages, on both
+  platforms. android hardening with no swift equivalent: a restored
+  MainActivity drops its launch link so an old link is not replayed after
+  process death, and onNewIntent keeps the newest link as the activity intent
+  so a link that revives the app after process death is not lost
+  (`plugins/android-launch-intent.cjs`).

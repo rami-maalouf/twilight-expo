@@ -5,5 +5,3 @@ import type { HomeWidgetProps } from '../../widgets/home-widget-props';
 export const HOME_WIDGETS_SUPPORTED = false;
 
 export function publishHomeWidgets(_props: HomeWidgetProps): void {}
-
-export function reloadHomeWidgets(): void {}

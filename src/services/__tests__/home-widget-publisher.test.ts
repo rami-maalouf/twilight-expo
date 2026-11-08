@@ -1,46 +1,60 @@
-// widget publishing never throws into the app, skips identical snapshots and
-// retries after a failure
+// widget publishing never throws into the app, skips identical snapshots,
+// retries after a failure, and forces a re-render on refresh
 import { createHomeWidgetPublisher } from '../home-widget-publisher';
 import { initialHomeWidgetProps } from '../home-widget-snapshot';
 
-function sink() {
-  return { publish: jest.fn(), reload: jest.fn() };
+function clock() {
+  let t = 1_000;
+  return () => (t += 1);
 }
 
 describe('createHomeWidgetPublisher', () => {
   test('publishes changes once and skips identical snapshots', () => {
-    const s = sink();
-    const publisher = createHomeWidgetPublisher(s);
+    const publish = jest.fn();
+    const publisher = createHomeWidgetPublisher(publish, undefined, clock());
     const props = initialHomeWidgetProps();
     expect(publisher.update(props)).toBe(true);
     expect(publisher.update({ ...props })).toBe(false);
     expect(publisher.update({ ...props, sleeping: true })).toBe(true);
-    expect(s.publish).toHaveBeenCalledTimes(2);
+    expect(publish).toHaveBeenCalledTimes(2);
+    expect(publish.mock.calls[1][0].sleeping).toBe(true);
+  });
+
+  test('every publish carries a new render key so expo-widgets re-renders', () => {
+    const publish = jest.fn();
+    const publisher = createHomeWidgetPublisher(publish, undefined, clock());
+    publisher.refresh();
+    expect(publish).not.toHaveBeenCalled();
+    publisher.update(initialHomeWidgetProps());
+    publisher.refresh();
+    publisher.refresh();
+    const keys = publish.mock.calls.map(([props]) => props.renderKey);
+    expect(keys).toEqual([1001, 1002, 1003]);
+    expect(publish.mock.calls[2][0].bedtime).toBe('10:00 PM');
   });
 
   test('a failing sink is contained and the snapshot is retried', () => {
-    const s = sink();
-    const onError = jest.fn();
-    s.publish.mockImplementationOnce(() => {
+    const publish = jest.fn().mockImplementationOnce(() => {
       throw new Error('launcher gone');
     });
-    const publisher = createHomeWidgetPublisher(s, onError);
+    const onError = jest.fn();
+    const publisher = createHomeWidgetPublisher(publish, onError, clock());
     const props = initialHomeWidgetProps();
-    expect(() => publisher.update(props)).not.toThrow();
+    expect(publisher.update(props)).toBe(false);
     expect(onError).toHaveBeenCalledTimes(1);
     expect(publisher.update(props)).toBe(true);
-    expect(s.publish).toHaveBeenCalledTimes(2);
+    expect(publish).toHaveBeenCalledTimes(2);
   });
 
-  test('refresh re-renders and contains reload failures', () => {
-    const s = sink();
+  test('refresh failures are contained', () => {
     const onError = jest.fn();
-    s.reload.mockImplementation(() => {
+    const publish = jest.fn();
+    const publisher = createHomeWidgetPublisher(publish, onError, clock());
+    publisher.update(initialHomeWidgetProps());
+    publish.mockImplementation(() => {
       throw new Error('no native module');
     });
-    const publisher = createHomeWidgetPublisher(s, onError);
     expect(() => publisher.refresh()).not.toThrow();
-    expect(s.reload).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledTimes(1);
   });
 });
