@@ -6,7 +6,7 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
 ## scope cuts (pre-agreed in test-3-spec.md)
 
 - app blocking (FamilyControls/ManagedSettings), NFC/QR flows, storekit tip
-  jar, telemetrydeck, BGTaskScheduler, data export/archive, app
+  jar, telemetrydeck, BGTaskScheduler, demo-data manager, data export/archive, app
   intents/shortcuts/control-center widget, break-glass flow, session breaks:
   all out of scope per the spec's decisions section. healthkit sync is not
   ported to ios; android gets the health connect equivalent (below). the
