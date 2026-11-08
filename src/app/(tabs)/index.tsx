@@ -13,6 +13,7 @@ import { Screen } from '@/components/common/Screen';
 import { InsightPills } from '@/components/dashboard/InsightPills';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import { StatusCard } from '@/components/dashboard/StatusCard';
+import { WeekEmptyState } from '@/components/dashboard/WeekEmptyState';
 import { AlignmentCard } from '@/components/charts/AlignmentCard';
 import {
   MovingAverageCard,
@@ -301,17 +302,7 @@ export default function DashboardScreen() {
                   />
                 </Card>
               ) : (
-                <Card>
-                  <View style={styles.emptyChart}>
-                    <SymbolView name="chart.bar.fill" size={50} tintColor={theme.accent} />
-                    <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-                      Your sleep story starts tonight
-                    </Text>
-                    <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-                      Log your first night to see your patterns here
-                    </Text>
-                  </View>
-                </Card>
+                <WeekEmptyState />
               ))}
             {viewMode === 'Trend' && (
               <MovingAverageCard
@@ -389,7 +380,4 @@ const styles = StyleSheet.create({
   date: { fontSize: 15 },
   analytics: { gap: 16, alignSelf: 'stretch' },
   chartSpacer: { height: 12 },
-  emptyChart: { alignItems: 'center', gap: 8, paddingVertical: 40 },
-  emptyTitle: { fontSize: 17, fontWeight: '600' },
-  emptySubtitle: { fontSize: 15, textAlign: 'center' },
 });

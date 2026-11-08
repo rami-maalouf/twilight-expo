@@ -8,12 +8,14 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
+import { isHealthConnectSupported } from '@/services/health-connect/native-adapter';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const SRI_RESEARCH_URL = 'https://www.nature.com/articles/s41598-017-03171-4';
 
-// the sri copy drops swift's "including imported Apple Health sleep envelopes"
-// clause: this port has no health import.
+// the sri copy adapts swift's "including imported Apple Health sleep envelopes"
+// clause to health connect on android; ios has no health import, so it drops it.
+const SRI_IMPORT_CLAUSE = isHealthConnectSupported ? ', including imported Health Connect sleep' : '';
 const ITEMS: {
   icon: SymbolViewProps['name'];
   title: string;
@@ -27,7 +29,7 @@ const ITEMS: {
     definition:
       'How often your sleep or wake state matches 24 hours later. 100 means identical timing; 0 means half the compared time matches. Negative scores are possible. This measures timing, not whether you get enough sleep.',
     calculation:
-      'SRI = 200 × matching fraction − 100.\n\nThe line shows SRI for the selected 7, 14, or 28 completed days ending on each date. It combines 6, 13, or 27 comparisons, respectively, of sleep/wake states exactly 24 hours apart. The faint bars show those individual day-to-day comparisons.\n\nDays run noon to noon in your current time zone. A rolling point needs every adjacent-day comparison in its selected window. Missing logs and daylight-saving transition days leave gaps. Changing 90D to All changes the visible history, not the calculation window.\n\nTwilight treats logged sessions, including naps, as sleep and the rest of a recorded day as awake. It cannot detect unlogged naps or awakenings within a session. Days without logs are unknown. Sessions over 24 hours are excluded. This is a log-based estimate; the selected duration is a display window, not a clinical threshold.',
+      `SRI = 200 × matching fraction − 100.\n\nThe line shows SRI for the selected 7, 14, or 28 completed days ending on each date. It combines 6, 13, or 27 comparisons, respectively, of sleep/wake states exactly 24 hours apart. The faint bars show those individual day-to-day comparisons.\n\nDays run noon to noon in your current time zone. A rolling point needs every adjacent-day comparison in its selected window. Missing logs and daylight-saving transition days leave gaps. Changing 90D to All changes the visible history, not the calculation window.\n\nTwilight treats logged sessions, including naps, as sleep and the rest of a recorded day as awake. It cannot detect unlogged naps or awakenings within a session${SRI_IMPORT_CLAUSE}. Days without logs are unknown. Sessions over 24 hours are excluded. This is a log-based estimate; the selected duration is a display window, not a clinical threshold.`,
     link: { label: 'Read the original SRI research', url: SRI_RESEARCH_URL },
   },
   {
