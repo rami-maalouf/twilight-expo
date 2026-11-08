@@ -138,6 +138,9 @@ not the demo profile.
   `end > start`.
 - group by source bundle; sort by start then end; split when
   `next.start - last.end > 3 h` (gap measured from the previous sample's end).
+  the port measures from the latest end in the current batch instead (11.1):
+  hc's in-bed sample spans its own stages, so "previous sample" can be a
+  short stage inside a long record.
 - night envelope: min start / max end of `asleep` samples, else `inBed`
   samples. drop nights shorter than 5 min.
 - `nightKey = "<source>|<startOfDay(end) epoch s>|<start epoch s>"` with
@@ -378,7 +381,12 @@ record ids.
      before the night start. own records do not count: on android 14+ own
      data has no limit, so an old own record proves nothing about the
      foreign window.
-  otherwise the import is kept and its links stay. the first draft used
+  otherwise the import is kept but DETACHED: its links are removed and
+  `health_import_detached = 1` (corrected in the domain-data slice, 11.2:
+  keeping the links let the next changes pass, where the mirror counts as
+  exact, delete the very import this rule had just protected). it still
+  blocks overlapping foreign nights and re-links when a mirror night matches
+  its key. the first draft used
   `firstGrantedAt - 30 days`, which is wrong after an auto-backup restore
   (4.6) or a revoke and re-grant, and then deletes imports that hc merely
   did not return.
@@ -521,7 +529,9 @@ deletion loop.
 
 policy (applies to a `DeletionChange` for a known `hc_record_id`, and to a
 full read that finds an owned session with `hc_written = 1`, not pending,
-whose record is missing, within the own-read range):
+whose record is missing, within the own-read range; the full-read case runs
+only where own reads are unlimited, android 14+ or history granted, so the
+android 13 own-data window cannot mark old records as removed, 11.5):
 
 1. the local session is never deleted without a user action.
 2. the session gets `hc_remote_deleted = 1`, `hc_record_id = null`,
@@ -879,8 +889,9 @@ the clock rule at creation.
   (key + linked record ids + overlapping other-source mirror record ids,
   2.6), delete links; for an owned, not adopted, not demo session: insert a
   ledger row, and enqueue `twilight.sleep-session.<id>` in the outbox when
-  `hc_written = 1` and the repo was built with `recordRemoteDeletions = true`
-  (android); then delete the row.
+  `hc_written = 1`; then delete the row. (the planned
+  `recordRemoteDeletions` flag is not needed: `hc_written` is never 1 on
+  ios, so the gate already keeps ios free of outbox rows, 11.3.)
 - `deleteSessionsWithPrefix` / `replaceSessionsWithPrefix` (demo seed and
   demo exit) never write ledger, outbox or tombstone rows. demo ids are never
   written to hc, so there is nothing to delete remotely.
@@ -1111,7 +1122,9 @@ after the night loop:
   inserted in the same pass (swift needs a second pull for that).
 - superseded: an imported (not adopted) session that overlaps an owned
   session (after the updates above) is removed without a tombstone (fixes
-  swift defect 9). this happens when the user logs or edits a night that is
+  swift defect 9). only imports matched to a mirror night in this pass are
+  superseded, because only those can come back (11.6); detached and
+  archive-restored imports are left alone. this happens when the user logs or edits a night that is
   already imported, or when a source app grows its night into a twilight
   night. "user edits win" either way. if the user later deletes the owned
   session, the night is imported again on the next pass. the active
@@ -1158,8 +1171,11 @@ after the night loop:
   the overlap checks of reconcile ignore demo sessions (a demo night must
   never block or supersede a real import, and reconcile does not run while
   demo is active anyway).
-- demo start and demo exit run inside `runExclusive`, so a sync in flight
-  finishes before demo rows appear or disappear.
+- demo start and demo exit are synchronous sqlite changes, so they do not
+  go through `runExclusive` (11.4): the engine re-checks "enabled and not
+  demo" after every adapter await and aborts the run quietly (no error, no
+  write) when demo became active or sync was turned off. demo exit requests
+  a `full` sync through `DemoDataManager.onChange`.
 - real sessions logged during demo stay pending and export after exit.
 - `EXPO_PUBLIC_DEMO_MODE=1` builds seed demo on every launch and keep
   `isDemoDataActive` true, so they never talk to hc.
@@ -1868,6 +1884,76 @@ and the platform-guard component tests.
   rewriting.
 - readme: health connect setup, seeder-based e2e (both seeder builds),
   data management.
+
+---
+
+## 11. implementation notes (domain-data slice)
+
+where the implementation had to correct or pin down the text above. the body
+sections reference these numbers.
+
+1. clusterer gap (1.6): measured from the latest end in the batch, not the
+   previous sample's end. tested in `clusterer.test.ts` ("a short stage
+   inside a long in-bed record does not split the night").
+2. absence without evidence (2.4): detach instead of "kept with links".
+   tested in `reconciler.test.ts` ("absent in a full read without evidence").
+3. no `recordRemoteDeletions` flag (3.4): `hc_written` gates the outbox on
+   every platform; ledger rows are written on ios too (tiny, harmless).
+4. demo isolation (4.4): demo enter/exit are synchronous; the engine aborts
+   at every await checkpoint instead of running them inside `runExclusive`.
+   `runExclusive` exists for the archive import. tested ("demo turned on
+   mid-run aborts quietly").
+5. full-read own absence (2.6) only when `sdkInt >= 34 || history`.
+6. superseded imports (4.2) only when matched in this pass.
+7. reconcile order (4.2): phase a assigns every import to the night holding
+   most of its records (global, so a split follows the larger part even when
+   the smaller part starts first), merges the rest, then falls back to the
+   swift key match; phase b runs the tombstone, adopted and overlap rules
+   against the post-update intervals of imports, so an import moved by its
+   source blocks by its new interval.
+8. night key format: `<data origin>|<wake day YYYY-MM-DD>|<start epoch s>`.
+9. orphans (1.6, 2.3): rehydrated from the own record's own bounds (one
+   record per session id; the highest `clientRecordVersion` wins if a store
+   ever holds two).
+10. invalid writes (2.5): a mixed batch result (some ok, some
+    `E_HC_INVALID`) means the module rejected exactly those records, so they
+    are poisoned directly; only a batch where every write failed validation
+    (the hc call itself threw) is retried one write at a time.
+11. outbound order (4.2 step 2): enqueue deletes for written-then-invalid
+    sessions, drain the outbox, re-plan (edits may land during the drain),
+    then write.
+12. permission error classification (2.3, 4.3): `E_HC_PERMISSION` with read
+    or write still granted is an interruption, no error card; the new status
+    is published so the ui shows the partial state. only "no grant left" is
+    the permission error.
+13. disable (4.7) also clears `lastFullReadAt` (so re-enable is a full read)
+    and `lastError`.
+14. pull summary (5.5): the night count includes tombstoned nights, like
+    swift (found on the emulator: "1 session(s) in 0 night(s)").
+15. triggers (1.4): launch and every `AppState` change to `active` request
+    `full`; a completed-night create, edit, wake up or delete in the sleep
+    store requests `push`. dev builds expose the engine as
+    `globalThis.__twilightHealthSync` for e2e checks through the metro
+    debugger; release builds do not.
+16. the pure core is `src/domain/health/{types,ownership,zones,clusterer,
+    reconciler,inbound,outbound,pull-result}.ts`; `changes.ts` and
+    `connection-state.ts` from 4.1 are not separate files: page splitting is
+    three lines in the engine, and the connection state belongs to the ui
+    slice.
+
+verified on `Twilight_Pixel_9_B` (android 16) through the real ui (logs
+tab, editor, swipe delete) and the seeder `list`:
+
+| step | observed |
+|---|---|
+| migration on the existing install | db at `user_version 0` migrated, onboarding and dashboard normal, no js error |
+| enable with grants already present | first full read imported the seeded foreign night (`Imported 1 night(s) ... (1 session(s))`) |
+| import zones | a `+00:00` record on a device in `America/Toronto` maps to `Etc/GMT` and shows 11:00 PM -> 6:00 AM |
+| export of a manual log | one record, origin `com.rami.twilight.port`, cid `twilight.sleep-session.<id>`, version `1794168999076` (clock), recording method 3 (manual entry), offsets `-05:00/-05:00` |
+| two edits | same record id `e27405af-...` both times, versions `1794169041092` then `1794169073126`, new start and end |
+| no echo | after foreground syncs: 2 local sessions, mirror holds only the foreign record, token advanced |
+| delete | the record is gone from hc, outbox empty, ledger row written, a forced pull rehydrates nothing |
+| delete an import | tombstone with the night key and its record id; hc keeps the original; force resync + full sync do not bring it back |
 
 ---
 

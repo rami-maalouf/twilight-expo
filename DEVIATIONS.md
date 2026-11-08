@@ -5,10 +5,12 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
 
 ## scope cuts (pre-agreed in test-3-spec.md)
 
-- app blocking (FamilyControls/ManagedSettings), healthkit sync, NFC/QR flows,
-  storekit tip jar, telemetrydeck, BGTaskScheduler, demo-data manager, data
-  export/archive, app intents/shortcuts/control-center widget, break-glass flow,
-  session breaks: all out of scope per the spec's decisions section.
+- app blocking (FamilyControls/ManagedSettings), NFC/QR flows, storekit tip
+  jar, telemetrydeck, BGTaskScheduler, data export/archive, app
+  intents/shortcuts/control-center widget, break-glass flow, session breaks:
+  all out of scope per the spec's decisions section. healthkit sync is not
+  ported to ios; android gets the health connect equivalent (below). the
+  archive is planned (docs/health-connect.md 6) and still missing.
 - go-to-sleep caption omitted (swift's "Tap to start" / "or scan your NFC tag..."
   clause dropped; nfc out of scope and home UI matches current product direction).
 - settings: NFC & QR shortcuts section not ported (out of scope).
@@ -20,9 +22,11 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   here). while sample history is active, Settings shows the swift "Demo Data"
   section with "Exit Demo and Continue in App"; the floating home exit
   control stays hidden like swift.
-- swift 0.10 apple health import (onboarding pull, "Pull from Apple Health"
-  empty state, tombstones, reconciler) is not ported: healthkit sync stays
-  out of scope, and android would need health connect instead.
+- swift 0.10 apple health import: the sync core (tombstones, clusterer,
+  reconciler, two-way sync) is ported to health connect on android. its ui
+  (onboarding step, settings screen, "Pull from Health Connect" empty state)
+  is not built yet, so sync cannot be turned on from the app; dev builds
+  can start it through `globalThis.__twilightHealthSync.enableSync()`.
 
 ## implementation deviations
 
@@ -86,3 +90,44 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   minute-oracle and both dst transitions. the guide's SRI copy drops "including
   imported Apple Health sleep envelopes" because there is no health import.
   metrics "Regularity Score" is renamed "Timing Consistency" like swift.
+
+## health connect sync (android) vs swift healthkit sync
+
+design and every decision: docs/health-connect.md (2.10, 11). in short:
+
+- health connect replaces healthkit on android; ios has no health sync (no
+  healthkit in this port) and never calls the module.
+- one `SleepSessionRecord` per twilight night with one sleeping stage, client
+  record id `twilight.sleep-session.<id>` (swift sync identifier), per-end
+  zone offsets instead of one zone id, recording method manual entry for
+  "Manual Log" and actively recorded for tracked nights.
+- ownership is by data origin package only; a twilight-prefixed record from
+  another package is foreign (swift also trusted the prefix).
+- reads use a changes token and a local mirror of foreign records instead of
+  re-reading all history every sync; one reconcile per pass over the mirror.
+- versions are clock based and bumped on every edit, and "mark synced" is a
+  compare-and-set, so an edit during a write is never lost (swift defect 1).
+- local deletions go to a persistent outbox and a deletion ledger, also while
+  sync is off, so deleted nights never come back (swift defect 2).
+- night keys use the wake day from the record's end offset, and updates match
+  by record ids first, so source edits and travel no longer re-key nights
+  (swift defect 3). informational pull results are not errors (defect 4);
+  an update-only pull says "Updated N night(s)" (defect 5).
+- deleting an import also tombstones other apps' copies of that night
+  (defect 6); a moved adopted night is not imported again (defect 7);
+  imports without links (restored) are never deleted by absence (defect 8);
+  a manual log over an import replaces it (defect 9).
+- edited imports stay local and are never written to health connect (hc
+  write-back guidance); swift exports them.
+- deletions of twilight records in health connect never delete the local
+  night silently: recent ones are held for a decision, nights older than 30
+  days only stop exporting. swift ignores such deletions.
+- imports whose records disappear after 30 days (hc auto-delete) are kept as
+  detached imports; swift deletes vanished imports.
+- reads run only in the foreground; a background request is outbound only.
+- force resync repairs differences instead of rewriting every record.
+- android auto backup restores are detected with a no-backup install id and
+  reset device-bound sync state once.
+- the swift 800 ms empty-import retry is not ported (not needed so far on
+  the emulator; docs/health-connect.md 2.10 item 10).
+

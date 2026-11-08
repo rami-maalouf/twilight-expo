@@ -55,5 +55,27 @@ Onboarding, dashboard, logs, metrics, and settings for sleep tracking are ported
 The home dashboard matches Swift 0.10: `Week | Trend | Time | SRI | Score`. SRI is
 the Sleep Regularity Index (`src/domain/metrics/sleep-regularity.ts`), ported with
 its Swift unit tests.
-App blocking, HealthKit, NFC, tip jar, and related Swift extras are out of scope
-(see `DEVIATIONS.md`).
+App blocking, HealthKit on iOS, NFC, tip jar, and related Swift extras are out of
+scope (see `DEVIATIONS.md`).
+
+## Health Connect (Android)
+
+Two-way sleep sync with Health Connect, ported from the Swift HealthKit sync
+(`docs/health-connect.md`). Status: native module, sync core and engine are in;
+the onboarding step and settings screen are not built yet.
+
+- pure decisions: `src/domain/health/` (clusterer, reconciler, export planner)
+- sql: `src/data/health-store.ts`, ownership hooks in `src/data/session-repo.ts`
+- engine: `src/services/health-connect/sync-engine.ts` (single flight, runs on
+  launch, foreground and after a night is saved, edited or deleted)
+- tests use `tests/helpers/fake-health-connect.ts`
+
+Dev-build e2e without the ui (Metro debugger):
+
+```js
+await globalThis.__twilightHealthSync.enableSync(); // requests access, turns sync on, full sync
+globalThis.__twilightHealthSync.snapshot();          // status, last pull result, last error
+```
+
+Foreign sleep for tests comes from the throwaway seeder apps described in
+`docs/health-connect.md` 7.2 (`com.rami.twilight.hcseeder` and `.b`).
