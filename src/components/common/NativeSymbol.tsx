@@ -1,7 +1,7 @@
 // expo-symbols: a string name is an SF Symbol and renders only on ios.
 // android/web need a Material Symbols name. this wrapper keeps existing
 // call sites on sf names and maps them. source:
-// https://docs.expo.dev/versions/v57.0.0/sdk/symbols/
+// https://docs.expo.dev/versions/v58.0.0/sdk/symbols/
 import bold from 'expo-symbols/androidWeights/bold';
 import medium from 'expo-symbols/androidWeights/medium';
 import regular from 'expo-symbols/androidWeights/regular';

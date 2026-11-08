@@ -1,6 +1,6 @@
 # Twilight (Expo port)
 
-Sleep tracker port of the Swift Twilight app. Expo SDK 57 / React Native 0.86.
+Sleep tracker port of the Swift Twilight app. Expo SDK 58 / React Native 0.88.
 Routes live under `src/app/`.
 
 ## Production vs demo

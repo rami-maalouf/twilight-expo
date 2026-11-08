@@ -1,5 +1,5 @@
 // android: material dropdown via universal @expo/ui Picker.
-// source: https://docs.expo.dev/versions/v57.0.0/sdk/ui/universal/picker/
+// source: https://docs.expo.dev/versions/v58.0.0/sdk/ui/universal/picker/
 import { Host, Picker } from '@expo/ui';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 

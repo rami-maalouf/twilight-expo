@@ -1,7 +1,7 @@
 // native segmented control on both platforms via @expo/ui:
 // ios: SwiftUI Picker with pickerStyle('segmented')
 // android: Compose SingleChoiceSegmentedButtonRow
-// source: https://docs.expo.dev/versions/v57.0.0/sdk/ui/drop-in-replacements/segmentedcontrol/
+// source: https://docs.expo.dev/versions/v58.0.0/sdk/ui/drop-in-replacements/segmentedcontrol/
 import { SegmentedControl } from '@expo/ui/community/segmented-control';
 
 import { useTheme } from '@/theme/ThemeProvider';
