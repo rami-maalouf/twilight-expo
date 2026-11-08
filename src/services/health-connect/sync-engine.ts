@@ -60,6 +60,8 @@ export interface HealthSyncSnapshot {
   lastPullResult: PullResult | null;
   lastSuccessAt: number | null;
   heldRemoteDeletions: string[];
+  // a permission request was made once; no grants + requested = denied (2.8)
+  permissionRequested: boolean;
 }
 
 export interface SyncRunResult {
@@ -144,6 +146,7 @@ export class HealthSyncEngine {
       lastPullResult: this.store.getJson<PullResult>('lastPullResult'),
       lastSuccessAt: lastSuccess == null ? null : Number(lastSuccess),
       heldRemoteDeletions: this.store.heldRemoteDeletions(),
+      permissionRequested: this.store.getState('permissionRequestedAt') != null,
     };
   }
 
@@ -670,6 +673,14 @@ export class HealthSyncEngine {
     const status = await this.adapter.getStatus();
     this.publish({ status });
     return status;
+  }
+
+  // e2e step 17 (dev builds only): a bogus token must lead to a silent full
+  // re-read on the next sync. writes no hc records
+  invalidateChangesTokenForTesting(): boolean {
+    if (this.store.getState('changesToken') == null) return false;
+    this.store.setState('changesToken', 'bogus-token');
+    return true;
   }
 
   // held remote deletions card (2.6)

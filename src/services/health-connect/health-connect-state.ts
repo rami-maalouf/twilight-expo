@@ -12,6 +12,7 @@ export const healthSyncStore = createStore<HealthSyncSnapshot>(() => ({
   lastPullResult: null,
   lastSuccessAt: null,
   heldRemoteDeletions: [],
+  permissionRequested: false,
 }));
 
 export function useHealthSyncState<T>(selector: (state: HealthSyncSnapshot) => T): T {

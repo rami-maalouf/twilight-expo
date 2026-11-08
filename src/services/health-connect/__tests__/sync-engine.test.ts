@@ -622,6 +622,33 @@ describe('sync engine', () => {
     expect(t.engine.snapshot().lastError?.code).toBe('permission');
   });
 
+  test('a denied request is remembered so the ui shows denied, not notDetermined (2.8)', async () => {
+    const t = setup();
+    t.settings.set('healthSyncEnabled', false);
+    t.hc.read = false;
+    t.hc.write = false;
+    expect(t.engine.snapshot().permissionRequested).toBe(false);
+    t.hc.grantOnRequest = { read: false, write: false, history: false };
+    await t.engine.enableSync();
+    expect(t.engine.snapshot().permissionRequested).toBe(true);
+  });
+
+  test('dev token invalidation -> next sync is a silent full re-read, no duplicates, no error (7.3 step 17)', async () => {
+    const t = setup();
+    expect(t.engine.invalidateChangesTokenForTesting()).toBe(false);
+    t.foreign(1);
+    t.logNight(3);
+    await t.engine.sync('full');
+    expect(t.engine.invalidateChangesTokenForTesting()).toBe(true);
+    t.hc.resetCalls();
+    const result = await t.engine.sync('full');
+    expect(t.hc.callCount('getChangesToken')).toBe(1);
+    expect(result.error).toBeNull();
+    expect(t.sessions()).toHaveLength(2);
+    expect(t.hc.ownRecords()).toHaveLength(1);
+    expect(t.repo.health.getState('changesToken')).not.toBe('bogus-token');
+  });
+
   test('sync off -> skipped without adapter calls', async () => {
     const t = setup();
     t.settings.set('healthSyncEnabled', false);
