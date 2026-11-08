@@ -4,6 +4,7 @@ import {
   canPullFromHealthConnect,
   connectionState,
   type ConnectionInput,
+  type HcConnectionState,
   heldDeletionTitle,
   isConnectionVisible,
   lastSyncedLabel,
@@ -112,26 +113,36 @@ describe('canPullFromHealthConnect (5.4)', () => {
 });
 
 describe('settings screen actions', () => {
+  const v = (state: HcConnectionState, exportOnly = false) => ({ state, exportOnly });
+  const idle = { isConnecting: false, isSyncing: false };
+
   test('primary action per state (swift handlePrimaryAction)', () => {
-    expect(screenPrimaryAction('connected')).toBe('pull');
-    expect(screenPrimaryAction('readyToEnable')).toBe('enable');
-    expect(screenPrimaryAction('notDetermined')).toBe('enable');
-    expect(screenPrimaryAction('denied')).toBe('openHealthConnect');
-    expect(screenPrimaryAction('updateRequired')).toBe('update');
-    expect(screenPrimaryAction('unavailable')).toBeNull();
-    expect(screenPrimaryAction('demo')).toBeNull();
+    expect(screenPrimaryAction(v('connected'))).toBe('pull');
+    expect(screenPrimaryAction(v('readyToEnable'))).toBe('enable');
+    expect(screenPrimaryAction(v('notDetermined'))).toBe('enable');
+    expect(screenPrimaryAction(v('denied'))).toBe('openHealthConnect');
+    expect(screenPrimaryAction(v('updateRequired'))).toBe('update');
+    expect(screenPrimaryAction(v('unavailable'))).toBeNull();
+    expect(screenPrimaryAction(v('demo'))).toBeNull();
+  });
+
+  test('write-only access syncs instead of pulling', () => {
+    const view = connectionState(input({ write: true, enabled: true }));
+    expect(screenPrimaryAction(view)).toBe('syncNow');
+    expect(screenPrimaryTitle(view, idle)).toBe('Sync now');
+    expect(screenPrimaryTitle(view, { isConnecting: false, isSyncing: true })).toBe('Syncing...');
   });
 
   test('primary titles follow the busy flags', () => {
-    expect(screenPrimaryTitle('connected', { isConnecting: false, isSyncing: false })).toBe('Pull from Health Connect');
-    expect(screenPrimaryTitle('connected', { isConnecting: false, isSyncing: true })).toBe(
+    expect(screenPrimaryTitle(v('connected'), idle)).toBe('Pull from Health Connect');
+    expect(screenPrimaryTitle(v('connected'), { isConnecting: false, isSyncing: true })).toBe(
       'Pulling Health Connect sleep...'
     );
-    expect(screenPrimaryTitle('readyToEnable', { isConnecting: true, isSyncing: false })).toBe('Turning on sync...');
-    expect(screenPrimaryTitle('notDetermined', { isConnecting: false, isSyncing: false })).toBe('Connect Health Connect');
-    expect(screenPrimaryTitle('notDetermined', { isConnecting: true, isSyncing: false })).toBe('Connecting...');
-    expect(screenPrimaryTitle('denied', { isConnecting: false, isSyncing: false })).toBe('Open Health Connect');
-    expect(screenPrimaryTitle('demo', { isConnecting: false, isSyncing: false })).toBeNull();
+    expect(screenPrimaryTitle(v('readyToEnable'), { isConnecting: true, isSyncing: false })).toBe('Turning on sync...');
+    expect(screenPrimaryTitle(v('notDetermined'), idle)).toBe('Connect Health Connect');
+    expect(screenPrimaryTitle(v('notDetermined'), { isConnecting: true, isSyncing: false })).toBe('Connecting...');
+    expect(screenPrimaryTitle(v('denied'), idle)).toBe('Open Health Connect');
+    expect(screenPrimaryTitle(v('demo'), idle)).toBeNull();
   });
 
   test('turn off is offered whenever the switch is on outside demo', () => {

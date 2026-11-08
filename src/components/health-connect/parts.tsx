@@ -219,7 +219,8 @@ export function HcButton({
       <Pressable
         testID={testID}
         accessibilityRole="button"
-        accessibilityState={{ disabled: inactive, busy: loading }}
+        accessibilityLabel={title}
+        accessibilityState={loading ? { disabled: true, busy: true } : { disabled: inactive }}
         disabled={inactive}
         onPress={onPress}
         android_ripple={{ color: withAlpha(isFilled ? '#ffffff' : theme.textPrimary, 0.18) }}

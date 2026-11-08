@@ -226,12 +226,13 @@ export function statusTips(view: ConnectionView, options: { hasAdoptedImports: b
   return tips;
 }
 
-export type ScreenPrimaryAction = 'pull' | 'enable' | 'openHealthConnect' | 'update';
+// 'syncNow': write-only access cannot pull, so the button runs an outbound sync
+export type ScreenPrimaryAction = 'pull' | 'syncNow' | 'enable' | 'openHealthConnect' | 'update';
 
-export function screenPrimaryAction(state: HcConnectionState): ScreenPrimaryAction | null {
-  switch (state) {
+export function screenPrimaryAction(view: Pick<ConnectionView, 'state' | 'exportOnly'>): ScreenPrimaryAction | null {
+  switch (view.state) {
     case 'connected':
-      return 'pull';
+      return view.exportOnly ? 'syncNow' : 'pull';
     case 'readyToEnable':
     case 'notDetermined':
       return 'enable';
@@ -245,11 +246,12 @@ export function screenPrimaryAction(state: HcConnectionState): ScreenPrimaryActi
 }
 
 export function screenPrimaryTitle(
-  state: HcConnectionState,
+  view: Pick<ConnectionView, 'state' | 'exportOnly'>,
   flags: { isConnecting: boolean; isSyncing: boolean }
 ): string | null {
-  switch (state) {
+  switch (view.state) {
     case 'connected':
+      if (view.exportOnly) return flags.isSyncing ? 'Syncing...' : 'Sync now';
       return flags.isSyncing ? 'Pulling Health Connect sleep...' : 'Pull from Health Connect';
     case 'readyToEnable':
       return flags.isConnecting ? 'Turning on sync...' : 'Turn on Health Connect sync';

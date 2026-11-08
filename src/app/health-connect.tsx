@@ -86,7 +86,6 @@ export default function HealthConnectScreen() {
   const hasAdoptedImports = useSleepStore((s) => s.sessions.some((session) => session.health?.adopted === true));
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
-  const [actionHeight, setActionHeight] = useState(0);
   const now = useClock(lastSuccessAt);
 
   const { state } = connection;
@@ -95,20 +94,22 @@ export default function HealthConnectScreen() {
   const tone = CONNECTION_TONE[state];
   const accent = toneColor(theme, tone);
   const busy = isSyncing || isPulling;
-  const primary = screenPrimaryAction(state);
-  const primaryTitle = screenPrimaryTitle(state, { isConnecting, isSyncing: busy });
+  const primary = screenPrimaryAction(connection);
+  const primaryTitle = screenPrimaryTitle(connection, { isConnecting, isSyncing: busy });
   const tips = statusTips(connection, { hasAdoptedImports });
   const syncedLabel = state === 'connected' && now != null ? lastSyncedLabel(lastSuccessAt, now, formatSyncTime) : null;
-  const pullMessage = state === 'connected' ? lastPullResult?.message : null;
+  // write-only access never pulls, so an older pull result would be stale
+  const pullMessage = state === 'connected' && !connection.exportOnly ? lastPullResult?.message : null;
   const isLight = theme.name === 'sunset';
 
   const runPrimary = async () => {
     switch (primary) {
       case 'pull':
+      case 'syncNow':
         if (busy) return;
         setIsPulling(true);
         try {
-          await healthSyncEngine.sync('forceResync');
+          await healthSyncEngine.sync(primary === 'pull' ? 'forceResync' : 'full');
         } finally {
           setIsPulling(false);
         }
@@ -165,7 +166,8 @@ export default function HealthConnectScreen() {
         <>
           <ScrollView
             testID="health-connect-scroll"
-            contentContainerStyle={[styles.content, { paddingBottom: actionHeight + 24 }]}
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}>
             {/* hero */}
             <HcCard glow={accent} testID={`health-connect-state-${state}`}>
@@ -374,9 +376,9 @@ export default function HealthConnectScreen() {
           </ScrollView>
 
           {primaryTitle || showsDisableAction(state, enabled) ? (
+            // swift: the action area sits below the scroll view, not over it
             <LinearGradient
               colors={['rgba(0,0,0,0)', isLight ? 'rgba(0,0,0,0.06)' : 'rgba(0,0,0,0.22)']}
-              onLayout={(event) => setActionHeight(event.nativeEvent.layout.height)}
               style={[styles.actionArea, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
               {primaryTitle ? (
                 <HcButton
@@ -385,7 +387,7 @@ export default function HealthConnectScreen() {
                   color={accent}
                   labelColor={onToneColor(tone)}
                   icon={
-                    primary === 'pull'
+                    primary === 'pull' || primary === 'syncNow'
                       ? 'arrow.clockwise'
                       : primary === 'enable'
                         ? 'heart.fill'
@@ -393,7 +395,7 @@ export default function HealthConnectScreen() {
                           ? 'arrow.down.circle.fill'
                           : 'arrow.up.forward.app'
                   }
-                  loading={primary === 'pull' ? busy : primary === 'enable' && isConnecting}
+                  loading={primary === 'pull' || primary === 'syncNow' ? busy : primary === 'enable' && isConnecting}
                   onPress={runPrimary}
                 />
               ) : null}
@@ -431,7 +433,8 @@ const styles = StyleSheet.create({
   backButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   toolbarTitle: { fontSize: 22, fontWeight: '600' },
   loading: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingTop: 8, gap: 18 },
+  scroll: { flex: 1 },
+  content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 18 },
   heroRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   heroIcon: { width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center' },
   heroTexts: { flex: 1, gap: 10 },
@@ -449,5 +452,5 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardTitle: { fontSize: 17, fontWeight: '600' },
-  actionArea: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 16, gap: 10 },
+  actionArea: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
 });
