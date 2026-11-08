@@ -37,9 +37,12 @@ function deviceTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
 }
 
+// onSessionsChanged: a completed night was created, edited or deleted, so
+// health sync should push (swift syncSessionIfNeeded / handleLocalDeletion)
 export function createSleepStore(
   repo: SessionRepo,
-  timeZone: () => string = deviceTimeZone
+  timeZone: () => string = deviceTimeZone,
+  onSessionsChanged: () => void = () => {}
 ): StoreApi<SleepState> {
   return createStore<SleepState>((set, get) => {
     const load = () => ({
@@ -66,22 +69,26 @@ export function createSleepStore(
           result.started = repo.startSession('Sleep Mode', timeZone(), nowMs);
         }
         set(load());
+        if (result.ended) onSessionsChanged();
         return result;
       },
 
       createManualLog: (input) => {
         repo.createManualLog(input);
         set(load());
+        onSessionsChanged();
       },
 
       updateSession: (id, input) => {
         repo.updateSession(id, input);
         set(load());
+        onSessionsChanged();
       },
 
       deleteSession: (id) => {
         repo.deleteSession(id);
         set(load());
+        onSessionsChanged();
       },
     };
   });

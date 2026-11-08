@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { settingsStore } from '@/data/app-db';
 import { DemoExitControl } from '@/components/demo/DemoExitControl';
+import { useHealthConnectSync } from '@/services/health-connect/use-health-connect-sync';
 import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
 import { useSleepStore } from '@/state/app-sleep-store';
@@ -31,6 +32,8 @@ export default function RootLayout() {
 
   // live activity lifecycle (parity + superpower wiring)
   useLiveActivitySync();
+  // health connect two-way sleep sync triggers (android only)
+  useHealthConnectSync();
 
   // wind-down reminder: (re)schedule on launch, bedtime change, and toggle
   const windDownEnabled = useSettings((s) => s.windDownReminderEnabled);
