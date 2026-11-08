@@ -14,6 +14,23 @@ export interface SleepSession {
   endTimeZone: string | null;
   createdAt: number;
   updatedAt: number;
+  // health sync ownership; filled by the repository, absent in pure fixtures
+  health?: SessionHealth;
+}
+
+// docs/health-connect.md 3.4
+export interface SessionHealth {
+  // health-owned import (swift isHealthKitImported)
+  imported: boolean;
+  // edited import: owned locally, never written to health connect
+  adopted: boolean;
+  provider: 'health_connect' | 'healthkit' | null;
+  nightKey: string | null;
+  sourceId: string | null;
+  needsSync: boolean;
+  syncVersion: number;
+  hcRecordId: string | null;
+  hcRemoteVersion: number | null;
 }
 
 export type ThemeMode = 'system' | 'light' | 'dark';
