@@ -55,8 +55,11 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   id encodes its bedtime so a changed bedtime replaces the activity, and an
   expired/out-of-window countdown is cleared on foreground (the original's
   ActivityKit flow has no equivalent state to leak).
-- android (original is ios-only): live activities stay ios-only (hidden in
-  settings, sync no-ops); home-screen widgets are android-only. compact inline date/time pickers do not exist, so
+- turning the Live Activity toggle off now removes a running activity (and
+  turning it on restores it), and a changed goal or bedtime resyncs it; the
+  original only reads the toggle when a session starts.
+- android (original is ios-only): the live activity becomes an ongoing
+  session notification (see below); home-screen widgets are android-only. compact inline date/time pickers do not exist, so
   settings and the log editor use a value chip that opens the system dialog.
   ios keeps the native compact style. icons use Material Symbols via NativeSymbol
   (SF string names render nothing on android). dashboard and metrics segmented
@@ -130,3 +133,53 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   process death, and onNewIntent keeps the newest link as the activity intent
   so a link that revives the app after process death is not lost
   (`plugins/android-launch-intent.cjs`).
+- android session notification (the live activity's android twin, driven by
+  the same `useLiveActivitySync` lifecycle; native side in
+  `modules/twilight-widget-actions` `TwilightSessionNotification.kt`).
+  - while asleep: "Rejuvenating...", an elapsed chronometer in the header
+    (android's `H:MM:SS` stopwatch format instead of swift's "1h 23m"; it
+    ticks without the app), a progress bar toward the sleep goal,
+    "<Xh Ym> left" / "Goal reached" and a Wake Up action. ongoing, silent,
+    public on the lock screen, teal accent. on android 16 it asks to be
+    promoted to a live update (status bar chip with the timer, progress
+    style bar with a moon tracker); older versions show the classic
+    progress bar. progress and "left" refresh about once a minute through
+    a non-waking inexact alarm, like the widgets, so they can lag after doze.
+  - within 3 hours of bedtime (no session): "Winding down...", a countdown
+    chronometer to bedtime, "Bedtime at <time> - dim the lights" and a Start
+    Sleep action; android removes it at bedtime by itself. unlike the
+    session it can be swiped away, and a dismissed countdown stays away
+    until the bedtime changes.
+  - standard notification templates instead of expo-widgets 58
+    `createCustomNotification`: custom RemoteViews can never be promoted to
+    a live update, have no chronometer (the elapsed time would only move
+    when js re-renders it), and their button presses only reach js while
+    the app process is alive.
+  - Wake Up / Start Sleep work with the app swiped away and the phone
+    locked: a native receiver records the press with its time in the
+    widgets' pending-action store, updates the notification at once, and
+    starts a headless js task (`TwilightSessionAction`, registered in
+    `index.ts`, the app's entry, before expo-router) that ends or starts
+    the session at the press time through the app's store and refreshes the
+    widgets. if js cannot start, the app applies the press when it next
+    opens, still at the press time (presses older than 12 hours are
+    dropped). no "Pause..." joke unless the app is on screen, like the ios
+    button.
+  - the settings row reads "Sleep Notification" with android copy instead
+    of "Live Activity" / "...with some inspirational quote" (the original
+    never shows a quote). turning it on asks for POST_NOTIFICATIONS (android
+    13+) and points to system settings when notifications are off; starting
+    a session asks too, only while android still allows a prompt.
+  - channels: "Sleep session" and "Bedtime countdown" (default importance
+    with no sound or vibration: low importance files them under "Silent",
+    which pixel hides from the lock screen and the status bar) next to
+    "Wind-down reminders" (default importance) for the daily reminder,
+    which previously used expo's fallback channel. all use the monochrome
+    moon small icon (for the reminder through the expo-notifications plugin
+    entry in app.json, with the teal accent; the countdown uses gold).
+  - the notification is reposted after a reboot or an app update (alarms
+    and possibly the notification are gone); a relaunch reconciles it with
+    the stored session.
+- settings "Go to settings to disable globally" (swift link at the end of
+  Notifications, hidden while sleeping) opens the app's notification
+  settings on android and the app's settings page on ios.

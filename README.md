@@ -68,6 +68,29 @@ home-screen widget (live activity only). After changing a layout, rebuild or
 reload the app so it re-registers the layout; after changing the plugin or the
 module, run `bunx expo prebuild --clean --platform android`.
 
+## Sleep notification (Android Live Activity)
+
+On Android the iOS Live Activity is an ongoing notification, on by default
+(**Settings → Notifications → Sleep Notification**):
+
+| When | Shows | Button |
+|------|-------|--------|
+| Asleep | "Rejuvenating...", elapsed timer, progress to the sleep goal, time left or "Goal reached" | **Wake Up** |
+| Within 3 h of bedtime | "Winding down...", countdown to bedtime | **Start Sleep** |
+
+Both buttons work with the app swiped away or the phone locked: the press
+is recorded natively with its time and a headless JS task
+(`src/services/session-action-task.ts`, registered in `index.ts`) applies
+it. On Android 16 the sleep notification is promoted to a Live Update
+(status bar chip). Native code: `modules/twilight-widget-actions`
+(`TwilightSessionNotification.kt`); JS lifecycle shared with iOS:
+`src/services/use-live-activity-sync.ts` and `live-activity.android.ts`.
+
+```bash
+# inspect it on a device or emulator
+adb shell dumpsys notification --noredact | rg -A3 twilight.session
+```
+
 ## Sleep links
 
 `twilight://sleep/start` and `twilight://sleep/stop` start or end a session
