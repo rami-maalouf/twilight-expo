@@ -331,9 +331,14 @@ partial full read is ever committed.
 token expiry: a token is valid for 30 days after it is generated
 (`HealthConnectClient.getChangesToken` reference); an expired token returns
 `changesTokenExpired == true`. an invalid token (for example a token
-restored from another device, 4.6) is not documented; the engine treats any
-`getChanges` exception other than `SecurityException`, rate limit or
-`IOException` as an invalid token, once per run. the engine does NOT surface
+restored from another device, 4.6) is not documented. verified on the
+android 16 emulator (2.11): a malformed token (`"bogus-token"`) and an
+unknown one (`"99999"`) do not throw; they return `tokenExpired: true`
+with `nextToken: ""`, so they take the expiry path. the engine still treats
+any `getChanges` exception other than `SecurityException`, rate limit or
+`IOException` (the module maps `IllegalArgumentException` to
+`E_HC_TOKEN`) as an invalid token, once per run, for providers that throw,
+and never stores an empty `nextToken`. the engine does NOT surface
 an error (prior art did). it clears the token and runs a full re-read with
 dedupe (hc docs "read and dedupe all data", the recommended strategy). dedupe
 is natural: the mirror is keyed by record id, imports by night key and
@@ -391,11 +396,14 @@ record ids.
 - `insertRecords` upserts by `clientRecordId`. hc overwrites only when the new
   `clientRecordVersion` is HIGHER than the stored one; otherwise "the process
   ignores the change and the value remains the same" (write-data "value check
-  in client record version"). equal versions are ignored too. the ignore is
-  silent: no exception, and the docs do not say which id the response
-  returns in that case. swift healthkit replaces on any version, so the port
-  must guarantee strictly increasing versions without depending on a read
-  (3.3).
+  in client record version"). the docs say equal versions are ignored too,
+  but the android 16 emulator REPLACES on an equal version and ignores only
+  a lower one (2.11). the ignore is silent: no exception, and the response
+  returns the id of the existing record. the engine must be correct under
+  both rules (strictly higher, or higher-or-equal), so the fake hc runs the
+  version tests in both modes. swift healthkit replaces on any version, so
+  the port must guarantee strictly increasing versions without depending on
+  a read (3.3).
 - `insertRecords` is one transaction: "if one fails, none is inserted"
   (reference). batches of at most 50 writes (docs limit is 1000 per
   request; small batches keep a failure local).
@@ -453,7 +461,11 @@ record ids.
 verified facts (`HealthConnectClient.deleteRecords` reference): the call is
 one transaction ("if one fails, none is deleted"), and "deleting by invalid
 identifiers such as a non-existing identifier or deleting the same record
-multiple times will result in IPC failure" (`RemoteException`). the first
+multiple times will result in IPC failure" (`RemoteException`). on the
+android 16 emulator a delete by a client record id that does not exist
+resolves without error (2.11); the apk provider on android 13 and lower is
+unverified. the rules below are kept because they cost nothing when the
+call succeeds and protect the providers that do throw. the first
 draft enqueued every owned deletion, including sessions that were never
 written (created while sync was off, or with write denied). one such row
 would fail its whole batch on every run: the outbox could never drain
@@ -468,13 +480,16 @@ rules:
 3. drain in batches of 50 by client record id. on a batch failure, retry the
    batch one id at a time.
 4. a single id that fails with `E_HC_REMOTE`:
-   - read permission granted: read own records in `[start_ms - 1 day,
-     end_ms + 1 day]`. no record with that client record id -> it is already
-     gone (deleted in the hc ui, auto-deleted, or never landed): drop the
-     row. found -> keep the row, `attempts += 1`.
-   - read permission missing: `attempts += 1`; after 5 failed runs drop the
-     row and log it. the worst case is one stale twilight record left in
-     hc; the ledger still stops it from being rehydrated.
+   - own read possible (read granted, or write granted on android 14+,
+     where an app reads its own records without read permission, 2.11):
+     read own records in `[start_ms - 1 day, end_ms + 1 day]`. no record
+     with that client record id -> it is already gone (deleted in the hc
+     ui, auto-deleted, or never landed): drop the row. found -> keep the
+     row, `attempts += 1`.
+   - no own read (android 13 and lower without read): `attempts += 1`;
+     after 5 failed runs drop the row and log it. the worst case is one
+     stale twilight record left in hc; the ledger still stops it from
+     being rehydrated.
 5. `E_HC_RATE_LIMIT`, `E_HC_PERMISSION`, `E_HC_IO`: stop, keep rows, no
    attempt counted.
 6. after 3 failed attempts on a row that still exists remotely, the error
@@ -564,11 +579,29 @@ the provider while twilight is in the background).
   `android.permission.health.READ_SLEEP`, `WRITE_SLEEP`,
   `READ_HEALTH_DATA_HISTORY`. no background read permission: swift sync is
   foreground-only and so is the port.
-- request: `PermissionController.createRequestPermissionResultContract()` via
-  expo `RegisterActivityContracts { registerForActivityResult(...) }`
-  (fallback: `startActivityForResult` + `OnActivityResult` if the sdk 58 api
-  differs). the call resolves with the granted set re-read from
-  `getGrantedPermissions()`.
+- request, two paths by sdk int (found on the emulator, 2.11):
+  - android 14+: the connect-client contract delegates to
+    `ActivityResultContracts.RequestMultiplePermissions`. expo's activity
+    result registry launches that intent through
+    `ActivityCompat.requestPermissions`, whose answer arrives in
+    `onRequestPermissionsResult`. the registry only forwards
+    `onActivityResult`, so a launcher call never resumes (the first
+    implementation hung forever and held the request mutex). the module
+    therefore asks through expo's `appContext.permissions.askForPermissions`,
+    which goes through rn's `PermissionAwareActivity` and does get the
+    callback.
+  - android 13 and lower: the contract starts the apk provider for a result
+    (`androidx.health.ACTION_REQUEST_PERMISSIONS`), so the expo launcher from
+    `RegisterActivityContracts { registerForActivityResult(...) }` works.
+  - both paths: one request at a time (mutex); if the rn activity is
+    destroyed while the ui is open, `OnActivityDestroys` releases the
+    waiting call. the call resolves with the granted set re-read from
+    `getGrantedPermissions()`, never from the contract result.
+- android 15+ ui order (emulator): hc onboarding ("Get started with Health
+  Connect") on the very first request of the device, then one sheet with
+  read sleep and write sleep ("Allow all"), then a separate "Allow Twilight
+  to access past data?" screen for `READ_HEALTH_DATA_HISTORY` that names the
+  window start ("data added before October 9, 2026" on 2026-11-08).
 - hc exposes read and write status separately (healthkit hides read status).
   the port uses both: inbound runs when read is granted, outbound when write
   is granted. partial grants are a "connected" state with copy that says
@@ -669,6 +702,35 @@ the provider while twilight is in the background).
     (2.5).
 18. device restore from android auto backup resets device-bound sync state
     (4.6).
+
+### 2.11 verified on the emulator (native-module slice)
+
+`Twilight_Pixel_9_B`, android 16 (api 36, hc framework module),
+connect-client 1.1.0, calls made through the module from the js runtime:
+
+| question | observed |
+|---|---|
+| reads or token before any grant | `SecurityException` -> `E_HC_PERMISSION` ("Caller doesn't have android.permission.health.READ_SLEEP") |
+| permission request result path | android 14+ result comes through `onRequestPermissionsResult`, not `onActivityResult` (2.8); the expo launcher never resumed |
+| round trip of a write | `readSleep(own)` returns the record with the written `clientRecordId`, `clientRecordVersion`, recording method, one `STAGE_TYPE_SLEEPING` stage, and per-end offsets from the zone ids (`Europe/Paris` 3600, `America/New_York` -18000 in november) |
+| upsert with an EQUAL version, new start | replaced (start moved, `lastModifiedTime` changed), same record id |
+| upsert with a LOWER version, new start | ignored silently, returns the existing record id |
+| upsert with a higher version | replaced, same record id |
+| `getChanges` after own writes | own records come back as upserts with `dataOrigin` = own package; tokens are small decimal strings |
+| `getChanges` after a delete | `DeletionChange` with the record id (no client record id) |
+| `getChanges("bogus-token")`, `getChanges("99999")` | no exception: `tokenExpired: true`, `nextToken: ""` |
+| delete by a client record id that does not exist | resolves, no `RemoteException` |
+| invalid writes (no twilight prefix, unknown zone id) | rejected per record in the module (`E_HC_INVALID`) without a hc call; valid writes in the same batch land |
+| partial grant (write only) | request resolves with `{read: false, write: true}`; no history screen (it needs read) |
+| write only: `readSleep(own)` | works, and returns own records written by an earlier install of the same package (uninstall keeps them); `getChangesToken` needs read (`E_HC_PERMISSION`). the 2.6 outbox verify step and the 3.3 self-heal can use own reads with write only |
+| reinstall | uninstall revokes every permission; `getInstallId` returns a new uuid (4.6) |
+| foreign records | `readSleep(all)` returns both seeder origins with their package, stages (`[4,1,5]`, `[]` for a stageless record), `+05:30` as 19800, and the twilight-prefixed foreign cid with the seeder's origin (2.2); `readSleep(own)` excludes them; `getChanges` lists foreign upserts and a foreign delete as its record id |
+| read window without history permission | revoking `READ_HEALTH_DATA_HISTORY` (which kills the app process) and reading again drops the record that ended 50 days ago, silently, no error (2.4 trim rule) |
+| paging | 600 own writes in one `upsertSleep` (95 ms); `readSleep` pages 500 + 102 with `nextPageToken` set then null; one `deleteSleepByClientRecordIds` with 600 ids removes them |
+| `openPermissionSettings` on android 14+ | `ACTION_MANAGE_HEALTH_PERMISSIONS` needs `GRANT_RUNTIME_PERMISSIONS` (signature) on api 36: `SecurityException`, so the module falls back to `getHealthConnectManageDataIntent` ("Data and access"). a per-app page is not reachable for third-party apps here; copy must say "Open Health Connect", not "open Twilight's permissions" |
+| `openProviderInstall` without play store | the market intent does not resolve, the web listing opens in the browser |
+| rationale | hc app -> App permissions -> Twilight -> "Read privacy policy" starts `ViewPermissionUsageActivity` (the alias) from hc's uid; `Done` returns to hc. light, dark and font scale 1.3 render without clipping. `adb am start` of the alias is refused (`START_VIEW_PERMISSION_USAGE`), so only hc can open it |
+| `pm grant` for hc permissions | works for the seeder (`adb shell pm grant <pkg> android.permission.health.READ_SLEEP`) |
 
 ---
 
@@ -794,8 +856,9 @@ the clock rule at creation.
   where id = ? and health_sync_version = ?`. an edit during the write changes
   the version, the update matches zero rows, and the session stays pending.
 - crash between write and mark: the session is still pending with the same
-  version; the next write sends the same version, hc ignores it (same
-  content), and the mark succeeds. idempotent.
+  version; the next write sends the same version, hc ignores it or (android
+  16, 2.11) replaces it with the same content, and the mark succeeds.
+  idempotent.
 - payload migration: `HEALTH_PAYLOAD_MIN_VERSION = 2` keeps swift's floor;
   `payloadRevision` in sync state is compared with a code constant, and a
   change marks every owned, ended, valid, not adopted, not remote-deleted
@@ -1537,9 +1600,11 @@ new pure tests:
 repo and engine tests (in-memory sqlite + `FakeHealthConnect`):
 
 the `FakeHealthConnect` must model the verified hc behaviors, or the engine
-tests prove nothing: lower-or-equal version upserts are ignored silently;
+tests prove nothing: lower version upserts are ignored silently, and equal
+versions are ignored (docs mode) or replace (android 16 mode, 2.11);
 `insertRecords` and `deleteRecords` are all-or-nothing; deleting a missing
-id throws `E_HC_REMOTE`; range reads outside a configurable foreign window
+id throws `E_HC_REMOTE` (docs mode) or succeeds (android 16 mode); a bad
+token returns `tokenExpired` (android 16) or throws `E_HC_TOKEN`; range reads outside a configurable foreign window
 trim silently while own reads are unlimited (android 14 mode) or limited
 (android 13 mode); `getChanges` pages with `hasMore`, replays own changes,
 and can return `tokenExpired`; any call can be set to throw a chosen error
@@ -1608,21 +1673,26 @@ activity and alias (hc requires them to grant), and one exported
 `SeedActivity` driven by intent extras; results go to logcat tag `HCSEED`
 and the activity finishes.
 
+built in the native-module slice (sources in `/tmp/hcseeder`, not in the
+repo; rebuild with `android/gradlew -p /tmp/hcseeder assembleDebug`). two
+product flavors give two real data origins: `a` ->
+`com.rami.twilight.hcseeder`, `b` -> `com.rami.twilight.hcseeder.b`.
+records are `Metadata.autoRecorded` with a watch device.
+
 ```
-adb shell am start -n com.rami.twilight.hcseeder/.SeedActivity --es op insert \
-  --es cid night-a --el start <ms> --el end <ms> --ei offset 3600 --es stages "2:<ms>:<ms>,1:<ms>:<ms>"
-adb shell am start -n ... --es op update --es cid night-a --el version 2 --el start <ms> --el end <ms>
-adb shell am start -n ... --es op delete --es cid night-a
-adb shell am start -n ... --es op list            # logs every sleep record: id, origin, cid, version, method, offsets, times
-adb shell am start -n ... --es op wipe            # deletes all seeder records
-adb shell am start -n ... --es op insert --es stages none ...      # record without stages
-adb shell am start -n ... --es op upsert-lower --es cid night-a    # lower version upsert, logs the returned id
-adb shell am start -n ... --es op delete-missing                   # deleteRecords with an unknown client id, logs the exception
+S=com.rami.twilight.hcseeder.SeedActivity
+adb shell am start -W -n com.rami.twilight.hcseeder/$S --es op insert \
+  --es cid night-a --el start <ms> --el end <ms> [--ei offset 3600] [--el version 1] \
+  [--es stages "4:<ms>:<ms>,1:<ms>:<ms>" | --es stages none]   # upsert by cid; default one SLEEPING stage
+adb shell am start -W -n ... --es op delete --es cid night-a  # delete by client record id
+adb shell am start -W -n ... --es op list                     # every readable sleep record: id, origin, cid, version, method, offsets, stages
+adb shell am start -W -n ... --es op wipe                     # deletes this flavor's own records
 ```
 
-two foreign origins: build the seeder twice with `applicationIdSuffix`
-(`com.rami.twilight.hcseeder` and `com.rami.twilight.hcseeder.b`) so the
-"two apps record the same night" cases have two real data origins.
+an update is `insert` with the same cid and a higher `--el version`. the
+lower-version and missing-delete probes (former ops `upsert-lower`,
+`delete-missing`) were answered through twilight's own module instead
+(2.11).
 
 grant once: `adb shell pm grant com.rami.twilight.hcseeder android.permission.health.WRITE_SLEEP`
 (and `READ_SLEEP`); if `pm grant` is refused, use the seeder's "Grant" button.
@@ -1688,7 +1758,8 @@ state checks with `adb shell uiautomator dump`; visuals with
     com.rami.twilight.port` during the pull, relaunch -> counts match a clean
     pull, no duplicates.
 14. revoke read and write in hc -> settings shows "Permission denied" and
-    "Open Health Connect" opens the permission page; deny the dialog twice
+    "Open Health Connect" opens hc ("Data and access" on android 14+, 2.11:
+    the per-app page is closed to third-party apps); deny the dialog twice
     and record whether hc still shows it (2.8); grant write only ->
     "export only" copy, and an edit still replaces the hc record; re-grant
     all.
@@ -1721,10 +1792,10 @@ state checks with `adb shell uiautomator dump`; visuals with
 22. hc facts to record (the docs do not state them): open hc -> manage data
     -> set auto-delete and write down the offered periods (the 30-day
     aged-out threshold in 2.6 assumes the shortest period is longer than 30
-    days; change the threshold if not); the result of a `deleteRecords`
-    call for a client record id that does not exist (expected
-    `RemoteException`, 2.6); which id `insertRecords` returns for an
-    ignored lower-version upsert (seeder op `upsert-lower`).
+    days; change the threshold if not). done in the native-module slice
+    (2.11): a `deleteRecords` call for a client record id that does not
+    exist resolves on android 16; an ignored lower-version upsert returns
+    the existing record id; an equal version replaces.
 23. device restore: `adb shell bmgr enable true`, `adb shell bmgr backupnow
     com.rami.twilight.port`, uninstall, install, `adb shell bmgr restore
     com.rami.twilight.port` (or reinstall with restore) -> on launch the
@@ -1958,7 +2029,8 @@ e2e run must record it.
   stable 1.1.0 with app `minSdkVersion 26` stands; hc sdk supports android
   8 (api 26), the hc app needs android 9 (get-started).
 - upsert overwrites only on a strictly higher `clientRecordVersion`
-  (verified twice: sync-data and write-data).
+  (verified twice: sync-data and write-data). corrected by the emulator
+  (2.11): android 16 also replaces on an equal version.
 - tokens valid 30 days, `changesTokenExpired`, "read and dedupe all data"
   strategy, separate token per data type (verified).
 - stage constants 0-7 (verified, `SleepSessionRecord` reference).
@@ -1967,4 +2039,6 @@ e2e run must record it.
   (verified, get-started).
 - expo modules api: `RegisterActivityContracts` with
   `registerForActivityResult`, `OnActivityResult`, suspendable
-  `AsyncFunction` bodies exist (expo module api docs).
+  `AsyncFunction` bodies exist (expo module api docs). corrected by the
+  emulator (2.8, 2.11): the registry cannot deliver the android 14+ hc
+  permission result; the module uses `appContext.permissions` there.

@@ -69,6 +69,12 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   colors. form sheets fall back to full-screen modals. cards
   add android elevation. the moon glow still uses ios-style shadows, which are
   weaker on android.
+- android `minSdkVersion` is 26, not the rn 0.88 default 24 (`expo-build-properties`
+  in app.json): the health connect module uses the stable
+  `androidx.health.connect:connect-client:1.1.0`, which requires api 26. the
+  1.2.0 line that supports api 24 is alpha. health connect itself needs android
+  9, so api 24/25 devices lose nothing they could use
+  (docs/health-connect.md 2.9).
 - charts use @shopify/react-native-skia instead of Swift Charts. Aug 11
   dashboard features (Trend 7/30 window, Time Sleep/Wake/Both chart, duration-
   tinted averages, in-card history chip, Dev settings demo onboarding) match
