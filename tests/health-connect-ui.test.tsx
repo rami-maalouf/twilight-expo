@@ -1,7 +1,8 @@
 // platform guards for every health connect surface (docs/health-connect.md 2.7,
 // 5.2-5.4, 7.3 "ios"): ios renders none of them; android renders them from
 // the engine snapshot. the native module is never loaded in jest.
-import { cleanup, render } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render } from '@testing-library/react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SettingsStore, type KeyValueStorage } from '@/data/settings-store';
 import { ThemeProvider } from '@/theme/ThemeProvider';
@@ -24,11 +25,14 @@ jest.mock('@/data/app-db', () => {
   return { sessionRepo, settingsStore, demoDataManager: new DemoDataManager(sessionRepo, settingsStore) };
 });
 
-jest.mock('expo-router', () => ({
-  ...jest.requireActual('expo-router'),
-  Redirect: () => null,
-  router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
-}));
+jest.mock('expo-router', () => {
+  const { Text } = require('react-native');
+  return {
+    ...jest.requireActual('expo-router'),
+    Redirect: ({ href }: { href: string }) => <Text testID="redirect">{href}</Text>,
+    router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
+  };
+});
 
 const mockPlatform = { supported: false };
 jest.mock('@/services/health-connect/native-adapter', () => {
@@ -40,6 +44,7 @@ jest.mock('@/services/health-connect/native-adapter', () => {
   return mocked;
 });
 
+import HealthConnectScreen from '@/app/health-connect';
 import { HealthConnectSection } from '@/components/settings/HealthConnectSection';
 import { WeekEmptyState } from '@/components/dashboard/WeekEmptyState';
 import type { HcStatus } from '@/services/health-connect/adapter';
@@ -61,8 +66,21 @@ const ANDROID_STATUS: HcStatus = {
   sdkInt: 36,
 };
 
+const METRICS = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
+
 function renderThemed(element: React.ReactElement) {
-  return render(<ThemeProvider store={new SettingsStore(memoryKv())}>{element}</ThemeProvider>);
+  return render(
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <ThemeProvider store={new SettingsStore(memoryKv())}>{element}</ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+// the screen's clock ticks once on a zero timeout; flush it inside act
+async function renderScreen() {
+  const result = await renderThemed(<HealthConnectScreen />);
+  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  return result;
 }
 
 function setSnapshot(status: HcStatus | null, enabled: boolean) {
@@ -92,6 +110,13 @@ describe('ios (health connect unsupported)', () => {
 
   test('onboarding skips the health connect step', async () => {
     await expect(showsHealthConnectOnboarding()).resolves.toBe(false);
+  });
+
+  test('the health connect route redirects home', async () => {
+    setSnapshot(ANDROID_STATUS, true);
+    const { getByTestId, queryByTestId } = await renderScreen();
+    expect(getByTestId('redirect').props.children).toBe('/');
+    expect(queryByTestId('health-connect-scroll')).toBeNull();
   });
 });
 
@@ -143,5 +168,34 @@ describe('android', () => {
     await expect(showsHealthConnectOnboarding()).resolves.toBe(true);
     setSnapshot({ ...ANDROID_STATUS, availability: 'unavailable', read: false, write: false }, false);
     await expect(showsHealthConnectOnboarding()).resolves.toBe(false);
+  });
+
+  test('the screen shows one held night with singular copy and both actions', async () => {
+    setSnapshot(ANDROID_STATUS, true);
+    healthSyncStore.setState({ heldRemoteDeletions: ['s1'] });
+    const { getByTestId, getByText } = await renderScreen();
+    getByTestId('health-connect-state-connected');
+    getByText('Health Connect removed 1 Twilight night');
+    getByText('This night was deleted in Health Connect. Twilight still has it and will not send it back unless you edit it.');
+    getByTestId('health-connect-keep-held');
+    getByTestId('health-connect-remove-held');
+    await act(() => healthSyncStore.setState({ heldRemoteDeletions: [] }));
+  });
+
+  test('write-only access offers sync now instead of pull', async () => {
+    setSnapshot({ ...ANDROID_STATUS, read: false, history: false }, true);
+    const { getByTestId } = await renderScreen();
+    expect(getByTestId('health-connect-primary').props.accessibilityLabel).toBe('Sync now');
+  });
+
+  test('back falls back to settings when the screen is the root', async () => {
+    setSnapshot(ANDROID_STATUS, true);
+    const mockRouter = jest.requireMock('expo-router').router;
+    const { getByTestId } = await renderScreen();
+    mockRouter.canGoBack.mockReturnValueOnce(false);
+    await fireEvent.press(getByTestId('health-connect-back'));
+    expect(mockRouter.replace).toHaveBeenCalledWith('/settings');
+    await fireEvent.press(getByTestId('health-connect-back'));
+    expect(mockRouter.back).toHaveBeenCalledTimes(1);
   });
 });
