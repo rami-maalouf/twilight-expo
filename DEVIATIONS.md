@@ -143,8 +143,11 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
     public on the lock screen, teal accent. on android 16 it asks to be
     promoted to a live update (status bar chip with the timer, progress
     style bar with a moon tracker); older versions show the classic
-    progress bar. progress and "left" refresh about once a minute through
-    a non-waking inexact alarm, like the widgets, so they can lag after doze.
+    progress bar. promotion itself is unverified: the android 16 (36.0)
+    emulator image predates live updates (16 qpr1), so it shows the
+    progress style notification without the status bar chip. progress and
+    "left" refresh about once a minute through a non-waking inexact alarm,
+    like the widgets, so they can lag after doze.
   - within 3 hours of bedtime (no session): "Winding down...", a countdown
     chronometer to bedtime, "Bedtime at <time> - dim the lights" and a Start
     Sleep action; android removes it at bedtime by itself. unlike the
