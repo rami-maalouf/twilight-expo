@@ -42,6 +42,10 @@ example
 /ios
 /android
 
+# gradle output of local expo modules (their sources are committed)
+/modules/*/android/build/
+/modules/*/android/.gradle/
+
 # agent local state
 .claude/settings.local.json
 
