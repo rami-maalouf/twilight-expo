@@ -19,13 +19,50 @@ export const SLEEP_STOP_URL = 'twilight://sleep/stop';
 export const WIDGET_ACTION_MAX_AGE_MS = 2 * 60_000;
 
 export function freshWidgetAction(
-  pending: { action: string; at: number } | null,
+  pending: { action: string; at: number; origin?: string } | null,
   nowMs: number = Date.now()
 ): SleepLinkAction | null {
-  if (pending == null) return null;
+  // notification presses keep their press time (planNotificationAction)
+  if (pending == null || pending.origin === 'notification') return null;
   if (pending.action !== 'start' && pending.action !== 'stop') return null;
   const age = nowMs - pending.at;
   return age >= 0 && age <= WIDGET_ACTION_MAX_AGE_MS ? pending.action : null;
+}
+
+// a session notification press runs in the background and keeps its press
+// time: wake up ends the session when it was pressed, start sleep starts it
+// then, even if js only gets to it when the app next opens. older than this
+// it no longer describes the current night and is dropped.
+export const NOTIFICATION_ACTION_MAX_AGE_MS = 12 * 3600_000;
+// tolerated clock skew between the press and the js clock
+const CLOCK_SKEW_MS = 5_000;
+
+export interface PlannedNotificationAction {
+  action: SleepLinkAction;
+  // when the session ends or starts
+  atMs: number;
+}
+
+// decides whether a pending notification press still applies to the
+// current state. stop needs the session it was meant for (started before
+// the press); start needs no session at or after the press.
+export function planNotificationAction(
+  pending: { action: string; at: number; origin?: string } | null,
+  state: Pick<SleepState, 'activeSession' | 'sessions'>,
+  nowMs: number = Date.now()
+): PlannedNotificationAction | null {
+  if (pending == null || pending.origin !== 'notification') return null;
+  if (pending.action !== 'start' && pending.action !== 'stop') return null;
+  const age = nowMs - pending.at;
+  if (age < -CLOCK_SKEW_MS || age > NOTIFICATION_ACTION_MAX_AGE_MS) return null;
+  const atMs = Math.min(pending.at, nowMs);
+  const active = state.activeSession;
+  if (pending.action === 'stop') {
+    return active && active.startTime <= atMs ? { action: 'stop', atMs } : null;
+  }
+  if (active) return null;
+  const lastEnd = state.sessions[0]?.endTime ?? null;
+  return lastEnd == null || lastEnd <= atMs ? { action: 'start', atMs } : null;
 }
 
 // accepts full urls (any scheme, so dev-client prefixes work) and bare paths

@@ -7,7 +7,9 @@ import { createSleepStore } from '../../state/sleep-store';
 import {
   parseSleepLink,
   freshWidgetAction,
+  NOTIFICATION_ACTION_MAX_AGE_MS,
   performSleepLinkAction,
+  planNotificationAction,
   queueLaunchSleepLink,
   queueSleepLinkAction,
   SLEEP_LINK_MESSAGES,
@@ -124,6 +126,68 @@ describe('freshWidgetAction', () => {
     expect(freshWidgetAction({ action: 'stop', at: NOW - WIDGET_ACTION_MAX_AGE_MS - 1 }, NOW)).toBeNull();
     expect(freshWidgetAction({ action: 'start', at: NOW + 60_000 }, NOW)).toBeNull();
     expect(freshWidgetAction({ action: 'toggle', at: NOW }, NOW)).toBeNull();
+  });
+
+  test('notification presses are left to planNotificationAction', () => {
+    expect(freshWidgetAction({ action: 'stop', at: NOW - 1_000, origin: 'notification' }, NOW)).toBeNull();
+    expect(freshWidgetAction({ action: 'stop', at: NOW - 1_000, origin: 'widget' }, NOW)).toBe('stop');
+  });
+});
+
+describe('planNotificationAction', () => {
+  const press = (action: string, at: number) => ({ action, at, origin: 'notification' });
+
+  test('wake up ends the session at the press time, however late js runs', () => {
+    const { store } = setup();
+    store.getState().toggleSleep(T0);
+    const plan = planNotificationAction(press('stop', T0 + 8 * HOUR), store.getState(), T0 + 10 * HOUR);
+    expect(plan).toEqual({ action: 'stop', atMs: T0 + 8 * HOUR });
+    store.getState().toggleSleep(plan!.atMs);
+    expect(store.getState().sessions[0]).toMatchObject({ startTime: T0, endTime: T0 + 8 * HOUR });
+  });
+
+  test('wake up needs the session it was pressed for', () => {
+    const { store } = setup();
+    expect(planNotificationAction(press('stop', T0), store.getState(), T0 + 1_000)).toBeNull();
+    store.getState().toggleSleep(T0 + HOUR);
+    // pressed before this session started: a stale press from another night
+    expect(planNotificationAction(press('stop', T0), store.getState(), T0 + 2 * HOUR)).toBeNull();
+  });
+
+  test('start sleep starts at the press time unless a session followed it', () => {
+    const { store } = setup();
+    expect(planNotificationAction(press('start', T0), store.getState(), T0 + 5_000)).toEqual({
+      action: 'start',
+      atMs: T0,
+    });
+    store.getState().toggleSleep(T0 - 8 * HOUR);
+    store.getState().toggleSleep(T0 + HOUR);
+    expect(planNotificationAction(press('start', T0), store.getState(), T0 + 2 * HOUR)).toBeNull();
+    store.getState().toggleSleep(T0 + 3 * HOUR);
+    expect(planNotificationAction(press('start', T0), store.getState(), T0 + 3 * HOUR)).toBeNull();
+  });
+
+  test('old, future-dated, widget and unknown presses are dropped', () => {
+    const { store } = setup();
+    store.getState().toggleSleep(T0);
+    const state = store.getState();
+    const now = T0 + NOTIFICATION_ACTION_MAX_AGE_MS + HOUR;
+    expect(planNotificationAction(press('stop', T0 + HOUR - 1), state, now)).toBeNull();
+    expect(planNotificationAction(press('stop', T0 + HOUR), state, now)).not.toBeNull();
+    expect(planNotificationAction(press('stop', T0 + 60_000), state, T0)).toBeNull();
+    expect(planNotificationAction({ action: 'stop', at: T0 + 1, origin: 'widget' }, state, T0 + 2)).toBeNull();
+    expect(planNotificationAction({ action: 'stop', at: T0 + 1 }, state, T0 + 2)).toBeNull();
+    expect(planNotificationAction(press('toggle', T0 + 1), state, T0 + 2)).toBeNull();
+    expect(planNotificationAction(null, state, T0)).toBeNull();
+  });
+
+  test('a press a few seconds ahead of the js clock applies now', () => {
+    const { store } = setup();
+    store.getState().toggleSleep(T0);
+    expect(planNotificationAction(press('stop', T0 + HOUR + 2_000), store.getState(), T0 + HOUR)).toEqual({
+      action: 'stop',
+      atMs: T0 + HOUR,
+    });
   });
 });
 
