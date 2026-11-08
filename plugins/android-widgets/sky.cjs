@@ -19,8 +19,8 @@ function skyDrawableXml(sky, radius) {
   <item
     android:gravity="top|center_horizontal"
     android:width="132dp"
-    android:height="52dp"
-    android:top="4dp"
+    android:height="36dp"
+    android:top="2dp"
         android:drawable="@drawable/twilight_widget_stars" />`
     : '';
   return `<?xml version="1.0" encoding="utf-8"?>

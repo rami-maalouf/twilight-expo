@@ -7,7 +7,8 @@
 //   action (glance buttons can only broadcast; the app performs the action,
 //   so it works from a cold start like swift's openAppWhenRun intents)
 // - the widget drawables (night-sky / sunset backgrounds, icons, previews)
-// - picker preview images in each widget's appwidget-provider xml
+// - picker preview images and a night-sky loading layout in each widget's
+//   appwidget-provider xml
 const fs = require('fs');
 const path = require('path');
 const { AndroidConfig, withDangerousMod } = require('expo/config-plugins');
@@ -67,13 +68,15 @@ function writeSkies(resDir) {
   }
 }
 
-function addPreview(infoPath, previewImage) {
-  const xml = fs.readFileSync(infoPath, 'utf8');
-  if (xml.includes('android:previewImage')) return;
-  fs.writeFileSync(
-    infoPath,
-    xml.replace('<appwidget-provider ', `<appwidget-provider android:previewImage="@drawable/${previewImage}" `)
-  );
+// picker preview + a night-sky loading layout instead of expo's text placeholder
+function patchWidgetInfo(infoPath, previewImage) {
+  let xml = fs.readFileSync(infoPath, 'utf8');
+  xml = xml.replace('@layout/expo_widgets_initial_layout', '@layout/twilight_widget_loading');
+  if (previewImage && !xml.includes('android:previewImage')) {
+    const ns = 'xmlns:android="http://schemas.android.com/apk/res/android"';
+    xml = xml.replace(ns, `${ns}\n  android:previewImage="@drawable/${previewImage}"`);
+  }
+  fs.writeFileSync(infoPath, xml);
 }
 
 function withTwilightWidgetFiles(config, widgets) {
@@ -90,8 +93,10 @@ function withTwilightWidgetFiles(config, widgets) {
       writeSkies(resDir);
       for (const widget of widgets) {
         fs.writeFileSync(path.join(javaDir, `${getProviderClassName(widget)}.kt`), providerKt(androidPackage, widget));
-        const previewImage = widget.android?.previewImage;
-        if (previewImage) addPreview(path.join(resDir, 'xml', `${getWidgetInfoResourceName(widget)}.xml`), previewImage);
+        patchWidgetInfo(
+          path.join(resDir, 'xml', `${getWidgetInfoResourceName(widget)}.xml`),
+          widget.android?.previewImage
+        );
       }
       return config;
     },

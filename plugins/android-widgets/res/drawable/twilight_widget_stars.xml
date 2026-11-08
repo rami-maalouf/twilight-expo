@@ -2,19 +2,19 @@
 <!-- a few faint stars for the night-sky widget backgrounds -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
   android:width="132dp"
-  android:height="52dp"
+  android:height="36dp"
   android:viewportWidth="132"
-  android:viewportHeight="52">
-  <path android:fillColor="#ffffff" android:fillAlpha="0.75" android:pathData="M116.8,8a1.2,1.2 0 1,0 2.4,0a1.2,1.2 0 1,0 -2.4,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.5" android:pathData="M95.2,18a0.8,0.8 0 1,0 1.6,0a0.8,0.8 0 1,0 -1.6,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.35" android:pathData="M125.3,30a0.7,0.7 0 1,0 1.4,0a0.7,0.7 0 1,0 -1.4,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.4" android:pathData="M77.35,6a0.65,0.65 0 1,0 1.3,0a0.65,0.65 0 1,0 -1.3,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.55" android:pathData="M103,40a1,1 0 1,0 2,0a1,1 0 1,0 -2,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.3" android:pathData="M59.3,22a0.7,0.7 0 1,0 1.4,0a0.7,0.7 0 1,0 -1.4,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.28" android:pathData="M85.5,32a0.5,0.5 0 1,0 1,0a0.5,0.5 0 1,0 -1,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.3" android:pathData="M39.4,10a0.6,0.6 0 1,0 1.2,0a0.6,0.6 0 1,0 -1.2,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.25" android:pathData="M17.45,26a0.55,0.55 0 1,0 1.1,0a0.55,0.55 0 1,0 -1.1,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.22" android:pathData="M69.5,46a0.5,0.5 0 1,0 1,0a0.5,0.5 0 1,0 -1,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.35" android:pathData="M29.2,42a0.8,0.8 0 1,0 1.6,0a0.8,0.8 0 1,0 -1.6,0z" />
-  <path android:fillColor="#ffffff" android:fillAlpha="0.25" android:pathData="M51.55,4a0.45,0.45 0 1,0 0.9,0a0.45,0.45 0 1,0 -0.9,0z" />
+  android:viewportHeight="36">
+  <path android:fillColor="#ffffff" android:fillAlpha="0.75" android:pathData="M116.8,6a1.2,1.2 0 1,0 2.4,0a1.2,1.2 0 1,0 -2.4,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.5" android:pathData="M95.2,14a0.8,0.8 0 1,0 1.6,0a0.8,0.8 0 1,0 -1.6,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.35" android:pathData="M125.3,24a0.7,0.7 0 1,0 1.4,0a0.7,0.7 0 1,0 -1.4,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.4" android:pathData="M77.35,5a0.65,0.65 0 1,0 1.3,0a0.65,0.65 0 1,0 -1.3,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.55" android:pathData="M105,30a1,1 0 1,0 2,0a1,1 0 1,0 -2,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.3" android:pathData="M59.3,17a0.7,0.7 0 1,0 1.4,0a0.7,0.7 0 1,0 -1.4,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.28" android:pathData="M85.5,25a0.5,0.5 0 1,0 1,0a0.5,0.5 0 1,0 -1,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.3" android:pathData="M39.4,8a0.6,0.6 0 1,0 1.2,0a0.6,0.6 0 1,0 -1.2,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.25" android:pathData="M17.45,20a0.55,0.55 0 1,0 1.1,0a0.55,0.55 0 1,0 -1.1,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.22" android:pathData="M69.5,33a0.5,0.5 0 1,0 1,0a0.5,0.5 0 1,0 -1,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.35" android:pathData="M29.2,31a0.8,0.8 0 1,0 1.6,0a0.8,0.8 0 1,0 -1.6,0z" />
+  <path android:fillColor="#ffffff" android:fillAlpha="0.25" android:pathData="M51.55,3a0.45,0.45 0 1,0 0.9,0a0.45,0.45 0 1,0 -0.9,0z" />
 </vector>

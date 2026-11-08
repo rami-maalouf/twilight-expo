@@ -52,7 +52,8 @@
                 "targetCellWidth": 2,
                 "targetCellHeight": 2,
                 "resizeMode": "both",
-                "initialLayout": "widgets/sleep-status.android.tsx"
+                "initialLayout": "widgets/sleep-status.android.tsx",
+                "previewImage": "twilight_widget_preview_status"
               }
             },
             {
@@ -66,7 +67,8 @@
                 "targetCellWidth": 2,
                 "targetCellHeight": 1,
                 "resizeMode": "horizontal",
-                "initialLayout": "widgets/sleep-mode.android.tsx"
+                "initialLayout": "widgets/sleep-mode.android.tsx",
+                "previewImage": "twilight_widget_preview_mode"
               }
             },
             {
@@ -80,7 +82,8 @@
                 "targetCellWidth": 4,
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal",
-                "initialLayout": "widgets/sleep-overview.android.tsx"
+                "initialLayout": "widgets/sleep-overview.android.tsx",
+                "previewImage": "twilight_widget_preview_overview"
               }
             }
           ]

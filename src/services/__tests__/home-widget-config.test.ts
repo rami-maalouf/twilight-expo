@@ -1,5 +1,8 @@
 // the android widget config (app.json + plugins/android-widgets) and the js
 // side must agree on widget names, drawable names and palette colors
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import appJson from '../../../app.json';
 import { PALETTES } from '../../theme/palettes';
 import {
@@ -12,7 +15,9 @@ import { widgetColors } from '../home-widget-snapshot';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { SKY_GRADIENTS, skyDrawableXml } = require('../../../plugins/android-widgets/sky.cjs');
 
-type PluginEntry = string | [string, { widgets?: { name: string; ios?: unknown; android?: { initialLayout?: string } }[] }];
+type PluginEntry =
+  | string
+  | [string, { widgets?: { name: string; ios?: unknown; android?: { initialLayout?: string; previewImage?: string } }[] }];
 
 function androidWidgets() {
   const entry = (appJson.expo.plugins as PluginEntry[]).find(
@@ -32,6 +37,16 @@ describe('android widget config', () => {
       // ios: null keeps them out of the ios widget extension
       expect(widget.ios).toBeNull();
       expect(widget.android?.initialLayout).toMatch(/^widgets\/.+\.android\.tsx$/);
+    }
+  });
+
+  test('every widget has a picker preview image shipped with the plugin', () => {
+    for (const widget of androidWidgets()) {
+      const preview = widget.android?.previewImage;
+      expect(preview).toMatch(/^twilight_widget_preview_/);
+      expect(
+        existsSync(join(__dirname, '../../../plugins/android-widgets/res/drawable-nodpi', `${preview}.png`))
+      ).toBe(true);
     }
   });
 
