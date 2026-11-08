@@ -90,6 +90,14 @@
         }
       ],
       "./plugins/android-launch-intent.cjs",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#00D4FF",
+          "enableRemoteNotifications": false
+        }
+      ],
       "expo-sqlite",
       "@react-native-community/datetimepicker",
       "expo-font",
