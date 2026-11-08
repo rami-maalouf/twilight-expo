@@ -1,8 +1,9 @@
 // ports: Components/Common/GlowingMoonView.swift
 // sf symbol moon with 3 breathing glow layers (native shadow = blur that follows the icon alpha)
-import { SymbolView } from 'expo-symbols';
 import { useEffect } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+
+import { NativeSymbol } from '@/components/common/NativeSymbol';
 import Animated, {
   Easing,
   interpolate,
@@ -46,19 +47,14 @@ function GlowLayer({
 }
 
 function MoonIcon({ color, size }: { color: string; size: number }) {
-  if (Platform.OS === 'ios') {
-    return (
-      <SymbolView
-        name="moon.stars.fill"
-        size={size}
-        tintColor={color}
-        resizeMode="scaleAspectFit"
-      />
-    );
-  }
-  // android fallback: plain circle glow carrier (polish out of scope per spec priority 8)
-  const style = { width: size, height: size, borderRadius: size / 2, backgroundColor: color };
-  return <View style={style} />;
+  return (
+    <NativeSymbol
+      name="moon.stars.fill"
+      size={size}
+      tintColor={color}
+      resizeMode="scaleAspectFit"
+    />
+  );
 }
 
 export function GlowingMoonView({

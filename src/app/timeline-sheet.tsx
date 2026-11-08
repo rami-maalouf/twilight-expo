@@ -5,6 +5,7 @@ import { Canvas, Circle, DashPathEffect, Line, RoundedRect, vec } from '@shopify
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
@@ -41,6 +42,7 @@ function clockLabel(offset: number): string {
 export default function TimelineSheetScreen() {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const sessions = useSleepStore((s) => s.sessions);
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
@@ -85,13 +87,20 @@ export default function TimelineSheetScreen() {
 
   return (
     <Screen starCount={20}>
-      <View style={styles.navOverlay} pointerEvents="box-none">
+      <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
+        <View style={styles.toolbarSpacer} />
         <Text style={[styles.navTitle, { color: theme.textPrimary }]}>Sleep/Wake Trend</Text>
-        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.doneButton}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.doneButton}>
           <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
         </Pressable>
       </View>
-      <View style={styles.body}>
+      <View
+        style={[
+          styles.body,
+          {
+            paddingBottom: Math.max(insets.bottom, 16),
+          },
+        ]}>
         <Text style={[styles.heading, { color: theme.textPrimary }]}>
           Long-range Sleep/Wake Trend
         </Text>
@@ -192,20 +201,18 @@ export default function TimelineSheetScreen() {
 }
 
 const styles = StyleSheet.create({
-  navOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 48,
-    zIndex: 10,
+  toolbar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
+  toolbarSpacer: { width: 48 },
   navTitle: { fontSize: 17, fontWeight: '600' },
-  doneButton: { position: 'absolute', right: 16, top: 14 },
+  doneButton: { minWidth: 48, alignItems: 'flex-end' },
   done: { fontSize: 17, fontWeight: '600' },
-  body: { flex: 1, paddingTop: 56, paddingHorizontal: 20, gap: 14 },
+  body: { flex: 1, paddingHorizontal: 20, paddingTop: 12, gap: 14 },
   heading: { fontSize: 17, fontWeight: '600' },
   subtitle: { fontSize: 15 },
   pickerRow: { flexDirection: 'row' },

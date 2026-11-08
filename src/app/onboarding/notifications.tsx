@@ -1,8 +1,10 @@
 // ports: Views/Onboarding/NotificationPermissionStepView.swift (step 3);
-// finishing here writes the schedule + is_onboarded flag (step 4 "finish")
+// continue routes to the optional sample-data step; isOnboarded is set there.
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { type SymbolViewProps } from 'expo-symbols';
+
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 

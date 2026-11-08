@@ -3,7 +3,9 @@
 // white 0.15 stroke, light haptic on tap
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { type SymbolViewProps } from 'expo-symbols';
+
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';

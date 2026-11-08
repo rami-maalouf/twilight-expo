@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -10,7 +10,15 @@ import { updateWindDownNotification } from '@/services/notifications';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
-import { ThemeProvider } from '@/theme/ThemeProvider';
+import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+
+function ThemedStatusBar() {
+  const theme = useTheme();
+  const isLight = theme.name === 'sunset';
+  return (
+    <StatusBar style={isLight ? 'dark' : 'light'} />
+  );
+}
 
 export default function RootLayout() {
   // the original applies .grayscale(1.0) on the app root while sleeping;
@@ -34,7 +42,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider store={settingsStore} desaturated={isSleeping}>
-      <StatusBar style="light" />
+      <ThemedStatusBar />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View style={{ flex: 1 }}>
           {!isOnboarded && <Redirect href="/onboarding" />}
@@ -45,19 +53,27 @@ export default function RootLayout() {
             <Stack.Screen name="sleep-tips" options={{ presentation: 'modal' }} />
             <Stack.Screen
               name="timeline-sheet"
-              options={{
-                presentation: 'formSheet',
-                sheetAllowedDetents: [0.82, 1.0],
-                sheetGrabberVisible: true,
-              }}
+              options={
+                Platform.OS === 'ios'
+                  ? {
+                      presentation: 'formSheet',
+                      sheetAllowedDetents: [0.82, 1.0],
+                      sheetGrabberVisible: true,
+                    }
+                  : { presentation: 'modal' }
+              }
             />
             <Stack.Screen
               name="metrics-explanation"
-              options={{
-                presentation: 'formSheet',
-                sheetAllowedDetents: [0.6, 1.0],
-                sheetGrabberVisible: true,
-              }}
+              options={
+                Platform.OS === 'ios'
+                  ? {
+                      presentation: 'formSheet',
+                      sheetAllowedDetents: [0.6, 1.0],
+                      sheetGrabberVisible: true,
+                    }
+                  : { presentation: 'modal' }
+              }
             />
           </Stack>
           <DemoExitControl />

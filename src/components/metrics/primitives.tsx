@@ -2,7 +2,9 @@
 // ChartCard.swift and SleepMetricsView's MetricChip / SelectionSummaryRow /
 // ChartSelectionBubble / empty state
 import { BlurView } from 'expo-blur';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { type SymbolViewProps } from 'expo-symbols';
+
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';

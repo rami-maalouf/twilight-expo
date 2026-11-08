@@ -55,6 +55,5 @@ describe('app shell', () => {
     );
     getByText('Go to Sleep');
     getByText('Start tonight!');
-    getByText('Tap to start');
   });
 });

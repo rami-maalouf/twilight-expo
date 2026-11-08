@@ -14,6 +14,12 @@ import {
   weekdayOf,
 } from '../session-rules';
 import { timeOffsetFromMinutes, timeOffsetOfInstant } from './chart-data';
+import {
+  sleepRegularitySeries,
+  type SleepInterval,
+  type SleepRegularityPoint,
+  type SleepRegularityWindow,
+} from './sleep-regularity';
 
 export type MetricsRange = '30D' | '90D' | '1Y' | 'All';
 
@@ -158,9 +164,16 @@ export class SleepMetricsAnalyzer {
   readonly targetSleepOffset: number | null;
   readonly targetWakeOffset: number | null;
   private readonly today: CalendarDay;
+  // every valid completed session (naps included), unlike the one-per-night records
+  private readonly sleepIntervals: SleepInterval[];
 
   constructor(sessions: readonly SleepSession[], options: AnalyzerOptions) {
     this.records = buildNightRecords(sessions);
+    this.sleepIntervals = sessions.flatMap((s) =>
+      isValidSession(s) && s.endTime != null && s.endTime > s.startTime
+        ? [{ start: s.startTime, end: s.endTime }]
+        : []
+    );
     this.today = options.today;
     this.targetDurationHours = goalDurationHours(
       options.optimalSleepMinutes,
@@ -174,6 +187,13 @@ export class SleepMetricsAnalyzer {
       options.optimalWakeMinutes != null
         ? timeOffsetFromMinutes(options.optimalWakeMinutes)
         : null;
+  }
+
+  sleepRegularitySeries(
+    range: MetricsRange,
+    window: SleepRegularityWindow = '7D'
+  ): SleepRegularityPoint[] {
+    return sleepRegularitySeries(this.sleepIntervals, { days: rangeDays(range), window });
   }
 
   get firstTrackedDate(): CalendarDay | null {

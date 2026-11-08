@@ -2,7 +2,7 @@
 // 3/7/14/30/90-day rows with average, change chip and a mini sparkline
 import { BlurView } from 'expo-blur';
 import { Canvas, Path } from '@shopify/react-native-skia';
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { TrendPeriod } from '@/domain/metrics/analyzer';

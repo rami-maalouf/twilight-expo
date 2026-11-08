@@ -12,7 +12,7 @@ import {
   Skia,
   vec,
 } from '@shopify/react-native-skia';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
@@ -117,10 +117,8 @@ export function TimingCard({
   const theme = useTheme();
   const fixed = useFixedColor();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    setSelectedIndex(null);
-  }, [metric]);
+  const [measuredWidth, setMeasuredWidth] = useState(width);
+  const chartWidth = measuredWidth > 0 ? measuredWidth : width;
 
   const series = metric === 'Wake' ? wakeSeries : sleepSeries;
   const targetOffset =
@@ -283,7 +281,7 @@ export function TimingCard({
   })();
 
   const plotY = (offset: number) => -offset;
-  const plotW = width - MARGIN.left - MARGIN.right;
+  const plotW = chartWidth - MARGIN.left - MARGIN.right;
   const plotH = CHART_HEIGHT - MARGIN.top - MARGIN.bottom;
   const dates =
     metric === 'Both' ? pairedNights.map((p) => p.sleep.date) : series.map((p) => p.date);
@@ -388,32 +386,16 @@ export function TimingCard({
 
   const header = (
     <View style={styles.headerRow}>
-      <View style={[styles.metricPicker, { maxWidth: metric === 'Both' ? 230 : 188 }]}>
+      <View style={styles.metricPicker}>
         <SegmentedPicker
           options={TIMING_METRICS}
           value={metric}
-          onChange={onMetricChange}
+          onChange={(next) => {
+            setSelectedIndex(null);
+            onMetricChange(next);
+          }}
           testIDPrefix="demo.dashboard.timing.metric"
         />
-      </View>
-      <View style={styles.headline}>
-        {metric === 'Both' && effectiveSelectedPair ? (
-          <Text style={styles.headlineBoth} numberOfLines={1}>
-            <Text style={{ color: fixed(SLEEP), fontWeight: '600' }}>
-              {formatClockTime24Hour(effectiveSelectedPair.sleep.actualOffset)}
-            </Text>
-            <Text style={{ color: theme.textSecondary }}> – </Text>
-            <Text style={{ color: fixed(WAKE), fontWeight: '600' }}>
-              {formatClockTime24Hour(effectiveSelectedPair.wake.actualOffset)}
-            </Text>
-          </Text>
-        ) : (
-          <Text
-            style={[styles.headlineSingle, { color: fixed(metricAccent(metric)) }]}
-            numberOfLines={1}>
-            {selectedPoint ? formatClockTime24Hour(selectedPoint.actualOffset) : '-'}
-          </Text>
-        )}
       </View>
       <HistoryRangeChip range={historyRange} onToggle={onHistoryRangeToggle} />
     </View>
@@ -438,7 +420,12 @@ export function TimingCard({
         {header}
         <InsightPills items={pills} />
 
-        <View style={{ width, height: CHART_HEIGHT }}>
+        <View
+          style={styles.chartFrame}
+          onLayout={(e) => {
+            const next = e.nativeEvent.layout.width;
+            if (next > 0 && Math.abs(next - measuredWidth) > 0.5) setMeasuredWidth(next);
+          }}>
           <Canvas style={StyleSheet.absoluteFill}>
             {metric !== 'Both' && targetOffset != null && (
               <>
@@ -721,12 +708,16 @@ export function TimingCard({
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metricPicker: { flexShrink: 1 },
-  headline: { flex: 1, minWidth: 0, alignItems: 'flex-end' },
-  headlineBoth: { fontSize: 15, fontWeight: '600' },
-  headlineSingle: { fontSize: 17, fontWeight: '600' },
+  stack: { gap: 12, alignSelf: 'stretch' },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'stretch',
+    width: '100%',
+  },
+  chartFrame: { alignSelf: 'stretch', width: '100%', height: CHART_HEIGHT },
+  metricPicker: { flex: 1, minWidth: 230, flexShrink: 0 },
   emptyText: { fontSize: 15, paddingVertical: 24 },
   yLabel: {
     position: 'absolute',

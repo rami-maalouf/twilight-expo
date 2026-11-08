@@ -1,5 +1,5 @@
 // ports: Views/SleepDashboardView.swift (DashboardHistoryRangeChip)
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';

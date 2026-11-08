@@ -1,6 +1,6 @@
 // ports: Views/Onboarding/SleepScheduleStepView.swift (step 2)
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CircularTimePicker } from '@/components/common/CircularTimePicker';

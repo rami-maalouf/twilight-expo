@@ -1,56 +1,59 @@
-# Welcome to your Expo app 👋
+# Twilight (Expo port)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Sleep tracker port of the Swift Twilight app. Expo SDK 57 / React Native 0.86.
+Routes live under `src/app/`.
 
-## Get started
+## Production vs demo
 
-1. Install dependencies
+| Mode | What you get |
+|------|----------------|
+| **Production** (default) | Empty DB, full onboarding, log real sleep from day one |
+| **Demo** | Seeds ~100 sample nights on launch, skips onboarding, charts filled |
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### Run production
 
 ```bash
-npm run reset-project
+bun install
+bun run ios:prod
+# or
+bun run start:prod
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Default `bun run ios` / `bun run start` are also production (demo env unset).
 
-### Other setup steps
+### Run demo
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+bun run ios:demo
+# or
+bun run start:demo
+```
 
-## Learn more
+### Switch without rebuilding
 
-To learn more about developing your project with Expo, look at the following resources:
+- **Settings → Sample Data → Load Sample Sleep History** - optional charts with seeded nights
+- **Settings → Demo Data → Exit Demo and Continue in App** - removes sample nights and restores your schedule
+- Onboarding ends with an optional sample-data offer; **Skip for now** leaves you in a clean production app
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### EAS profiles
 
-## Join the community
+- `production`, `preview`, `development` - `EXPO_PUBLIC_DEMO_MODE=0`
+- `preview-demo`, `development-demo` - `EXPO_PUBLIC_DEMO_MODE=1`
 
-Join our community of developers creating universal apps.
+## First-run flow (production)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. Welcome
+2. Sleep schedule
+3. Notification permission (optional)
+4. Optional sample data (Skip or Explore)
+
+Then: **Go to Sleep** / **Wake Up** on Home, or add manual logs from Logs.
+
+## Scope notes
+
+Onboarding, dashboard, logs, metrics, and settings for sleep tracking are ported.
+The home dashboard matches Swift 0.10: `Week | Trend | Time | SRI | Score`. SRI is
+the Sleep Regularity Index (`src/domain/metrics/sleep-regularity.ts`), ported with
+its Swift unit tests.
+App blocking, HealthKit, NFC, tip jar, and related Swift extras are out of scope
+(see `DEVIATIONS.md`).

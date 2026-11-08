@@ -1,5 +1,7 @@
 // app-side wiring: opens the real expo-sqlite database and kv-store.
 // kept separate from db.ts so the repository stays testable in node.
+// production default: empty DB + onboarding. demo seed only when
+// EXPO_PUBLIC_DEMO_MODE=1 (see package.json start:demo / ios:demo).
 import { openDatabaseSync } from 'expo-sqlite';
 import Storage from 'expo-sqlite/kv-store';
 

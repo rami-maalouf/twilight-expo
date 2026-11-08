@@ -420,6 +420,9 @@ export function DebtChart({
 }
 
 // 5. weekday averages: purple weekend bars, custom day + avg labels, y 0-12
+// larger bottom margin than other charts so day/avg labels sit below bars with a gap
+const WEEKDAY_BOTTOM = 40;
+
 export function WeekdayChart({
   averages,
   width,
@@ -431,14 +434,16 @@ export function WeekdayChart({
 }) {
   const theme = useTheme();
   const fixed = useFixedColor();
-  const { plotW, plotH } = usePlot({ width, height: height + 10 });
+  const frameH = height + 18;
+  const plotW = width - M.left - M.right;
+  const plotH = frameH - M.top - WEEKDAY_BOTTOM;
   const bandW = plotW / 7;
   const xPos = (i: number) => M.left + bandW * i + bandW / 2;
   const yPos = (h: number) => M.top + ((12 - h) / 12) * plotH;
   const barW = Math.min(26, bandW * 0.6);
 
   return (
-    <View style={{ width, height: height + 10 }}>
+    <View style={{ width, height: frameH }}>
       <Canvas style={StyleSheet.absoluteFill}>
         {averages.map((day, i) => (
           <RoundedRect
@@ -541,7 +546,7 @@ const chartStyles = StyleSheet.create({
   },
   xLabel: { position: 'absolute', bottom: 0, width: 60, textAlign: 'center', fontSize: 11, color: GRAY },
   bubbleWrap: { position: 'absolute', top: 4 },
-  weekdayLabel: { position: 'absolute', bottom: 0, alignItems: 'center', gap: 1 },
+  weekdayLabel: { position: 'absolute', bottom: 2, alignItems: 'center', gap: 2 },
   weekdayName: { fontSize: 11, fontWeight: '700' },
   weekdayAvg: { fontSize: 10, fontWeight: '500', color: GRAY },
   pctLabel: { position: 'absolute', textAlign: 'center', fontSize: 10, color: GRAY },

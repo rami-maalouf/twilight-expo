@@ -3,13 +3,12 @@
 Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
 
 
-## Token Budget & Agent Cost Rules
+## Argent / Screenshot Cost Rules
 
-To keep context small and costs low, observe these rules during UI builds:
-1. **Prefer Text over Pixels:** Use `describe` or `debugger-component-tree` to verify state. Only use `screenshot` when a check is strictly visual (spacing, color, clipping).
-2. **Minimize Screenshot Weight:** The system is configured with `ARGENT_SCREENSHOT_SCALE=0.2`. Use `includeImageInContext: false` when capturing baselines just for diffing.
-3. **Run Sequences:** Use `run-sequence` for multi-step actions instead of tapping and screenshotting repeatedly. Use `await-ui-element` to wait for state to settle.
-4. **One Session Per Checkpoint:** Use `checkpoints.md` as the handoff artifact. Start fresh sessions per checkpoint to avoid dragging the whole build history along.
-5. **Delegate Exploration:** Use subagents to explore and dump files, returning only the conclusion to the main context.
-6. **Use the Cheapest Capable Subagent:** When the active client supports subagents, delegate bounded exploration, file inspection, and log analysis to the least expensive available model that can reliably complete the task. Use only model identifiers supported by the active client.
-7. **Keep Heavy Device Work Isolated:** When the active client supports subagents, delegate repeated Argent inspection loops to one bounded subagent and have it return a concise conclusion. Use the active client's own context-management features instead of assuming commands or tool parameters from another client.
+To keep vision-token cost low during mobile UI work:
+1. **Prefer trees over pixels:** Use `describe` or `debugger-component-tree` to verify state. Call `screenshot` only when the check is strictly visual (spacing, color, clipping, typography).
+2. **Default scale is 0.2** via `ARGENT_SCREENSHOT_SCALE`. Do **not** pass `scale: 1` (or any scale above 0.2) for routine UI inspection or readability.
+3. **Full-res only for diffs:** For `screenshot-diff` baselines/current captures, use `scale: 1` with `includeImageInContext: false` so the PNG is on disk but not loaded into model context.
+4. **Batch interactions:** Prefer `run-sequence` for multi-step device actions. Wait with `await-ui-element` / `await-screen-idle` - never poll with repeated screenshots.
+5. **Video is expensive and rarely needed:** Do not start `screen-recording-*` unless the question requires motion (animation, gesture path, timing/jank). Prefer a still + tree.
+6. **Auto-screenshots are disabled globally** (`disable-auto-screenshot`). Do not re-enable. Take an explicit `screenshot` only when you need an image in context.

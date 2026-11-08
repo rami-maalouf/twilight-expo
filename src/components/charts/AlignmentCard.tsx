@@ -3,7 +3,7 @@
 // (0.8/0.2), dashed green target rule at 70, y axis [0,25,50,70,100],
 // daily/trend/main-drag/streak pills, component progress rows
 import { Canvas, Circle, DashPathEffect, Line, Path, RoundedRect, vec } from '@shopify/react-native-skia';
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -95,6 +95,8 @@ export function AlignmentCard({
   const theme = useTheme();
   const fixed = useFixedColor();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [measuredWidth, setMeasuredWidth] = useState(width);
+  const chartWidth = measuredWidth > 0 ? measuredWidth : width;
 
   const plotted = buildDisplaySeries(series, includesTimingAndPhase);
   const xs = dayIndexes(plotted.map((p) => p.source.date));
@@ -190,7 +192,7 @@ export function AlignmentCard({
     },
   ];
 
-  const plotW = width - MARGIN.left - MARGIN.right;
+  const plotW = chartWidth - MARGIN.left - MARGIN.right;
   const plotH = CHART_HEIGHT - MARGIN.top - MARGIN.bottom;
   const xPos = (x: number) => MARGIN.left + (x / maxX) * plotW;
   const yPos = (score: number) => MARGIN.top + ((100 - score) / 100) * plotH;
@@ -265,7 +267,12 @@ export function AlignmentCard({
           </View>
         </View>
 
-        <View style={{ width, height: CHART_HEIGHT }}>
+        <View
+          style={styles.chartFrame}
+          onLayout={(e) => {
+            const next = e.nativeEvent.layout.width;
+            if (next > 0 && Math.abs(next - measuredWidth) > 0.5) setMeasuredWidth(next);
+          }}>
           <Canvas style={StyleSheet.absoluteFill}>
             {plotted.map((p, i) => {
               const y = yPos(p.dailyScore);
@@ -398,8 +405,15 @@ export function AlignmentCard({
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  stack: { gap: 12, alignSelf: 'stretch' },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'stretch',
+    width: '100%',
+  },
+  chartFrame: { alignSelf: 'stretch', width: '100%', height: CHART_HEIGHT },
   title: { flex: 1, fontSize: 17, fontWeight: '600', minWidth: 0 },
   headline: { fontSize: 17, fontWeight: '600' },
   emptyText: { fontSize: 15, paddingVertical: 24 },

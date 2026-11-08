@@ -50,8 +50,14 @@
   },
   "scripts": {
     "start": "expo start",
+    "start:prod": "EXPO_PUBLIC_DEMO_MODE=0 expo start",
+    "start:demo": "EXPO_PUBLIC_DEMO_MODE=1 expo start",
     "android": "expo run:android",
+    "android:prod": "EXPO_PUBLIC_DEMO_MODE=0 expo run:android",
+    "android:demo": "EXPO_PUBLIC_DEMO_MODE=1 expo run:android",
     "ios": "expo run:ios",
+    "ios:prod": "EXPO_PUBLIC_DEMO_MODE=0 expo run:ios",
+    "ios:demo": "EXPO_PUBLIC_DEMO_MODE=1 expo run:ios",
     "web": "expo start --web",
     "test": "jest",
     "lint": "expo lint"

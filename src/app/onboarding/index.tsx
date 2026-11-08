@@ -1,7 +1,9 @@
 // ports: Views/Onboarding/WelcomeStepView.swift (step 1 of the 4-step flow;
 // apple-health and nfc steps are out of scope per the spec)
 import { router } from 'expo-router';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { type SymbolViewProps } from 'expo-symbols';
+
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FadeInSlide } from '@/components/common/FadeInSlide';
@@ -13,7 +15,7 @@ const TRUST_CARDS: { icon: SymbolViewProps['name']; title: string; color: string
   { icon: 'dollarsign', title: 'No subscription', color: '#4cd964' },
   { icon: 'mic.slash.fill', title: 'No recording', color: '#af52de' },
   { icon: 'iphone.slash', title: '100% offline', color: '#5ac8fa' },
-  { icon: 'heart.text.square.fill', title: 'Apple Health sync', color: '#ff5a5f' },
+  { icon: 'lock.fill', title: 'On-device only', color: '#ff5a5f' },
 ];
 
 export default function WelcomeStep() {

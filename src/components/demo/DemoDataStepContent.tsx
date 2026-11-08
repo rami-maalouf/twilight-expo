@@ -1,5 +1,7 @@
 // ports: Views/Onboarding/DemoSleepDataStepView.swift (shared content)
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { type SymbolViewProps } from 'expo-symbols';
+
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FadeInSlide } from '@/components/common/FadeInSlide';

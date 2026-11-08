@@ -5,7 +5,10 @@
       "command": "argent",
       "args": [
         "mcp"
-      ]
+      ],
+      "env": {
+        "ARGENT_SCREENSHOT_SCALE": "0.2"
+      }
     }
   }
 }

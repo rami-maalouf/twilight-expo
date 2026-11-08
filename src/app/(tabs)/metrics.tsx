@@ -4,7 +4,7 @@
 // components with filter, sleep debt, weekday averages, histogram, footer
 // tiles, toolbar (timeline + guide)
 import { router, useFocusEffect } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
@@ -155,7 +155,7 @@ export default function MetricsScreen() {
 
   const jetlag = analyzer.socialJetlagHours(records);
   const regularityStats: StatItem[] = [
-    { title: 'Regularity Score', valueText: `${analyzer.regularityScore(records)}%`, icon: 'waveform.path.ecg', iconColor: fixed(INDIGO) },
+    { title: 'Timing Consistency', valueText: `${analyzer.regularityScore(records)}%`, icon: 'waveform.path.ecg', iconColor: fixed(INDIGO) },
     { title: 'Bedtime Consistency', valueText: `${analyzer.sleepConsistencyScore(records)}%`, icon: 'moon.fill', iconColor: fixed(INDIGO) },
     { title: 'Wake Consistency', valueText: `${analyzer.wakeConsistencyScore(records)}%`, icon: 'sunrise.fill', iconColor: fixed(ORANGE) },
     { title: 'Schedule Accuracy', valueText: `${analyzer.scheduleAccuracyScore(records)}%`, icon: 'scope', iconColor: fixed(GREEN) },

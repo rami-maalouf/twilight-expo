@@ -4,15 +4,15 @@
 // toggle, routine link, live activity toggle), community links.
 // NFC & QR / apple health / data sections are out of scope per the spec.
 import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
+import { NativeSymbol } from '@/components/common/NativeSymbol';
 import { DemoDataStepContent } from '@/components/demo/DemoDataStepContent';
+import { MenuPicker } from '@/components/settings/MenuPicker';
 import { demoDataManager } from '@/data/app-db';
-import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
 import { useState } from 'react';
 import {
-  ActionSheetIOS,
   Alert,
   Linking,
   Modal,
@@ -85,8 +85,10 @@ export default function SettingsScreen() {
   const liveActivityEnabled = useSettings((s) => s.liveActivityEnabled);
   const setSetting = useSettings((s) => s.setSetting);
   const refreshSettings = useSettings((s) => s.refresh);
+  const isDemoDataActive = useSettings((s) => s.isDemoDataActive);
   const [showingDemoDataOnboarding, setShowingDemoDataOnboarding] = useState(false);
   const [isImportingDemoData, setIsImportingDemoData] = useState(false);
+  const [isExitingDemoData, setIsExitingDemoData] = useState(false);
 
   const isLight = theme.name === 'sunset';
   const rowBg = isLight ? 'rgba(255, 255, 255, 0.75)' : '#1c1c1e';
@@ -107,46 +109,30 @@ export default function SettingsScreen() {
     }
   };
 
-  const pickMode = () => {
-    const options: ThemeMode[] = ['system', 'light', 'dark'];
-    if (Platform.OS !== 'ios') {
-      // android boot scope: cycle through modes instead of the ios action sheet
-      setMode(options[(options.indexOf(mode) + 1) % options.length]);
-      return;
-    }
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        options: [...options.map((m) => MODE_LABELS[m]), 'Cancel'],
-        cancelButtonIndex: 3,
-        title: 'Display Mode',
-      },
-      (index) => {
-        if (index < 3) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          setMode(options[index]);
-        }
-      }
-    );
-  };
-
-  const pickPalette = () => {
-    const options: ThemePalette[] = ['twilight', 'amethyst'];
-    if (Platform.OS !== 'ios') {
-      setPalette(options[(options.indexOf(palette) + 1) % options.length]);
-      return;
-    }
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        options: [...options.map((p) => PALETTE_LABELS[p]), 'Cancel'],
-        cancelButtonIndex: 2,
-        title: 'Theme Color',
-      },
-      (index) => {
-        if (index < 2) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          setPalette(options[index]);
-        }
-      }
+  const exitDemoFromSettings = () => {
+    if (isExitingDemoData) return;
+    Alert.alert(
+      'Remove Demo Data',
+      'This deletes the imported sample history and restores the sleep data and profile you were using before demo mode.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Exit Demo',
+          style: 'destructive',
+          onPress: () => {
+            setIsExitingDemoData(true);
+            try {
+              demoDataManager.exitDemoData();
+              refreshSettings();
+              appSleepStore.getState().refresh();
+            } catch {
+              Alert.alert("Couldn't Exit Demo", 'An unknown error occurred. Please try again.');
+            } finally {
+              setIsExitingDemoData(false);
+            }
+          },
+        },
+      ]
     );
   };
 
@@ -158,10 +144,10 @@ export default function SettingsScreen() {
   ) => (
     <Pressable key={label} onPress={() => Linking.openURL(url)}>
       <Row rowBg={rowBg} style={!isLast && styles.rowWithSeparator}>
-        <SymbolView name={icon} size={22} tintColor={theme.textPrimary} />
+        <NativeSymbol name={icon} size={22} tintColor={theme.textPrimary} />
         <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>{label}</Text>
         <View style={styles.spacer} />
-        <SymbolView name="arrow.up.right" size={12} tintColor="#98989f" />
+        <NativeSymbol name="arrow.up.right" size={12} tintColor="#98989f" />
       </Row>
     </Pressable>
   );
@@ -174,12 +160,12 @@ export default function SettingsScreen() {
         {/* support row */}
         <View style={styles.section}>
           <Row rowBg={rowBg}>
-            <SymbolView name="heart.fill" size={20} tintColor={fixed(RED)} />
+            <NativeSymbol name="heart.fill" size={20} tintColor={fixed(RED)} />
             <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>
               Indie-built. Community-supported
             </Text>
             <View style={styles.spacer} />
-            <SymbolView name="chevron.right" size={13} tintColor="#98989f" />
+            <NativeSymbol name="chevron.right" size={13} tintColor="#98989f" />
           </Row>
         </View>
 
@@ -190,7 +176,7 @@ export default function SettingsScreen() {
             <View style={styles.goalColumns}>
               <View style={styles.goalColumn}>
                 <View style={styles.goalLabelRow}>
-                  <SymbolView name="moon.fill" size={15} tintColor={fixed(INDIGO)} />
+                  <NativeSymbol name="moon.fill" size={15} tintColor={fixed(INDIGO)} />
                   <Text style={[styles.goalLabel, { color: fixed(INDIGO) }]}>Bedtime</Text>
                 </View>
                 <InlineDateTimePicker
@@ -205,7 +191,7 @@ export default function SettingsScreen() {
               </View>
               <View style={styles.goalColumn}>
                 <View style={styles.goalLabelRow}>
-                  <SymbolView name="sun.max.fill" size={15} tintColor={fixed(ORANGE)} />
+                  <NativeSymbol name="sun.max.fill" size={15} tintColor={fixed(ORANGE)} />
                   <Text style={[styles.goalLabel, { color: fixed(ORANGE) }]}>Wake Up</Text>
                 </View>
                 <InlineDateTimePicker
@@ -220,7 +206,7 @@ export default function SettingsScreen() {
               </View>
             </View>
             <View style={styles.goalPill}>
-              <SymbolView name="clock" size={14} tintColor="#ffffff" />
+              <NativeSymbol name="clock" size={14} tintColor="#ffffff" />
               <Text style={styles.goalPillText}>
                 Goal: {goalLabel(optimalSleepMinutes, optimalWakeMinutes)}
               </Text>
@@ -231,22 +217,27 @@ export default function SettingsScreen() {
         {/* app appearance */}
         <View style={styles.section}>
           <SectionHeader title="App Appearance" color={theme.textSecondary} />
-          <Pressable onPress={pickMode}>
-            <Row rowBg={rowBg} style={styles.rowWithSeparator}>
-              <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Display Mode</Text>
-              <View style={styles.spacer} />
-              <Text style={styles.rowValue}>{MODE_LABELS[mode]}</Text>
-              <SymbolView name="chevron.up.chevron.down" size={12} tintColor="#98989f" />
-            </Row>
-          </Pressable>
-          <Pressable onPress={pickPalette}>
-            <Row rowBg={rowBg}>
-              <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Theme Color</Text>
-              <View style={styles.spacer} />
-              <Text style={styles.rowValue}>{PALETTE_LABELS[palette]}</Text>
-              <SymbolView name="chevron.up.chevron.down" size={12} tintColor="#98989f" />
-            </Row>
-          </Pressable>
+          <MenuPicker
+            label="Display Mode"
+            value={mode}
+            options={['system', 'light', 'dark'] as const}
+            labels={MODE_LABELS}
+            title="Display Mode"
+            onChange={setMode}
+            rowBg={rowBg}
+            style={styles.rowWithSeparator}
+            testID="display-mode"
+          />
+          <MenuPicker
+            label="Theme Color"
+            value={palette}
+            options={['twilight', 'amethyst'] as const}
+            labels={PALETTE_LABELS}
+            title="Theme Color"
+            onChange={setPalette}
+            rowBg={rowBg}
+            testID="theme-color"
+          />
         </View>
 
         {/* notifications */}
@@ -269,26 +260,30 @@ export default function SettingsScreen() {
             />
           </Row>
           <Pressable onPress={() => router.push('/sleep-tips')} testID="sleep-tips-link">
-            <Row rowBg={rowBg} style={styles.rowWithSeparator}>
+            <Row
+              rowBg={rowBg}
+              style={Platform.OS === 'ios' ? styles.rowWithSeparator : undefined}>
               <Text style={[styles.routineLink, { color: theme.accent }]}>
                 View wind-down routine
               </Text>
-              <SymbolView name="arrow.right" size={12} tintColor={theme.accent} />
+              <NativeSymbol name="arrow.right" size={12} tintColor={theme.accent} />
             </Row>
           </Pressable>
-          <Row rowBg={rowBg} style={styles.toggleRow}>
-            <View style={styles.toggleTexts}>
-              <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Live Activity</Text>
-              <Text style={styles.rowDescription}>
-                Shows a live activity on your lock screen with some inspirational quote
-              </Text>
-            </View>
-            <Switch
-              value={liveActivityEnabled}
-              onValueChange={(v) => setSetting('liveActivityEnabled', v)}
-              trackColor={{ true: theme.actionPrimary }}
-            />
-          </Row>
+          {Platform.OS === 'ios' && (
+            <Row rowBg={rowBg} style={styles.toggleRow}>
+              <View style={styles.toggleTexts}>
+                <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>Live Activity</Text>
+                <Text style={styles.rowDescription}>
+                  Shows a live activity on your lock screen with some inspirational quote
+                </Text>
+              </View>
+              <Switch
+                value={liveActivityEnabled}
+                onValueChange={(v) => setSetting('liveActivityEnabled', v)}
+                trackColor={{ true: theme.actionPrimary }}
+              />
+            </Row>
+          )}
         </View>
 
         {/* community */}
@@ -301,6 +296,50 @@ export default function SettingsScreen() {
             Would love to hear your feedback & suggestions!
           </Text>
         </View>
+
+        {/* ports the swift "Demo Data" section, shown only while the sample is active */}
+        {isDemoDataActive ? (
+          <View style={styles.section}>
+            <SectionHeader title="Demo Data" color={theme.textSecondary} />
+            <Row rowBg={rowBg} style={[styles.demoDataRow, styles.rowWithSeparator]}>
+              <Text style={[styles.demoDataBody, { color: theme.textPrimary }]}>
+                This sample was loaded from onboarding so you could explore the app with real sleep
+                patterns.
+              </Text>
+              <Text style={[styles.demoDataCaption, { color: theme.textSecondary }]}>
+                The dates are shifted for privacy. Exiting the sample removes the imported history
+                and restores the sleep data you had before demo mode.
+              </Text>
+            </Row>
+            <Pressable
+              testID="exit-demo-data"
+              disabled={isExitingDemoData}
+              onPress={exitDemoFromSettings}>
+              <Row rowBg={rowBg}>
+                <Text style={[styles.rowLabel, { color: fixed(RED) }]}>
+                  Exit Demo and Continue in App
+                </Text>
+              </Row>
+            </Pressable>
+          </View>
+        ) : (
+          // port addition: release builds hide Development, so sample data stays reachable here
+          <View style={styles.section}>
+            <SectionHeader title="Sample Data" color={theme.textSecondary} />
+            <Pressable
+              testID="load-sample-data"
+              onPress={() => setShowingDemoDataOnboarding(true)}>
+              <Row rowBg={rowBg}>
+                <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>
+                  Load Sample Sleep History
+                </Text>
+              </Row>
+            </Pressable>
+            <Text style={[styles.sectionFooter, { color: theme.textSecondary }]}>
+              Optional 100-night history for exploring charts. Your real logs stay separate.
+            </Text>
+          </View>
+        )}
 
         {__DEV__ && (
           <View style={styles.section}>
@@ -385,7 +424,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(84, 84, 88, 0.6)',
   },
   rowLabel: { fontSize: 17 },
-  rowValue: { fontSize: 17, color: '#98989f' },
   rowDescription: { fontSize: 12, color: '#98989f', marginTop: 2 },
   spacer: { flex: 1 },
   goalRow: { flexDirection: 'column', alignItems: 'stretch', gap: 16, paddingVertical: 16 },
@@ -407,5 +445,8 @@ const styles = StyleSheet.create({
   goalPillText: { fontSize: 15, fontWeight: '500', color: '#ffffff' },
   toggleRow: { alignItems: 'center' },
   toggleTexts: { flex: 1 },
+  demoDataRow: { flexDirection: 'column', alignItems: 'flex-start', gap: 8 },
+  demoDataBody: { fontSize: 15 },
+  demoDataCaption: { fontSize: 12 },
   routineLink: { fontSize: 15 },
 });

@@ -1,6 +1,7 @@
 // theme context: components never hardcode palette hexes (spec code style)
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import * as SystemUI from 'expo-system-ui';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Appearance, Platform, StatusBar, useColorScheme } from 'react-native';
 
 import type { ThemeMode, ThemePalette } from '../domain/models';
 import type { SettingsStore } from '../data/settings-store';
@@ -53,6 +54,21 @@ export function ThemeProvider({
     () => ({ mode, palette, setMode, setPalette }),
     [mode, palette, setMode, setPalette]
   );
+
+  // native chrome (tab bar, status bar, pickers, menus) follows the app theme,
+  // not only the os appearance. source:
+  // https://docs.expo.dev/router/advanced/native-tabs/#white-background-flashes-when-switching-tabs-on-ios-26
+  useEffect(() => {
+    Appearance.setColorScheme(mode === 'system' ? 'unspecified' : mode === 'light' ? 'light' : 'dark');
+  }, [mode]);
+
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(theme.backgroundGradientStart).catch(() => {});
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor(theme.backgroundGradientStart, true);
+      StatusBar.setBarStyle(theme.name === 'sunset' ? 'dark-content' : 'light-content', true);
+    }
+  }, [theme.backgroundGradientStart, theme.name]);
 
   return (
     <ThemeContext value={theme}>

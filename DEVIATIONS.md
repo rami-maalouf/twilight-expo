@@ -9,11 +9,20 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   storekit tip jar, telemetrydeck, BGTaskScheduler, demo-data manager, data
   export/archive, app intents/shortcuts/control-center widget, break-glass flow,
   session breaks: all out of scope per the spec's decisions section.
-- go-to-sleep caption keeps "Tap to start" and drops the "or scan your NFC tag..."
-  clause (nfc out of scope).
+- go-to-sleep caption omitted (swift's "Tap to start" / "or scan your NFC tag..."
+  clause dropped; nfc out of scope and home UI matches current product direction).
 - settings: NFC & QR shortcuts section not ported (out of scope).
 - onboarding reduced from 6 steps to 4 (welcome -> schedule -> notifications ->
-  finish); apple-health and nfc steps dropped per scope.
+  optional sample-data offer); apple-health and nfc steps dropped per scope.
+  welcome trust card says "On-device only" instead of "Apple Health sync".
+  production is the default; demo seed requires EXPO_PUBLIC_DEMO_MODE=1 or
+  Settings -> Sample Data (a port addition, since Development is dev-only
+  here). while sample history is active, Settings shows the swift "Demo Data"
+  section with "Exit Demo and Continue in App"; the floating home exit
+  control stays hidden like swift.
+- swift 0.10 apple health import (onboarding pull, "Pull from Apple Health"
+  empty state, tombstones, reconciler) is not ported: healthkit sync stays
+  out of scope, and android would need health connect instead.
 
 ## implementation deviations
 
@@ -44,14 +53,28 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   id encodes its bedtime so a changed bedtime replaces the activity, and an
   expired/out-of-window countdown is cleared on foreground (the original's
   ActivityKit flow has no equivalent state to leak).
-- android (task 29, boot scope only - the original is ios-only): live activities
-  are guarded to no-op off ios; the compact inline date/time picker does not
-  exist on android (a mounted picker opens its modal dialog immediately), so
-  settings and the log editor render a pressable value chip there that opens
-  the system dialog on demand - ios keeps the native compact style. the glowing
-  moon renders without its halo on android (the glow is built from ios shadow
-  layers). no further android polish, per spec.
+- android (original is ios-only): live activities stay ios-only (hidden in
+  settings, sync no-ops). compact inline date/time pickers do not exist, so
+  settings and the log editor use a value chip that opens the system dialog.
+  ios keeps the native compact style. icons use Material Symbols via NativeSymbol
+  (SF string names render nothing on android). dashboard and metrics segmented
+  pickers use `@expo/ui` controls: SwiftUI segmented Picker on ios, Material 3
+  SegmentedButton on android with palette fills (actionPrimary selected,
+  actionSecondary-family inactive, borders matched to fills so they do not read
+  as empty outlines). settings appearance rows use the
+  universal `@expo/ui` menu Picker. native tabs, status bar, and system chrome
+  follow the in-app display mode via Appearance.setColorScheme plus NativeTabs
+  colors. form sheets fall back to full-screen modals. cards
+  add android elevation. the moon glow still uses ios-style shadows, which are
+  weaker on android.
 - charts use @shopify/react-native-skia instead of Swift Charts. Aug 11
   dashboard features (Trend 7/30 window, Time Sleep/Wake/Both chart, duration-
   tinted averages, in-card history chip, Dev settings demo onboarding) match
   Swift math/copy/colors; rendering stays Skia.
+- swift 0.10 sleep regularity index: the SRI tab replaces Core on home, with
+  the 7D/14D/28D window, faint day-to-day bars, and gap-split rolling line.
+  noon-to-noon days use the device iana zone through Intl (swift:
+  Calendar.current); every swift SRI unit test is ported, including the
+  minute-oracle and both dst transitions. the guide's SRI copy drops "including
+  imported Apple Health sleep envelopes" because there is no health import.
+  metrics "Regularity Score" is renamed "Timing Consistency" like swift.

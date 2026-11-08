@@ -1,7 +1,7 @@
 // ports: Views/Logs/SleepLogsView.swift - the sleep logs tab
 // large title, + toolbar button, valid sessions newest first, swipe to delete,
 // tap to edit (editor sheet lands in task 13)
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useCallback } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';

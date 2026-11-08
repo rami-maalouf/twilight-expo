@@ -3,7 +3,7 @@
 // segments split at target, actionPrimary lw3 catmullRom line, dashed
 // target rule, scrub selection, dynamic y domain clamped 0-12 (min span 0.9)
 import { Canvas, Circle, DashPathEffect, Line, Path, Skia, vec } from '@shopify/react-native-skia';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
@@ -115,11 +115,9 @@ export function MovingAverageCard({
   const theme = useTheme();
   const fixed = useFixedColor();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [measuredWidth, setMeasuredWidth] = useState(width);
+  const chartWidth = measuredWidth > 0 ? measuredWidth : width;
   const nightCount = nightCountForWindow(window);
-
-  useEffect(() => {
-    setSelectedIndex(null);
-  }, [window]);
 
   const plotted = series.filter((p) => p.movingAverageHours != null);
   const values = plotted.map((p) => p.movingAverageHours!);
@@ -178,7 +176,7 @@ export function MovingAverageCard({
   ];
 
   const { lower, upper } = movingAverageDomain(values, targetDurationHours);
-  const plotW = width - MARGIN.left - MARGIN.right;
+  const plotW = chartWidth - MARGIN.left - MARGIN.right;
   const plotH = CHART_HEIGHT - MARGIN.top - MARGIN.bottom;
   const xPos = (x: number) => MARGIN.left + (x / maxX) * plotW;
   const yPos = (h: number) => MARGIN.top + ((upper - h) / (upper - lower || 1)) * plotH;
@@ -230,10 +228,14 @@ export function MovingAverageCard({
         <SegmentedPicker
           options={MOVING_AVERAGE_WINDOWS}
           value={window}
-          onChange={onWindowChange}
+          onChange={(next) => {
+            setSelectedIndex(null);
+            onWindowChange(next);
+          }}
           testIDPrefix="demo.dashboard.trend.window"
         />
       </View>
+      <View style={styles.headerSpacer} />
       <Text style={[styles.headline, { color: theme.actionPrimary }]}>
         {fmtHours(latest?.movingAverageHours ?? null)}
       </Text>
@@ -268,7 +270,12 @@ export function MovingAverageCard({
 
         <InsightPills items={pills} />
 
-        <View style={{ width, height: CHART_HEIGHT }}>
+        <View
+          style={styles.chartFrame}
+          onLayout={(e) => {
+            const next = e.nativeEvent.layout.width;
+            if (next > 0 && Math.abs(next - measuredWidth) > 0.5) setMeasuredWidth(next);
+          }}>
           <Canvas style={StyleSheet.absoluteFill}>
             {segments.map((segment, i) => (
               <Path
@@ -361,9 +368,17 @@ export function MovingAverageCard({
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  windowPicker: { flex: 1, maxWidth: 188 },
+  stack: { gap: 12, alignSelf: 'stretch' },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'stretch',
+    width: '100%',
+  },
+  windowPicker: { width: 188, flexGrow: 0, flexShrink: 0 },
+  headerSpacer: { flexGrow: 1, minWidth: 8 },
+  chartFrame: { alignSelf: 'stretch', width: '100%', height: CHART_HEIGHT },
   headline: { fontSize: 17, fontWeight: '600' },
   emptyText: { fontSize: 15, paddingVertical: 24 },
   yLabel: {

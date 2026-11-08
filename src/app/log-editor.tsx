@@ -3,9 +3,10 @@
 // bedtime/wake summary cards, pinned save bar
 import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CircularTimePicker } from '@/components/common/CircularTimePicker';
 import { Screen } from '@/components/common/Screen';
@@ -59,6 +60,7 @@ function dayLabel(day: CalendarDay): string {
 export default function LogEditorScreen() {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const sessions = useSleepStore((s) => s.sessions);
@@ -105,9 +107,9 @@ export default function LogEditorScreen() {
 
   return (
     <Screen starCount={28}>
-      {/* inline-title toolbar over the gradient */}
-      <View style={styles.toolbar}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
+      {/* inline-title toolbar over the gradient; inset below android status bar */}
+      <View style={[styles.toolbar, { paddingTop: insets.top + 18 }]}>
+        <Pressable onPress={() => router.back()} hitSlop={8} testID="cancel-log">
           <Text style={[styles.cancel, { color: theme.accent }]}>Cancel</Text>
         </Pressable>
         <Text style={[styles.title, { color: theme.textPrimary }]}>
@@ -191,8 +193,8 @@ export default function LogEditorScreen() {
         </View>
       </ScrollView>
 
-      {/* pinned save bar */}
-      <View style={styles.saveBar}>
+      {/* pinned save bar; inset above android nav / home indicator */}
+      <View style={[styles.saveBar, { paddingBottom: Math.max(insets.bottom, 24) }]}>
         <Pressable
           testID="save-log"
           onPress={save}
@@ -219,7 +221,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 18,
     paddingBottom: 10,
   },
   cancel: { fontSize: 17 },
@@ -270,7 +271,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 24,
   },
   saveButton: {
     flexDirection: 'row',

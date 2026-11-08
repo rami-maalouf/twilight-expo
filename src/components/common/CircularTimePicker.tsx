@@ -16,12 +16,12 @@ import {
 } from '@shopify/react-native-skia';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import {
   angleFromMinutes,
   durationFromAngles,

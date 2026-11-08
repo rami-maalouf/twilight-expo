@@ -3,7 +3,9 @@
 // press scale 0.96 spring(0.3); long-press 0.8s fires medium haptic
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { type SymbolViewProps } from 'expo-symbols';
+
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 

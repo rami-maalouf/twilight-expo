@@ -34,5 +34,7 @@ export function FadeInSlide({
     transform: [{ translateY: (1 - progress.value) * slideOffset }],
   }));
 
-  return <Animated.View style={[animatedStyle, style]}>{children}</Animated.View>;
+  return (
+    <Animated.View style={[{ alignSelf: 'stretch' }, animatedStyle, style]}>{children}</Animated.View>
+  );
 }

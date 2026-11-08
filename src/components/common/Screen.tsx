@@ -16,7 +16,7 @@ export function Screen({
 }) {
   const theme = useTheme();
   return (
-    <View style={styles.root}>
+    <View collapsable={false} style={styles.root}>
       <LinearGradient
         colors={[theme.backgroundGradientStart, theme.backgroundGradientEnd]}
         start={{ x: 0.5, y: 0 }}

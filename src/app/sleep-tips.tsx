@@ -1,6 +1,7 @@
 // ports: Views/SleepHygieneTipsView.swift - the wind-down routine timeline
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
 import { useSettings } from '@/state/settings-state';
@@ -53,16 +54,23 @@ function clockString(minutes: number): string {
 export default function SleepTipsScreen() {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const insets = useSafeAreaInsets();
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
 
   return (
     <Screen starCount={20}>
-      <View style={styles.navOverlay} pointerEvents="box-none">
-        <Pressable onPress={() => router.back()} hitSlop={8} style={styles.doneButton}>
+      <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
+        <View style={styles.toolbarSpacer} />
+        <View style={styles.toolbarSpacer} />
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.doneButton}>
           <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 48) },
+        ]}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Your Wind-Down Routine</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
@@ -113,17 +121,17 @@ export default function SleepTipsScreen() {
 }
 
 const styles = StyleSheet.create({
-  navOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 48,
-    zIndex: 10,
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
-  doneButton: { position: 'absolute', right: 16, top: 14 },
+  toolbarSpacer: { flex: 1 },
+  doneButton: { minWidth: 48, alignItems: 'flex-end' },
   done: { fontSize: 17, fontWeight: '600' },
-  content: { padding: 16, paddingTop: 56, gap: 24, paddingBottom: 48 },
+  content: { paddingHorizontal: 16, paddingTop: 12, gap: 24 },
   header: { gap: 8 },
   title: { fontSize: 28, fontWeight: '700' },
   subtitle: { fontSize: 15 },

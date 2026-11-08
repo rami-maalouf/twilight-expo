@@ -2,6 +2,7 @@
   "expo": {
     "name": "Twilight",
     "slug": "twilight",
+    "owner": "ramimaalouf",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -42,6 +43,29 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.rami.twilight.port.ExpoWidgetsTarget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.rami.twilight.port"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "fab317b8-801d-4363-a705-0cde82178c3c"
+      }
     }
   }
 }

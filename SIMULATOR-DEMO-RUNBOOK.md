@@ -70,7 +70,7 @@ Set the app directory explicitly so EAS archives only Fable 5 and honors its
 `.easignore` file:
 
 ```bash
-task_eas_root="/Users/rami/Documents/life-os/expo/content/videos/ai-model-comparison/apps/swift-rewrite/fable-5"
+task_eas_root="/Users/rami/Documents/life-os/expo/content/demos/ai-model-comparison/apps/swift-rewrite/fable-5"
 EAS_NO_VCS=1 EAS_PROJECT_ROOT="$task_eas_root" \
   npx --yes eas-cli@latest build \
   --platform ios \

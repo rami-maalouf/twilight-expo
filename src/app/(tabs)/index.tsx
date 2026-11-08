@@ -1,9 +1,9 @@
 // ports: Views/SleepDashboardView.swift - the home dashboard
 // greeting (tap to shuffle) + info button, date line, view-mode segmented
-// picker, per-mode analytics cards (Week | Trend | Time | Score | Core),
+// picker, per-mode analytics cards (Week | Trend | Time | SRI | Score),
 // status card with streak, fadeInSlide entrances
 import { router, useFocusEffect } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
@@ -18,6 +18,7 @@ import {
   MovingAverageCard,
   type MovingAverageWindowLabel,
 } from '@/components/charts/MovingAverageCard';
+import { SleepRegularityCard } from '@/components/charts/SleepRegularityCard';
 import { TimingCard, type TimingMetric } from '@/components/charts/TimingCard';
 import { WeekChart, type WeekChartDay } from '@/components/charts/WeekChart';
 import { getGreeting, getShuffledGreeting } from '@/copy/greetings';
@@ -28,6 +29,7 @@ import {
   type MovingAveragePoint,
   type TimingAveragePoint,
 } from '@/domain/metrics/analyzer';
+import type { SleepRegularityWindow } from '@/domain/metrics/sleep-regularity';
 import {
   averageWeekDurationSeconds,
   formatAvgDuration,
@@ -43,7 +45,7 @@ import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
-const VIEW_MODES = ['Week', 'Trend', 'Time', 'Score', 'Core'] as const;
+const VIEW_MODES = ['Week', 'Trend', 'Time', 'SRI', 'Score'] as const;
 type ViewMode = (typeof VIEW_MODES)[number];
 
 const INDIGO = '#5856d6';
@@ -81,6 +83,7 @@ export default function DashboardScreen() {
   const [movingAverageWindow, setMovingAverageWindow] =
     useState<MovingAverageWindowLabel>('7-Night');
   const [timingMetric, setTimingMetric] = useState<TimingMetric>('Sleep');
+  const [sriWindow, setSriWindow] = useState<SleepRegularityWindow>('7D');
   const [greeting, setGreeting] = useState(() => {
     const { minutes } = nowMinutesAndToday();
     return getGreeting(minutes, optimalSleepMinutes, optimalWakeMinutes, isSleeping);
@@ -123,6 +126,7 @@ export default function DashboardScreen() {
     targetSleepOffset,
     targetWakeOffset,
     today,
+    analyzer,
   } = useMemo(() => {
     const { today } = nowMinutesAndToday();
     const analyzer = new SleepMetricsAnalyzer(sessions, {
@@ -209,8 +213,15 @@ export default function DashboardScreen() {
       targetSleepOffset: analyzer.targetSleepOffset,
       targetWakeOffset: analyzer.targetWakeOffset,
       today,
+      analyzer,
     };
   }, [sessions, optimalSleepMinutes, optimalWakeMinutes, theme, fixed]);
+
+  // the history range sets visible days; the window sets the calculation span
+  const sriSeries = useMemo(
+    () => analyzer.sleepRegularitySeries(historyRange === '90D' ? '90D' : 'All', sriWindow),
+    [analyzer, historyRange, sriWindow]
+  );
 
   const rangeStartKey = dayKey(addDays(today, -89));
   const inRange = <T extends { date: CalendarDay }>(points: T[]): T[] =>
@@ -327,21 +338,21 @@ export default function DashboardScreen() {
                 onHistoryRangeToggle={toggleHistoryRange}
               />
             )}
-            {viewMode === 'Score' && (
-              <AlignmentCard
-                series={visibleAlignment}
-                title="Sleep Alignment Score"
-                includesTimingAndPhase
+            {viewMode === 'SRI' && (
+              <SleepRegularityCard
+                series={sriSeries}
+                window={sriWindow}
+                onWindowChange={setSriWindow}
                 width={chartWidth}
                 historyRange={historyRange}
                 onHistoryRangeToggle={toggleHistoryRange}
               />
             )}
-            {viewMode === 'Core' && (
+            {viewMode === 'Score' && (
               <AlignmentCard
                 series={visibleAlignment}
-                title="Core Sleep Score"
-                includesTimingAndPhase={false}
+                title="Sleep Alignment Score"
+                includesTimingAndPhase
                 width={chartWidth}
                 historyRange={historyRange}
                 onHistoryRangeToggle={toggleHistoryRange}
@@ -365,12 +376,18 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingTop: 70, paddingHorizontal: 16, paddingBottom: 40, gap: 16 },
+  content: {
+    paddingTop: 70,
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+    gap: 16,
+    alignItems: 'stretch',
+  },
   header: { gap: 2 },
   greetingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   greeting: { fontSize: 34, fontWeight: '700' },
   date: { fontSize: 15 },
-  analytics: { gap: 16 },
+  analytics: { gap: 16, alignSelf: 'stretch' },
   chartSpacer: { height: 12 },
   emptyChart: { alignItems: 'center', gap: 8, paddingVertical: 40 },
   emptyTitle: { fontSize: 17, fontWeight: '600' },

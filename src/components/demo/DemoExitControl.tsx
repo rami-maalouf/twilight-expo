@@ -2,10 +2,11 @@ import { demoDataManager } from '@/data/app-db';
 import { appSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { useTheme } from '@/theme/ThemeProvider';
-import { SymbolView } from 'expo-symbols';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+// swift HomeView.showsDemoExitControl is hard-coded false; exit lives in settings
 const SHOW_DEMO_EXIT_CONTROL = false;
 
 export function DemoExitControl() {
@@ -39,10 +40,10 @@ export function DemoExitControl() {
         onPress={() =>
           Alert.alert(
             'Exit Demo?',
-            'This removes the sample history and restores your sleep schedule from before demo mode.',
+            'This removes the sample history and restores the data and sleep profile you were using before demo mode.',
             [
-              { text: 'Cancel', style: 'cancel' },
               { text: 'Exit Demo', style: 'destructive', onPress: exitDemoData },
+              { text: 'Cancel', style: 'cancel' },
             ]
           )
         }
@@ -52,7 +53,9 @@ export function DemoExitControl() {
         ) : (
           <SymbolView name="xmark.circle.fill" size={17} tintColor={theme.accent} />
         )}
-        <Text style={[styles.label, { color: theme.textPrimary }]}>{isExiting ? 'Exiting...' : 'Exit Demo'}</Text>
+        <Text style={[styles.label, { color: theme.textPrimary }]}>
+          {isExiting ? 'Exiting...' : 'Exit Demo'}
+        </Text>
       </Pressable>
     </View>
   );
