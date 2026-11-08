@@ -278,8 +278,24 @@ export function heldDeletionTitle(count: number): string {
   return `Health Connect removed ${count} Twilight night${count === 1 ? '' : 's'}`;
 }
 
-export const HELD_DELETION_BODY =
-  'These nights were deleted in Health Connect. Twilight still has them and will not send them back unless you edit them.';
+export function heldDeletionBody(count: number): string {
+  return count === 1
+    ? 'This night was deleted in Health Connect. Twilight still has it and will not send it back unless you edit it.'
+    : 'These nights were deleted in Health Connect. Twilight still has them and will not send them back unless you edit them.';
+}
+
+// confirmation for "Remove from Twilight"
+export function heldRemovalPrompt(count: number): { title: string; message: string } {
+  return count === 1
+    ? {
+        title: 'Remove this night from Twilight?',
+        message: 'It is already gone from Health Connect. This deletes it from your Twilight journal too.',
+      }
+    : {
+        title: `Remove ${count} nights from Twilight?`,
+        message: 'They are already gone from Health Connect. This deletes them from your Twilight journal too.',
+      };
+}
 
 // onboarding step (AppleHealthOnboardingStepView, 5.2)
 

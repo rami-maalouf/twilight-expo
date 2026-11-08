@@ -24,8 +24,9 @@ import {
 } from '@/components/health-connect/parts';
 import {
   CONNECTION_TONE,
-  HELD_DELETION_BODY,
+  heldDeletionBody,
   heldDeletionTitle,
+  heldRemovalPrompt,
   HERO_SUBTITLE,
   HERO_TITLE,
   lastSyncedLabel,
@@ -135,14 +136,11 @@ export default function HealthConnectScreen() {
   };
 
   const confirmRemoveHeld = () => {
-    Alert.alert(
-      held.length === 1 ? 'Remove this night from Twilight?' : `Remove ${held.length} nights from Twilight?`,
-      'They are already gone from Health Connect. This deletes them from your Twilight journal too.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => healthSyncEngine.removeHeldRemoteDeletions() },
-      ]
-    );
+    const prompt = heldRemovalPrompt(held.length);
+    Alert.alert(prompt.title, prompt.message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => healthSyncEngine.removeHeldRemoteDeletions() },
+    ]);
   };
 
   return (
@@ -203,7 +201,7 @@ export default function HealthConnectScreen() {
                 <SectionHeader
                   icon="trash.fill"
                   title={heldDeletionTitle(held.length)}
-                  subtitle={HELD_DELETION_BODY}
+                  subtitle={heldDeletionBody(held.length)}
                   accent={fixed(ORANGE)}
                 />
                 <View style={styles.heldActions}>

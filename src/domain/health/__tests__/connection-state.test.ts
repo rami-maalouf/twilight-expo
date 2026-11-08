@@ -5,7 +5,9 @@ import {
   connectionState,
   type ConnectionInput,
   type HcConnectionState,
+  heldDeletionBody,
   heldDeletionTitle,
+  heldRemovalPrompt,
   isConnectionVisible,
   lastSyncedLabel,
   onboardingCopy,
@@ -197,6 +199,17 @@ describe('row copy', () => {
   test('held deletion title pluralizes', () => {
     expect(heldDeletionTitle(1)).toBe('Health Connect removed 1 Twilight night');
     expect(heldDeletionTitle(3)).toBe('Health Connect removed 3 Twilight nights');
+  });
+
+  test('held deletion body matches the count', () => {
+    expect(heldDeletionBody(1)).toMatch(/^This night was deleted .* unless you edit it\.$/);
+    expect(heldDeletionBody(2)).toMatch(/^These nights were deleted .* unless you edit them\.$/);
+    expect(heldRemovalPrompt(1)).toEqual({
+      title: 'Remove this night from Twilight?',
+      message: 'It is already gone from Health Connect. This deletes it from your Twilight journal too.',
+    });
+    expect(heldRemovalPrompt(4).title).toBe('Remove 4 nights from Twilight?');
+    expect(heldRemovalPrompt(4).message).toMatch(/^They are already gone/);
   });
 });
 

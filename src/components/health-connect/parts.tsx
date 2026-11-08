@@ -220,7 +220,8 @@ export function HcButton({
         testID={testID}
         accessibilityRole="button"
         accessibilityLabel={title}
-        accessibilityState={loading ? { disabled: true, busy: true } : { disabled: inactive }}
+        // busy is always passed: android keeps a stale busy flag when the key is dropped
+        accessibilityState={{ disabled: inactive, busy: loading }}
         disabled={inactive}
         onPress={onPress}
         android_ripple={{ color: withAlpha(isFilled ? '#ffffff' : theme.textPrimary, 0.18) }}

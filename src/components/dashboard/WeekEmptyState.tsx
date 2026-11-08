@@ -50,7 +50,7 @@ export function WeekEmptyState() {
               testID="week-empty-pull"
               accessibilityRole="button"
               accessibilityLabel={loading ? 'Pulling Health Connect...' : 'Pull from Health Connect'}
-              accessibilityState={loading ? { busy: true, disabled: true } : { disabled: false }}
+              accessibilityState={{ busy: loading, disabled: loading }}
               disabled={loading}
               onPress={pull}
               android_ripple={{ color: withAlpha('#ffffff', 0.2) }}
