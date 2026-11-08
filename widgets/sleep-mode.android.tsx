@@ -1,7 +1,7 @@
 // ports: TwilightWidget/Widgets/SleepModeControlWidget.swift (ios 18 control).
 // android has no control center, so this is a 2x1 home-screen toggle: label
 // "Start Sleep" + moon (rgb 0,212,255) or "Wake Up" + sun (rgb 255,191,0),
-// status "Off" / "On". tapping opens twilight at twilight://sleep/start|stop
+// status "Off" / "On". tapping opens twilight to start or stop sleep
 // (swift: ToggleSleepModeIntent, openAppWhenRun, action hint "Open Twilight").
 import { Box, Button, Column, Image, Row, Spacer, Text } from '@expo/ui/jetpack-compose';
 import {
@@ -28,10 +28,11 @@ const SleepMode = (props: HomeWidgetProps, environment: WidgetEnvironment) => {
 
   return (
     <Box modifiers={[fillMaxSize()]}>
-      <Image source={{ uri: c.sky }} contentScale="fillBounds" modifiers={[fillMaxSize()]} />
+      {/* the label crosses the star field at 2x1, so this widget uses the starless sky */}
+      <Image source={{ uri: `${c.sky}_plain` }} contentScale="fillBounds" modifiers={[fillMaxSize()]} />
       {/* `target` is a widget-only button prop that ButtonProps does not type, hence the spread */}
       <Button
-        {...{ target: on ? 'twilight://sleep/stop' : 'twilight://sleep/start' }}
+        {...{ target: on ? 'sleep:stop' : 'sleep:start' }}
         colors={{ containerColor: 'transparent' }}
         modifiers={[fillMaxSize()]}>
         <Row modifiers={[fillMaxSize(), paddingAll(12)]} verticalAlignment="center">

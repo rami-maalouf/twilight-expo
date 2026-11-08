@@ -86,6 +86,7 @@
           ]
         }
       ],
+      "./plugins/android-launch-intent.cjs",
       "expo-sqlite",
       "@react-native-community/datetimepicker",
       "expo-font",

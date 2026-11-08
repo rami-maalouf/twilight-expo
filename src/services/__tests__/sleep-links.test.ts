@@ -6,13 +6,16 @@ import { SessionRepo } from '../../data/session-repo';
 import { createSleepStore } from '../../state/sleep-store';
 import {
   parseSleepLink,
+  freshWidgetAction,
   performSleepLinkAction,
+  queueLaunchSleepLink,
   queueSleepLinkAction,
   SLEEP_LINK_MESSAGES,
   SLEEP_START_URL,
   SLEEP_STOP_URL,
   subscribeSleepLinkActions,
   takeSleepLinkAction,
+  WIDGET_ACTION_MAX_AGE_MS,
 } from '../sleep-links';
 
 const T0 = Date.UTC(2025, 0, 15, 5, 0, 0);
@@ -106,6 +109,34 @@ describe('performSleepLinkAction', () => {
     expect(performSleepLinkAction('start', true, store, T0 + HOUR).message).toBe(
       SLEEP_LINK_MESSAGES.alreadyActive
     );
+  });
+});
+
+describe('freshWidgetAction', () => {
+  const NOW = Date.UTC(2025, 0, 15, 5);
+  test('a widget press from moments ago runs', () => {
+    expect(freshWidgetAction({ action: 'start', at: NOW - 3_000 }, NOW)).toBe('start');
+    expect(freshWidgetAction({ action: 'stop', at: NOW - WIDGET_ACTION_MAX_AGE_MS }, NOW)).toBe('stop');
+  });
+
+  test('late, future-dated, unknown or missing presses are dropped', () => {
+    expect(freshWidgetAction(null, NOW)).toBeNull();
+    expect(freshWidgetAction({ action: 'stop', at: NOW - WIDGET_ACTION_MAX_AGE_MS - 1 }, NOW)).toBeNull();
+    expect(freshWidgetAction({ action: 'start', at: NOW + 60_000 }, NOW)).toBeNull();
+    expect(freshWidgetAction({ action: 'toggle', at: NOW }, NOW)).toBeNull();
+  });
+});
+
+describe('launch link', () => {
+  test('the launching url queues once, whichever path reports it first', () => {
+    expect(queueLaunchSleepLink(null)).toBe(false);
+    // expo-router's timeout fallback reports the root url
+    expect(queueLaunchSleepLink('twilight:///')).toBe(false);
+    expect(queueLaunchSleepLink(SLEEP_STOP_URL)).toBe(true);
+    expect(takeSleepLinkAction()).toBe('stop');
+    // the same launch url arriving through Linking.getInitialURL()
+    expect(queueLaunchSleepLink(SLEEP_STOP_URL)).toBe(false);
+    expect(takeSleepLinkAction()).toBeNull();
   });
 });
 

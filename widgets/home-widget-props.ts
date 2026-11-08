@@ -7,6 +7,7 @@
 // one resolved color set; the layout picks `day` or `night` at render time
 export interface HomeWidgetColors {
   // android drawable name of the night-sky / sunset gradient background
+  // (plugins/android-widgets also generates a starless `${sky}_plain`)
   sky: string;
   textPrimary: string;
   textSecondary: string;

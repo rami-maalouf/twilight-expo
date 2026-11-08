@@ -6,8 +6,9 @@
 // android: last night and the bedtime/wake targets replace the blocking-
 // profile rows, the session start sits under the elapsed time, and a
 // Start Sleep / Wake Up pill replaces "Tap to open".
-// button targets are read by the generated provider (plugins/android-widgets):
-// 'open' launches the app, twilight:// urls open it at that link.
+// button targets are handled natively (modules/twilight-widget-actions):
+// 'open' launches the app, 'sleep:start' / 'sleep:stop' open it with a
+// pending action that the app runs like a twilight://sleep link.
 import { Box, Button, Column, Image, Row, Spacer, Text } from '@expo/ui/jetpack-compose';
 import {
   cornerRadius,
@@ -102,7 +103,7 @@ const SleepStatus = (props: HomeWidgetProps, environment: WidgetEnvironment) => 
       </Column>
       <Column modifiers={[fillMaxSize(), paddingAll(12)]} verticalAlignment="bottom">
         <Button
-          {...{ target: sleeping ? 'twilight://sleep/stop' : 'twilight://sleep/start' }}
+          {...{ target: sleeping ? 'sleep:stop' : 'sleep:start' }}
           colors={{ containerColor: sleeping ? 'rgba(255, 255, 255, 0.22)' : c.action }}
           modifiers={[fillMaxWidth(), height(40), cornerRadius(20)]}>
           <Row verticalAlignment="center">

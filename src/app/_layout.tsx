@@ -10,7 +10,7 @@ import { HomeWidgetSync } from '@/components/widgets/HomeWidgetSync';
 import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
 import { useForegroundRefresh } from '@/services/use-foreground-refresh';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
-import { useSleepLinkActions } from '@/services/use-sleep-link-actions';
+import { useExternalSleepActions } from '@/services/use-external-sleep-actions';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -34,8 +34,8 @@ export default function RootLayout() {
 
   // live activity lifecycle (parity + superpower wiring)
   useLiveActivitySync();
-  // twilight://sleep/start|stop from widgets and other surfaces
-  useSleepLinkActions();
+  // start/stop from home widgets and twilight://sleep links
+  useExternalSleepActions();
   // reread sessions and settings on every return to the foreground
   useForegroundRefresh();
 

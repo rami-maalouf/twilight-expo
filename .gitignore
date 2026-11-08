@@ -50,3 +50,7 @@ example
 
 # disposable eas simulator evidence
 .artifacts/eas-simulator/
+
+# local native module build outputs
+modules/*/android/build/
+modules/*/android/.cxx/
