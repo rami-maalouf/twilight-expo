@@ -61,8 +61,10 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   pickers use `@expo/ui` controls: SwiftUI segmented Picker on ios, Material 3
   SegmentedButton on android with palette fills (actionPrimary selected,
   actionSecondary-family inactive, borders matched to fills so they do not read
-  as empty outlines). settings appearance rows use the
-  universal `@expo/ui` menu Picker. native tabs, status bar, and system chrome
+  as empty outlines). settings appearance rows on android show the value and
+  chevron like ios and open an `@expo/ui` material 3 selectable dropdown menu
+  (the universal Picker's exposed-dropdown text field is wider than the row).
+  native tabs, status bar, and system chrome
   follow the in-app display mode via Appearance.setColorScheme plus NativeTabs
   colors. form sheets fall back to full-screen modals. cards
   add android elevation. the moon glow still uses ios-style shadows, which are
