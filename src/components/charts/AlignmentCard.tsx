@@ -6,7 +6,7 @@ import { Canvas, Circle, DashPathEffect, Line, Path, RoundedRect, vec } from '@s
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
 import { Card } from '@/components/common/Card';
 import { HistoryRangeChip, type DashboardHistoryRange } from '@/components/dashboard/HistoryRangeChip';
@@ -216,12 +216,13 @@ export function AlignmentCard({
     return best;
   };
 
-  const scrub = Gesture.Pan()
-    .minDistance(0)
-    .runOnJS(true)
-    .onBegin((e) => setSelectedIndex(nearestIndex(e.x)))
-    .onUpdate((e) => setSelectedIndex(nearestIndex(e.x)))
-    .onFinalize(() => setSelectedIndex(null));
+  const scrub = usePanGesture({
+    minDistance: 0,
+    runOnJS: true,
+    onBegin: (e) => setSelectedIndex(nearestIndex(e.x)),
+    onUpdate: (e) => setSelectedIndex(nearestIndex(e.x)),
+    onFinalize: () => setSelectedIndex(null),
+  });
 
   if (plotted.length === 0) {
     return (

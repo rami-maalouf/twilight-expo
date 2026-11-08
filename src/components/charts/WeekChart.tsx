@@ -6,7 +6,7 @@
 import { Canvas, Circle, DashPathEffect, Line, Path, RoundedRect, vec } from '@shopify/react-native-skia';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
 import {
   calculateYAxisDomain,
@@ -127,12 +127,13 @@ export function WeekChart({
     const i = Math.floor(x / Math.max(bandW, 1));
     return Math.min(days.length - 1, Math.max(0, i));
   };
-  const scrubGesture = Gesture.Pan()
-    .minDistance(0)
-    .runOnJS(true)
-    .onBegin((e) => setSelectedIndex(indexAtX(e.x)))
-    .onUpdate((e) => setSelectedIndex(indexAtX(e.x)))
-    .onFinalize(() => setSelectedIndex(null));
+  const scrubGesture = usePanGesture({
+    minDistance: 0,
+    runOnJS: true,
+    onBegin: (e) => setSelectedIndex(indexAtX(e.x)),
+    onUpdate: (e) => setSelectedIndex(indexAtX(e.x)),
+    onFinalize: () => setSelectedIndex(null),
+  });
 
   return (
     <View style={{ width, height }}>

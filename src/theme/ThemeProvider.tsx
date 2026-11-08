@@ -64,8 +64,9 @@ export function ThemeProvider({
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(theme.backgroundGradientStart).catch(() => {});
+    // react native 0.88 is edge-to-edge only: the status bar is transparent
+    // over the themed root, so only the icon style needs setting
     if (Platform.OS === 'android') {
-      StatusBar.setBackgroundColor(theme.backgroundGradientStart, true);
       StatusBar.setBarStyle(theme.name === 'sunset' ? 'dark-content' : 'light-content', true);
     }
   }, [theme.backgroundGradientStart, theme.name]);
