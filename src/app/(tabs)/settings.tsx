@@ -6,6 +6,7 @@
 import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
 import { NativeSymbol } from '@/components/common/NativeSymbol';
 import { DemoDataStepContent } from '@/components/demo/DemoDataStepContent';
+import { HealthConnectSection } from '@/components/settings/HealthConnectSection';
 import { MenuPicker } from '@/components/settings/MenuPicker';
 import { demoDataManager } from '@/data/app-db';
 import * as Notifications from 'expo-notifications';
@@ -285,6 +286,8 @@ export default function SettingsScreen() {
             </Row>
           )}
         </View>
+
+        <HealthConnectSection />
 
         {/* community */}
         <View style={styles.section}>
