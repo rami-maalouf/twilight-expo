@@ -33,6 +33,7 @@ const validators: { [K in keyof SleepSettingsData]: (v: unknown) => v is SleepSe
     v === 'twilight' || v === 'amethyst',
   liveActivityEnabled: (v): v is boolean => typeof v === 'boolean',
   liveActivityId: (v): v is string | null => v === null || typeof v === 'string',
+  healthSyncEnabled: (v): v is boolean => typeof v === 'boolean',
 };
 
 export class SettingsStore {
@@ -96,6 +97,7 @@ export class SettingsStore {
       themePalette: this.get('themePalette'),
       liveActivityEnabled: this.get('liveActivityEnabled'),
       liveActivityId: this.get('liveActivityId'),
+      healthSyncEnabled: this.get('healthSyncEnabled'),
     };
   }
 }

@@ -30,6 +30,8 @@ export interface SleepSettingsData {
   themePalette: ThemePalette;
   liveActivityEnabled: boolean;
   liveActivityId: string | null;
+  // android health connect sync switch (swift healthSyncEnabled); off by default
+  healthSyncEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: SleepSettingsData = {
@@ -42,6 +44,7 @@ export const DEFAULT_SETTINGS: SleepSettingsData = {
   themePalette: 'twilight',
   liveActivityEnabled: true,
   liveActivityId: null,
+  healthSyncEnabled: false,
 };
 
 // a wall-clock calendar day (month is 1-based), independent of any timezone instant
