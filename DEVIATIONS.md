@@ -15,18 +15,19 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   clause dropped; nfc out of scope and home UI matches current product direction).
 - settings: NFC & QR shortcuts section not ported (out of scope).
 - onboarding reduced from 6 steps to 4 (welcome -> schedule -> notifications ->
-  optional sample-data offer); apple-health and nfc steps dropped per scope.
+  optional sample-data offer); the nfc step is dropped per scope. on android
+  with health connect available, a health connect step follows welcome (5
+  steps, swift order); ios and android devices without health connect keep 4.
   welcome trust card says "On-device only" instead of "Apple Health sync".
   production is the default; demo seed requires EXPO_PUBLIC_DEMO_MODE=1 or
   Settings -> Sample Data (a port addition, since Development is dev-only
   here). while sample history is active, Settings shows the swift "Demo Data"
   section with "Exit Demo and Continue in App"; the floating home exit
   control stays hidden like swift.
-- swift 0.10 apple health import: the sync core (tombstones, clusterer,
-  reconciler, two-way sync) is ported to health connect on android. its ui
-  (onboarding step, settings screen, "Pull from Health Connect" empty state)
-  is not built yet, so sync cannot be turned on from the app; dev builds
-  can start it through `globalThis.__twilightHealthSync.enableSync()`.
+- swift 0.10 apple health import: ported to health connect on android with
+  its ui (onboarding step, settings section and screen, "Pull from Health
+  Connect" empty state, sync on foreground); see the health connect section
+  below. ios has no health sync and shows none of these surfaces.
 
 ## implementation deviations
 
@@ -87,8 +88,9 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   the 7D/14D/28D window, faint day-to-day bars, and gap-split rolling line.
   noon-to-noon days use the device iana zone through Intl (swift:
   Calendar.current); every swift SRI unit test is ported, including the
-  minute-oracle and both dst transitions. the guide's SRI copy drops "including
-  imported Apple Health sleep envelopes" because there is no health import.
+  minute-oracle and both dst transitions. the guide's SRI copy says "including
+  imported Health Connect sleep" on android and drops the clause on ios,
+  which has no health import.
   metrics "Regularity Score" is renamed "Timing Consistency" like swift.
 
 ## health connect sync (android) vs swift healthkit sync
@@ -130,4 +132,27 @@ design and every decision: docs/health-connect.md (2.10, 11). in short:
   reset device-bound sync state once.
 - the swift 800 ms empty-import retry is not ported (not needed so far on
   the emulator; docs/health-connect.md 2.10 item 10).
+
+ui (docs/health-connect.md 5 and 12):
+
+- the AppleHealthSettingsView states map to health connect states: plus
+  `updateRequired` (provider update), `hidden` (sdk unavailable and sync off:
+  no row, no screen, no onboarding step) and partial grants. "Open Settings"
+  becomes "Open Health Connect"; on android 14+ it lands on health connect's
+  "Data and access" because the per-app page is closed to third-party apps.
+- write-only access is a connected state whose primary action is "Sync now"
+  (outbound) instead of "Pull from Health Connect"; the hero, row and tips
+  name the missing direction. swift has no partial states (healthkit hides
+  read status).
+- denied always routes to Open Health Connect, never re-requests: on the
+  emulator, health connect stopped showing its dialog after one denial that
+  followed a revoke.
+- a held-deletion card ("Health Connect removed N Twilight night(s)", Keep
+  in Twilight / Remove from Twilight) is new; swift ignores remote deletions.
+- the last pull result is an informational line in the status card, never in
+  the error card (swift defect 4).
+- if health connect itself is disabled, "Open Health Connect" shows an
+  alert saying where to find it instead of doing nothing.
+- the screen keeps swift's card order and copy with "Apple Health" replaced;
+  the action area sits below the scroll view like swift's safe-area inset.
 

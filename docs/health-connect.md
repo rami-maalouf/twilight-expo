@@ -1351,6 +1351,9 @@ inputs: availability, read, write, permissionRequested, enabled, demoActive.
   other app's original."
 - the screen and the row render only when the connection state is not
   `hidden` (2.7).
+- as built (12): write-only access shows "Sync now" instead of Pull, the
+  hero names the missing direction, the held card and its confirmation are
+  count-aware, and back falls back to settings when the screen is the root.
 
 ### 5.4 dashboard empty state
 
@@ -1765,8 +1768,10 @@ state checks with `adb shell uiautomator dump`; visuals with
     twilight record; seeder `update` the original (also move it so it no
     longer overlaps) -> twilight keeps the user edit and does not import a
     second copy.
-12. hc-side delete of one recent twilight record (hc app -> data -> sleep
-    -> entry -> delete) -> foreground -> twilight session still there, held
+12. hc-side delete of one recent twilight record (hc app -> data and access
+    -> sleep -> pick the day -> enter deletion -> check the entry -> delete;
+    android 16 has no delete on the entry details page) -> foreground ->
+    twilight session still there, held
     card shown -> "Keep in Twilight" -> session stays, `list` shows it is not
     re-created; edit it -> it is exported again. repeat with "Remove from
     Twilight" -> session gone, no outbox error.
@@ -1776,7 +1781,9 @@ state checks with `adb shell uiautomator dump`; visuals with
 14. revoke read and write in hc -> settings shows "Permission denied" and
     "Open Health Connect" opens hc ("Data and access" on android 14+, 2.11:
     the per-app page is closed to third-party apps); deny the dialog twice
-    and record whether hc still shows it (2.8); grant write only ->
+    and record whether hc still shows it (2.8; android 16: after a revoke
+    and one denial the next request resolves with no sheet, 12); grant
+    write only ->
     "export only" copy, and an edit still replaces the hc record; re-grant
     all.
 15. demo: load sample data -> hc settings shows demo card; seeder `list`
@@ -1954,6 +1961,71 @@ tab, editor, swipe delete) and the seeder `list`:
 | no echo | after foreground syncs: 2 local sessions, mirror holds only the foreign record, token advanced |
 | delete | the record is gone from hc, outbox empty, ledger row written, a forced pull rehydrates nothing |
 | delete an import | tombstone with the night key and its record id; hc keeps the original; force resync + full sync do not bring it back |
+
+---
+
+## 12. implementation notes (ui slice)
+
+surfaces: `src/app/onboarding/health-connect.tsx` (step 2 of 5 on android),
+`src/components/settings/HealthConnectSection.tsx` (one import, one element
+in `settings.tsx`), `src/app/health-connect.tsx`, `WeekEmptyState.tsx`. all
+copy and every state decision live in `src/domain/health/connection-state.ts`
+(the 4.1 file, kept as one module), tested in its `__tests__`; platform
+guards in `tests/health-connect-ui.test.tsx`.
+
+decisions the design left open or got wrong:
+
+1. 5.3 write-only access: the primary action is "Sync now" / "Syncing..."
+   (`sync('full')`, outbound only) instead of "Pull from Health Connect",
+   which would promise an import that cannot happen. the stale last pull
+   line is hidden while write-only.
+2. 5.3 partial grants: the hero subtitle uses the row summary for
+   import-only and export-only ("Twilight saves your nights to Health
+   Connect. Allow read access to import sleep from other apps."), not the
+   full two-way sentence.
+3. 5.3 held card copy is count-aware: one night reads "This night was
+   deleted in Health Connect. Twilight still has it and will not send it
+   back unless you edit it."; the "Remove from Twilight" confirmation is
+   "Remove this night from Twilight?" / "It is already gone from Health
+   Connect. This deletes it from your Twilight journal too." (plural
+   variants as before).
+4. the action area is a sibling below the scroll view (swift safe-area
+   inset), not an absolute overlay with a measured bottom padding: the
+   content can never sit under the buttons, and no layout pass is needed.
+5. back on the screen falls back to `/settings` when there is no history (a
+   deep link or cold start can open the route as the root; `router.back()`
+   was a no-op with a dev warning).
+6. "Open Health Connect" / "Update Health Connect": when no screen can be
+   started (the user disabled the health connect app; an avd without play
+   store opens the web fallback instead), an alert says where to find it.
+7. `accessibilityState` always passes `busy`: android keeps a stale busy
+   flag on a button when the key is dropped after a pull.
+8. app-wide: expo-symbols 58.0.4 renders material glyphs in a `Text` that
+   scales with the system font while its box does not, so icons clipped at
+   font scale 1.3. `patches/expo-symbols@58.0.4.patch` (bun
+   `patchedDependencies`) sets `allowFontScaling={false}`; worth upstreaming.
+
+verified on `Twilight_Pixel_9_B` (android 16) through the real ui, the
+seeder `list` and the dev handle (`globalThis.__twilightHealthSync`):
+
+| step (7.3) | observed |
+|---|---|
+| 2 onboarding | notDetermined step, hc sheet (read + write), separate past-data screen, connected step, import awaited before finishing (screens 01-10) |
+| 5.3 settings states | connected, pulling, pulled message, import-only, export-only, denied, demo; update required and unavailable rendered by publishing those statuses (not reachable on api 36: the framework module always reports available, even with the controller app disabled) |
+| 7 tracked night | Go to Sleep 16:02:32, Wake Up 16:08:56 -> one record, recording method 1 (actively recorded), clock version, offsets `-05:00` |
+| 12 hc-side delete | hc 16 has no delete on the entry details page; deletion goes through the list's deletion mode. foreground -> held card, session kept. Keep -> no record re-created, Pull does not re-create it, an edit exports it again (same cid, new clock version). second delete -> Remove from Twilight -> session gone, hc has no twilight record, no error |
+| 14 revoke | `pm revoke` of all three -> row "Permission denied", screen "Health Connect needs permission" with Open Health Connect (opens "Data and access") and Turn off. a request after the revoke showed the sheet; after one "Don't allow" the next request resolved `false` with no sheet. write only -> "Sync now", export-only hero; an edit replaced the same record id with a higher version |
+| 15 demo | demo card, no sync actions; no record exported for 100 demo nights or for a real night logged during demo; after Exit Demo that night exported once, no error |
+| 16 hermes intl | `Asia/Kolkata` and `Etc/GMT-2` both format (5:30 AM, 2 AM for 00:00 utc) |
+| 17 token | dev row replaced the token; the next foreground pass imported a newly seeded foreign night exactly once, no error card |
+| 20 empty state | "No Health Connect sleep yet" + Pull -> alert with the pull message |
+| 21 visual | dark and light (Sunset) on the screen, row and action area; font scale 1.3 after the symbol patch: no clipping |
+
+not run (the host disk filled up, 1.8 GB free, and the avd no longer
+starts): 18 reinstall rehydration and the fresh-grant first read (2.10 item
+10) after `adb uninstall` (hc kept twilight's 3 records after uninstall;
+the app was reinstalled but never launched), 13 crash mid-pull, 19 archive
+(other slice), 23 device restore, 24 background notification end.
 
 ---
 

@@ -12,3 +12,12 @@ To keep vision-token cost low during mobile UI work:
 4. **Batch interactions:** Prefer `run-sequence` for multi-step device actions. Wait with `await-ui-element` / `await-screen-idle` - never poll with repeated screenshots.
 5. **Video is expensive and rarely needed:** Do not start `screen-recording-*` unless the question requires motion (animation, gesture path, timing/jank). Prefer a still + tree.
 6. **Auto-screenshots are disabled globally** (`disable-auto-screenshot`). Do not re-enable. Take an explicit `screenshot` only when you need an image in context.
+
+## Android e2e notes (Health Connect)
+
+- Argent `debugger-evaluate` needs `device_id` (the adb serial) plus `port: 8083`; it returns promises unresolved, so stash async results on `globalThis` and read them in a second call.
+- A raw CDP client must send `Origin: http://localhost:8083`, or Metro's inspector answers 401.
+- Fast Refresh sometimes stops applying on the emulator; `adb shell am force-stop com.rami.twilight.port` and relaunch to load the new bundle.
+- Deep links (`twilight://health-connect`, `twilight://log-editor?id=<id>`) reach any route quickly during e2e.
+- After `adb uninstall`, `adb reverse tcp:8081 tcp:8083` lets the fresh debug install find Metro on 8083 (no dev client).
+- Emulators need several GB of free host disk; the avd exits and refuses to start when the disk is full.

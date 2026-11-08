@@ -56,26 +56,38 @@ The home dashboard matches Swift 0.10: `Week | Trend | Time | SRI | Score`. SRI 
 the Sleep Regularity Index (`src/domain/metrics/sleep-regularity.ts`), ported with
 its Swift unit tests.
 App blocking, HealthKit on iOS, NFC, tip jar, and related Swift extras are out of
-scope (see `DEVIATIONS.md`).
+scope (see `DEVIATIONS.md`). Android syncs sleep with Health Connect (below).
 
 ## Health Connect (Android)
 
 Two-way sleep sync with Health Connect, ported from the Swift HealthKit sync
-(`docs/health-connect.md`). Status: native module, sync core and engine are in;
-the onboarding step and settings screen are not built yet.
+(`docs/health-connect.md`). Android only; iOS shows no Health Connect surface.
 
-- pure decisions: `src/domain/health/` (clusterer, reconciler, export planner)
+- turn it on in onboarding (step after welcome) or Settings -> Health Connect;
+  the screen shows connection state, last sync, held deletions, Pull, Sync now
+  (write-only), Turn off and Open Health Connect. An empty dashboard offers
+  "Pull from Health Connect". Sync runs on launch, foreground, Pull and after a
+  night is saved, edited or deleted.
+- pure decisions: `src/domain/health/` (clusterer, reconciler, export planner,
+  connection state and ui copy in `connection-state.ts`)
+- ui: `src/app/health-connect.tsx`, `src/app/onboarding/health-connect.tsx`,
+  `src/components/settings/HealthConnectSection.tsx`,
+  `src/components/dashboard/WeekEmptyState.tsx`
 - sql: `src/data/health-store.ts`, ownership hooks in `src/data/session-repo.ts`
 - engine: `src/services/health-connect/sync-engine.ts` (single flight, runs on
   launch, foreground and after a night is saved, edited or deleted)
 - tests use `tests/helpers/fake-health-connect.ts`
 
-Dev-build e2e without the ui (Metro debugger):
+Dev-build e2e helpers (Metro debugger; dev builds also show an "Invalidate
+Health Connect token (dev)" row on the Health Connect screen):
 
 ```js
 await globalThis.__twilightHealthSync.enableSync(); // requests access, turns sync on, full sync
 globalThis.__twilightHealthSync.snapshot();          // status, last pull result, last error
 ```
+
+The Metro inspector only accepts debugger connections whose `Origin` matches
+the dev server (`http://localhost:8083`).
 
 Foreign sleep for tests comes from the throwaway seeder apps described in
 `docs/health-connect.md` 7.2 (`com.rami.twilight.hcseeder` and `.b`).
