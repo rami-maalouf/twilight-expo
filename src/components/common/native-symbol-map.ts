@@ -2,6 +2,7 @@ import type { AndroidSymbol } from 'expo-symbols';
 import type { SFSymbol } from 'sf-symbols-typescript';
 
 export const SF_TO_ANDROID: Record<string, AndroidSymbol> = {
+  'archivebox.fill': 'archive',
   'arrow.clockwise': 'refresh',
   'arrow.down': 'arrow_downward',
   'arrow.down.circle.fill': 'arrow_circle_down',
@@ -37,6 +38,7 @@ export const SF_TO_ANDROID: Record<string, AndroidSymbol> = {
   'dollarsign': 'attach_money',
   'exclamationmark.circle.fill': 'error',
   'exclamationmark.triangle.fill': 'warning',
+  'externaldrive': 'import_export',
   'flame.fill': 'local_fire_department',
   'gearshape.fill': 'settings',
   'hand.raised.fill': 'back_hand',
@@ -64,6 +66,7 @@ export const SF_TO_ANDROID: Record<string, AndroidSymbol> = {
   'sparkles': 'auto_awesome',
   'sparkles.rectangle.stack.fill': 'auto_awesome',
   'square.and.arrow.down.fill': 'download',
+  'square.and.arrow.up': 'ios_share',
   'sun.max.fill': 'wb_sunny',
   'sunrise.fill': 'wb_twilight',
   'target': 'target',

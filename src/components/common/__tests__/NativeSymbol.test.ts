@@ -1,6 +1,7 @@
 import { androidSymbolFor, SF_TO_ANDROID } from '@/components/common/native-symbol-map';
 
 const USED_SF_NAMES = [
+  'archivebox.fill',
   'arrow.clockwise',
   'arrow.down',
   'arrow.down.circle.fill',
@@ -35,6 +36,7 @@ const USED_SF_NAMES = [
   'crown.fill',
   'dollarsign',
   'exclamationmark.circle.fill',
+  'externaldrive',
   'exclamationmark.triangle.fill',
   'flame.fill',
   'gearshape.fill',
@@ -61,6 +63,7 @@ const USED_SF_NAMES = [
   'sparkles',
   'sparkles.rectangle.stack.fill',
   'square.and.arrow.down.fill',
+  'square.and.arrow.up',
   'sun.max.fill',
   'sunrise.fill',
   'target',

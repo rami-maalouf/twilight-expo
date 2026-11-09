@@ -6,6 +6,7 @@
 import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
 import { NativeSymbol } from '@/components/common/NativeSymbol';
 import { DemoDataStepContent } from '@/components/demo/DemoDataStepContent';
+import { DataSection } from '@/components/settings/DataSection';
 import { HealthConnectSection } from '@/components/settings/HealthConnectSection';
 import { MenuPicker } from '@/components/settings/MenuPicker';
 import { demoDataManager } from '@/data/app-db';
@@ -299,6 +300,8 @@ export default function SettingsScreen() {
             Would love to hear your feedback & suggestions!
           </Text>
         </View>
+
+        <DataSection />
 
         {/* ports the swift "Demo Data" section, shown only while the sample is active */}
         {isDemoDataActive ? (
