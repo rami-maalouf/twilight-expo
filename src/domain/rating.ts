@@ -9,3 +9,17 @@ export function shouldRequestReview(
 ): boolean {
   return lastVersionPromptedForReview !== currentVersion && launchCount >= REVIEW_MIN_LAUNCHES;
 }
+
+// port addition: never over onboarding or at bedtime, and only while the app
+// is in front (swift asks only in a foregroundActive scene)
+export function canPromptForReview({
+  isOnboarded,
+  isSleeping,
+  isActive,
+}: {
+  isOnboarded: boolean;
+  isSleeping: boolean;
+  isActive: boolean;
+}): boolean {
+  return isOnboarded && !isSleeping && isActive;
+}

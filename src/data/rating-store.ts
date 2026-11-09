@@ -11,18 +11,19 @@ function readLaunchCount(kv: KeyValueStorage): number {
   return Number.isInteger(count) && count > 0 ? count : 0;
 }
 
-// swift incrementLaunchCount: counts this launch and, when the review
-// should be requested, marks the version as prompted before asking (like
-// swift, a prompt the store decides not to show still counts). canPrompt
-// false (onboarding on screen, asleep) counts the launch and defers the ask.
-export function recordAppLaunch(
-  kv: KeyValueStorage,
-  currentVersion: string,
-  { canPrompt }: { canPrompt: boolean }
-): boolean {
+// swift incrementLaunchCount, first half: counts this launch
+export function recordAppLaunch(kv: KeyValueStorage): number {
   const launchCount = readLaunchCount(kv) + 1;
   kv.setItemSync(LAUNCH_COUNT_KEY, String(launchCount));
-  if (!canPrompt || !shouldRequestReview(launchCount, kv.getItemSync(LAST_VERSION_KEY), currentVersion)) {
+  return launchCount;
+}
+
+// swift checkIfShouldRequestReview: when the review is due, marks the
+// version as prompted before asking (like swift, a prompt the store decides
+// not to show still counts). a launch that never claims (onboarding on
+// screen, asleep) leaves the prompt due for the next launch.
+export function claimReviewPrompt(kv: KeyValueStorage, currentVersion: string): boolean {
+  if (!shouldRequestReview(readLaunchCount(kv), kv.getItemSync(LAST_VERSION_KEY), currentVersion)) {
     return false;
   }
   kv.setItemSync(LAST_VERSION_KEY, currentVersion);

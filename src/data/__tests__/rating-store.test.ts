@@ -1,6 +1,6 @@
 // RatingManager parity: third launch, once per version, again after an update
-import { shouldRequestReview } from '../../domain/rating';
-import { recordAppLaunch } from '../rating-store';
+import { canPromptForReview, shouldRequestReview } from '../../domain/rating';
+import { claimReviewPrompt, recordAppLaunch } from '../rating-store';
 import type { KeyValueStorage } from '../settings-store';
 
 function memoryKv(): KeyValueStorage & { map: Map<string, string> } {
@@ -14,8 +14,12 @@ function memoryKv(): KeyValueStorage & { map: Map<string, string> } {
   };
 }
 
+// each launch counts, then claims the prompt unless the launch cannot ask
 function launches(kv: KeyValueStorage, version: string, count: number, canPrompt = true): boolean[] {
-  return Array.from({ length: count }, () => recordAppLaunch(kv, version, { canPrompt }));
+  return Array.from({ length: count }, () => {
+    recordAppLaunch(kv);
+    return canPrompt && claimReviewPrompt(kv, version);
+  });
 }
 
 describe('shouldRequestReview', () => {
@@ -27,10 +31,28 @@ describe('shouldRequestReview', () => {
   });
 });
 
-describe('recordAppLaunch', () => {
+describe('canPromptForReview', () => {
+  const ok = { isOnboarded: true, isSleeping: false, isActive: true };
+
+  test('asks only onboarded, awake and in front', () => {
+    expect(canPromptForReview(ok)).toBe(true);
+    expect(canPromptForReview({ ...ok, isOnboarded: false })).toBe(false);
+    expect(canPromptForReview({ ...ok, isSleeping: true })).toBe(false);
+    expect(canPromptForReview({ ...ok, isActive: false })).toBe(false);
+  });
+});
+
+describe('recordAppLaunch / claimReviewPrompt', () => {
+  test('counts every launch', () => {
+    const kv = memoryKv();
+    expect([recordAppLaunch(kv), recordAppLaunch(kv), recordAppLaunch(kv)]).toEqual([1, 2, 3]);
+    expect(kv.map.get('twilight.rating.launchCount')).toBe('3');
+  });
+
   test('prompts on the third launch and never again for the same version', () => {
     const kv = memoryKv();
     expect(launches(kv, '1.0.0', 6)).toEqual([false, false, true, false, false, false]);
+    expect(kv.map.get('twilight.rating.lastVersionPromptedForReview')).toBe('1.0.0');
   });
 
   test('prompts again on the first launch after a version bump', () => {
@@ -39,9 +61,10 @@ describe('recordAppLaunch', () => {
     expect(launches(kv, '1.1.0', 2)).toEqual([true, false]);
   });
 
-  test('a deferred prompt (onboarding on screen) still counts the launch and asks later', () => {
+  test('a deferred prompt (onboarding on screen, asleep) still counts the launch and asks later', () => {
     const kv = memoryKv();
     expect(launches(kv, '1.0.0', 4, false)).toEqual([false, false, false, false]);
+    expect(kv.map.has('twilight.rating.lastVersionPromptedForReview')).toBe(false);
     expect(launches(kv, '1.0.0', 2)).toEqual([true, false]);
   });
 

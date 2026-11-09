@@ -6,35 +6,42 @@ import Constants from 'expo-constants';
 import Storage from 'expo-sqlite/kv-store';
 import * as StoreReview from 'expo-store-review';
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 
-import { recordAppLaunch } from '../data/rating-store';
+import { claimReviewPrompt, recordAppLaunch } from '../data/rating-store';
+import { canPromptForReview } from '../domain/rating';
 import { appSleepStore } from '../state/app-sleep-store';
 import { useSettings } from '../state/settings-state';
+
+// the launch settles first: a twilight://sleep/start link resolves
+// asynchronously, and a review sheet over the first frame (or over a sleep
+// start) would be rude
+const SETTLE_MS = 2000;
 
 // once per process: the root layout can remount (fast refresh, a font
 // scale change recreating the activity) without the app launching again
 let launchRecorded = false;
 
-async function requestReview(): Promise<void> {
+async function askForReview(): Promise<void> {
+  const allowed = canPromptForReview({
+    isOnboarded: useSettings.getState().isOnboarded,
+    isSleeping: appSleepStore.getState().activeSession != null,
+    isActive: AppState.currentState === 'active',
+  });
+  // swift: CFBundleShortVersionString (android versionName), both from app.json "version"
+  if (!allowed || !claimReviewPrompt(Storage, Constants.expoConfig?.version ?? '')) return;
   if (await StoreReview.isAvailableAsync()) await StoreReview.requestReview();
 }
 
 export function useRatingPrompt() {
-  const isOnboarded = useSettings((s) => s.isOnboarded);
   useEffect(() => {
     if (launchRecorded) return;
     launchRecorded = true;
-    // swift: CFBundleShortVersionString (android versionName), both from app.json "version"
-    const version = Constants.expoConfig?.version ?? '';
-    // not over onboarding, and not at bedtime: a launch from a start sleep
-    // shortcut or tile has already started the session by now (the
-    // external actions run in an earlier effect)
-    const canPrompt = isOnboarded && appSleepStore.getState().activeSession == null;
-    if (recordAppLaunch(Storage, version, { canPrompt })) {
-      requestReview().catch((error) => {
+    recordAppLaunch(Storage);
+    setTimeout(() => {
+      askForReview().catch((error) => {
         if (__DEV__) console.warn('[rating] review request failed', error);
       });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, SETTLE_MS);
   }, []);
 }
