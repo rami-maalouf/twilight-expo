@@ -281,6 +281,8 @@ export default function DashboardScreen() {
             <Pressable
               hitSlop={8}
               onPress={() => router.push('/metrics-explanation')}
+              accessibilityRole="button"
+              accessibilityLabel="Metrics info"
               testID="metrics-info">
               <SymbolView name="info.circle" size={16} tintColor={theme.textSecondary} />
             </Pressable>

@@ -39,6 +39,8 @@ export default function LogsScreen() {
             <View style={styles.addRow}>
               <Pressable
                 testID="add-log"
+                accessibilityRole="button"
+                accessibilityLabel="Add sleep log"
                 onPress={() => openEditor(null)}
                 style={styles.addButton}>
                 <SymbolView name="plus" size={22} tintColor={theme.accent} />

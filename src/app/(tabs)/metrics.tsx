@@ -200,10 +200,20 @@ export default function MetricsScreen() {
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Metrics</Text>
           <View style={styles.toolbar}>
-            <Pressable testID="timeline-button" onPress={() => router.push('/timeline-sheet')} hitSlop={6}>
+            <Pressable
+              testID="timeline-button"
+              accessibilityRole="button"
+              accessibilityLabel="Sleep & Wake Timeline"
+              onPress={() => router.push({ pathname: '/timeline-sheet', params: { initialRange: range } })}
+              hitSlop={6}>
               <SymbolView name="chart.bar.xaxis" size={20} tintColor={theme.textPrimary} />
             </Pressable>
-            <Pressable testID="guide-button" onPress={() => router.push('/metrics-explanation')} hitSlop={6}>
+            <Pressable
+              testID="guide-button"
+              accessibilityRole="button"
+              accessibilityLabel="Metrics Guide"
+              onPress={() => router.push('/metrics-explanation')}
+              hitSlop={6}>
               <SymbolView name="info.circle" size={20} tintColor={theme.textPrimary} />
             </Pressable>
           </View>
