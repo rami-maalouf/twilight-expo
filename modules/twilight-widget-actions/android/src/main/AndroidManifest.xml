@@ -34,6 +34,11 @@
       <intent-filter>
         <action android:name="android.service.quicksettings.action.QS_TILE" />
       </intent-filter>
+      <!-- the app pushes every session change (requestListeningState), so the
+           shade shows the current state at once, even with the app not running -->
+      <meta-data
+        android:name="android.service.quicksettings.ACTIVE_TILE"
+        android:value="true" />
     </service>
     <!-- launcher shortcut trampoline: records the press and opens the app -->
     <activity

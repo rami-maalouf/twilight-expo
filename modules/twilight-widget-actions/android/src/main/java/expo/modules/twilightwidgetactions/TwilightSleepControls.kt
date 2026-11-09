@@ -1,7 +1,6 @@
 package expo.modules.twilightwidgetactions
 
 import android.app.Activity
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ShortcutInfo
@@ -10,7 +9,6 @@ import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.service.quicksettings.TileService
 import android.util.Log
 
 // the sleep controls outside the app: the quick settings tile
@@ -42,9 +40,7 @@ object TwilightSleepControls {
     val editor = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).edit()
     if (sleepingSinceMs == null) editor.remove(KEY_SLEEPING_SINCE) else editor.putLong(KEY_SLEEPING_SINCE, sleepingSinceMs)
     editor.commit()
-    // swift: ControlCenter.shared.reloadControls(ofKind: "SleepModeControlWidget")
-    runCatching { TileService.requestListeningState(context, ComponentName(context, TwilightSleepTileService::class.java)) }
-      .onFailure { Log.w(TAG, "could not refresh the quick settings tile", it) }
+    TwilightSleepTileService.refresh(context)
     updateShortcuts(context, sleepingSinceMs != null)
   }
 

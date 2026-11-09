@@ -1,8 +1,12 @@
 package expo.modules.twilightwidgetactions
 
 import android.app.PendingIntent
+import android.content.ComponentName
+import android.content.Context
 import android.graphics.drawable.Icon
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.util.Log
@@ -15,7 +19,19 @@ import android.util.Log
 class TwilightSleepTileService : TileService() {
   override fun onTileAdded() = render()
 
-  override fun onStartListening() = render()
+  override fun onStartListening() {
+    listening = this
+    render()
+  }
+
+  override fun onStopListening() {
+    if (listening === this) listening = null
+  }
+
+  override fun onDestroy() {
+    if (listening === this) listening = null
+    super.onDestroy()
+  }
 
   override fun onClick() {
     val action = if (TwilightSleepControls.isSleeping(this)) "stop" else "start"
@@ -52,7 +68,24 @@ class TwilightSleepTileService : TileService() {
     tile.updateTile()
   }
 
-  private companion object {
-    const val TAG = "TwilightSleepTile"
+  companion object {
+    private const val TAG = "TwilightSleepTile"
+
+    // the instance systemui is listening to, if any (main thread only)
+    private var listening: TwilightSleepTileService? = null
+
+    // swift: ControlCenter.shared.reloadControls(ofKind: "SleepModeControlWidget").
+    // requestListeningState (ACTIVE_TILE in the manifest) binds the tile to
+    // redraw, but systemui ignores it while the tile is still listening, as
+    // it stays after a tap; so a listening tile is also redrawn in place, or
+    // a session the tap started would keep showing the old state
+    fun refresh(context: Context) {
+      val appContext = context.applicationContext
+      Handler(Looper.getMainLooper()).post {
+        listening?.render()
+        runCatching { requestListeningState(appContext, ComponentName(appContext, TwilightSleepTileService::class.java)) }
+          .onFailure { Log.w(TAG, "could not refresh the quick settings tile", it) }
+      }
+    }
   }
 }
