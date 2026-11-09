@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '@/theme/ThemeProvider';
@@ -62,7 +62,7 @@ export function GlassButton({
         onLongPress={longPressEnabled ? fire : undefined}
         delayLongPress={longPressEnabled ? longPressDuration : undefined}>
         <View style={styles.clip}>
-          <BlurView intensity={100} tint={tint} style={StyleSheet.absoluteFill} />
+          <BlurView intensity={100} tint={tint} style={[StyleSheet.absoluteFill, Platform.OS === 'android' && { backgroundColor: theme.cardBackground }]} />
           <View
             style={[
               styles.content,

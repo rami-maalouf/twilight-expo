@@ -11,22 +11,24 @@ import {
 } from '@expo/ui/jetpack-compose';
 import { View } from 'react-native';
 
-import { useTheme } from '@/theme/ThemeProvider';
+import { useIsDesaturated, useTheme } from '@/theme/ThemeProvider';
 import type { AppTheme } from '@/theme/palettes';
 
 // solid fills Material can paint (prefer hex over rgba for Compose Color)
-function trackFill(theme: AppTheme): string {
+function trackFill(theme: AppTheme, isDesaturated: boolean): string {
+  if (isDesaturated) return theme.actionSecondary;
   if (theme.name === 'sunset') return '#F5E6E0';
   if (theme.name === 'amethyst') return '#3d426b';
   return '#2a2a4a';
 }
 
-function segmentedColors(theme: AppTheme) {
-  const track = trackFill(theme);
+function segmentedColors(theme: AppTheme, isDesaturated: boolean) {
+  const track = trackFill(theme, isDesaturated);
+  const activeContainer = isDesaturated ? '#333333' : theme.actionPrimary;
   return {
-    activeContainerColor: theme.actionPrimary,
+    activeContainerColor: activeContainer,
     activeContentColor: '#ffffff',
-    activeBorderColor: theme.actionPrimary,
+    activeBorderColor: activeContainer,
     inactiveContainerColor: track,
     inactiveContentColor: theme.name === 'sunset' ? theme.textPrimary : theme.textSecondary,
     inactiveBorderColor: track,
@@ -45,8 +47,9 @@ export function SegmentedPicker<T extends string>({
   testIDPrefix?: string;
 }) {
   const theme = useTheme();
+  const isDesaturated = useIsDesaturated();
   const isLight = theme.name === 'sunset';
-  const colors = segmentedColors(theme);
+  const colors = segmentedColors(theme, isDesaturated);
 
   return (
     <View testID={testIDPrefix} style={{ alignSelf: 'stretch', width: '100%' }}>

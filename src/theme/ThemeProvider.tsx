@@ -103,3 +103,7 @@ export function useThemeControls(): ThemeControls {
   if (!controls) throw new Error('useThemeControls must be used inside ThemeProvider');
   return controls;
 }
+
+export function useIsDesaturated(): boolean {
+  return useContext(DesaturatedContext);
+}

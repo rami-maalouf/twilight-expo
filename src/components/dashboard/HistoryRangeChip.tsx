@@ -19,7 +19,7 @@ export function HistoryRangeChip({
       testID="demo.dashboard.history-range"
       accessibilityLabel={range === '90D' ? 'Show all chart history' : 'Show past 90 days'}
       onPress={onToggle}
-      style={[styles.chip, { borderColor: `${theme.actionPrimary}59` }]}>
+      style={[styles.chip, { backgroundColor: theme.name === 'sunset' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(28, 28, 30, 0.55)', borderColor: `${theme.actionPrimary}59` }]}>
       <SymbolView name="calendar" size={11} weight="semibold" tintColor={theme.textPrimary} />
       <Text style={[styles.label, { color: theme.textPrimary }]}>{range}</Text>
     </Pressable>
