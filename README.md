@@ -91,6 +91,34 @@ it. On Android 16 the sleep notification is promoted to a Live Update
 adb shell dumpsys notification --noredact | rg -A3 twilight.session
 ```
 
+## Quick Settings tile and launcher shortcuts (Android)
+
+- **Quick Settings**: edit the tiles and add **Twilight Sleep Mode**. It shows
+  **Start Sleep** (moon, Off) or **Wake Up** (sun, On) and opens Twilight to
+  start or end sleep, like the Swift Control Center control.
+- **Launcher**: long-press the Twilight icon for **Start Sleep Mode** while
+  awake or **Wake Up** while asleep; drag one out to pin it. A pinned one that
+  no longer applies opens Twilight with "Sleep mode is already active." or
+  "Sleep mode is not active.".
+
+Both follow every session change (`src/services/sleep-controls.ts`); native
+code in `modules/twilight-widget-actions` (`TwilightSleepTileService.kt`,
+`TwilightSleepControls.kt`).
+
+```bash
+adb shell dumpsys shortcut | rg -A2 com.rami.twilight.port
+# the tile as the shade shows it (label, secondaryLabel, state 1 off / 2 on)
+adb shell dumpsys activity service com.android.systemui/.SystemUIService | rg -m1 TwilightSleepTile
+```
+
+## Rating prompt
+
+From the third launch, once per app version, Twilight asks for a review
+through `expo-store-review` (Swift `RatingManager` rule). It asks 2 s after
+launch and only while the app is in front, past onboarding and awake;
+otherwise it waits for the next launch. Launch count and the prompted version
+live in the kv store under `twilight.rating.*`.
+
 ## Sleep links
 
 `twilight://sleep/start` and `twilight://sleep/stop` start or end a session
@@ -109,5 +137,6 @@ The home dashboard matches Swift 0.10: `Week | Trend | Time | SRI | Score`. SRI 
 the Sleep Regularity Index (`src/domain/metrics/sleep-regularity.ts`), ported with
 its Swift unit tests.
 App blocking, HealthKit, NFC, tip jar, and related Swift extras are out of scope
-(see `DEVIATIONS.md`). The Swift home-screen widget and Control Center control
-are ported as Android home-screen widgets only.
+(see `DEVIATIONS.md`). The Swift home-screen widget, Control Center control and
+App Shortcuts are ported on Android only, as home-screen widgets, a Quick
+Settings tile and launcher shortcuts.

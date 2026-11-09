@@ -7,10 +7,13 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
 
 - app blocking (FamilyControls/ManagedSettings), healthkit sync, NFC/QR flows,
   storekit tip jar, telemetrydeck, BGTaskScheduler, demo-data manager, data
-  export/archive, app intents/shortcuts, break-glass flow, session breaks: all
-  out of scope per the spec's decisions section. the ios home-screen widget
-  and control-center control stay unported (ios keeps only the live
-  activity); android gets home-screen widgets instead (see below).
+  export/archive, break-glass flow, session breaks: all out of scope per the
+  spec's decisions section. the ios home-screen widget, control-center
+  control and app intents / siri app shortcuts stay unported (ios keeps only
+  the live activity and the twilight://sleep links); android gets
+  home-screen widgets, a quick settings tile and launcher shortcuts instead
+  (see below). the profile intents (start/stop/check profile, check session
+  active) are blocking-profile features and out of scope on both platforms.
 - go-to-sleep caption omitted (swift's "Tap to start" / "or scan your NFC tag..."
   clause dropped; nfc out of scope and home UI matches current product direction).
 - settings: NFC & QR shortcuts section not ported (out of scope).
@@ -186,3 +189,44 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
 - settings "Go to settings to disable globally" (swift link at the end of
   Notifications, hidden while sleeping) opens the app's notification
   settings on android and the app's settings page on ios.
+- android quick settings tile "Twilight Sleep Mode" (swift
+  SleepModeControlWidget; `TwilightSleepTileService.kt` in
+  `modules/twilight-widget-actions`, declared in the module's manifest, so
+  no config plugin is needed): "Start Sleep" + moon, "Off", inactive while
+  awake; "Wake Up" + sun, "On", active while asleep. tiles are monochrome,
+  so swift's cyan moon / amber sun tints become the system's tile colors. a
+  tap works like swift's `ToggleSleepModeIntent(shouldStart: !isOn)` with
+  `openAppWhenRun`: it stores the pending action, collapses the shade and
+  opens twilight (after unlocking on the lock screen), which runs it through
+  the dashboard toggle with the "Pause..." messages. the edit list shows
+  swift's display name; there is no description line on android.
+- android launcher shortcuts (swift TwilightShortcuts app shortcuts; android
+  has no siri phrases or intent dialogs): only the shortcut that applies is
+  offered, "Start Sleep" (long label "Start Sleep Mode", moon) while awake
+  and "Wake Up" (sun) while asleep, as dynamic shortcuts with adaptive
+  night-sky icons in swift's tints. both can be pinned; a pinned shortcut
+  that no longer applies opens the app with "Sleep mode is already active."
+  / "Sleep mode is not active.". the shortcut intents carry the
+  twilight://sleep/start|stop links but target a no-display trampoline
+  activity that stores the pending action and opens the app, so android
+  can neither swallow them (a link identical to the task's base intent is
+  only "brought to front") nor replay them after process death. before the
+  app has run once there are no shortcuts.
+- the tile and the shortcuts read a native mirror of the session that js
+  updates on every session change from any surface (`src/services/
+  sleep-controls.ts`, wired to the app store, so the headless notification
+  task updates it too); a session notification press updates it at once
+  natively. swift reloads the control on every change the same way. the
+  tile is an active tile (`ACTIVE_TILE`): each change redraws it in the
+  shade even while the shade is closed, and a tile that systemui still
+  holds after a tap is redrawn in place.
+- rating prompt (swift RatingManager): swift never calls
+  `incrementLaunchCount()`, so the swift app never asks. the port wires it
+  with swift's rule (once per app version, from the third launch) through
+  expo-store-review (play in-app review / SKStoreReviewController). launches
+  count once per ui process (headless starts do not count) in the kv store
+  (`twilight.rating.*`). port addition: the prompt is asked 2 s after the
+  launch (a sleep link resolves asynchronously) and only while the app is
+  in front, past onboarding and awake; otherwise it waits for the next
+  launch. the store's own quota decides whether the sheet actually
+  shows; without the play store nothing happens.
