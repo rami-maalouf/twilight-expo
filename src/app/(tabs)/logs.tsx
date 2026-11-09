@@ -64,6 +64,7 @@ export default function LogsScreen() {
           <View style={[index === 0 && styles.cardTop, index === sessions.length - 1 && styles.cardBottom, styles.cardBody]}>
             <LogRow
               session={item}
+              isFirst={index === 0}
               isLast={index === sessions.length - 1}
               onPress={() => openEditor(item)}
               onDelete={() => deleteSession(item.id)}

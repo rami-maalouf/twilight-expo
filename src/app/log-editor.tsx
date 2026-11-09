@@ -2,6 +2,7 @@
 // wake-day pill + goal-match card, circular picker (size 220) with live sync,
 // bedtime/wake summary cards, pinned save bar
 import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
+import { formatMinuteTime, formatDayDate } from '@/utils/locale-format';
 import { router, useLocalSearchParams } from 'expo-router';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useMemo, useState } from 'react';
@@ -41,20 +42,11 @@ function todayCalendarDay(): CalendarDay {
 }
 
 function clockLabel(minutes: number): string {
-  const h = Math.trunc(minutes / 60);
-  const m = minutes % 60;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const display = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  return `${display}:${String(m).padStart(2, '0')} ${ampm}`;
+  return formatMinuteTime(minutes);
 }
 
 function dayLabel(day: CalendarDay): string {
-  return new Date(Date.UTC(day.year, day.month - 1, day.day)).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  });
+  return formatDayDate(new Date(Date.UTC(day.year, day.month - 1, day.day)), { timeZone: 'UTC' });
 }
 
 export default function LogEditorScreen() {

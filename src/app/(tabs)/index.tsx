@@ -5,6 +5,7 @@
 import { router, useFocusEffect, useScrollToTop } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
+import { formatDashboardDate } from '@/utils/locale-format';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Canvas, LinearGradient, RoundedRect, vec } from '@shopify/react-native-skia';
@@ -279,11 +280,7 @@ export default function DashboardScreen() {
     }
   };
 
-  const dateLine = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const dateLine = formatDashboardDate(new Date());
 
   const chartWidth = width - 16 * 2 - 16 * 2;
   const hasWeekData = trackedDataPoints(weekData).length > 0;
