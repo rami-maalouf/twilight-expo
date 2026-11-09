@@ -6,11 +6,12 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
 ## scope cuts (pre-agreed in test-3-spec.md)
 
 - app blocking (FamilyControls/ManagedSettings), NFC/QR flows, storekit tip
-  jar, telemetrydeck, BGTaskScheduler, demo-data manager, data export/archive, app
+  jar, telemetrydeck, BGTaskScheduler, demo-data manager, app
   intents/shortcuts/control-center widget, break-glass flow, session breaks:
   all out of scope per the spec's decisions section. healthkit sync is not
   ported to ios; android gets the health connect equivalent (below). the
-  archive is planned (docs/health-connect.md 6) and still missing.
+  spec also cut data export/archive; it is now ported on both platforms
+  (see "data archive" below).
 - go-to-sleep caption omitted (swift's "Tap to start" / "or scan your NFC tag..."
   clause dropped; nfc out of scope and home UI matches current product direction).
 - settings: NFC & QR shortcuts section not ported (out of scope).
@@ -130,8 +131,9 @@ design and every decision: docs/health-connect.md (2.10, 11). in short:
 - force resync repairs differences instead of rewriting every record.
 - android auto backup restores are detected with a no-backup install id and
   reset device-bound sync state once.
-- the swift 800 ms empty-import retry is not ported (not needed so far on
-  the emulator; docs/health-connect.md 2.10 item 10).
+- the swift 800 ms empty-import retry is not ported: on the emulator the
+  first read right after a fresh grant returned every record, including the
+  45-day-old one (docs/health-connect.md 2.10 item 10, 13).
 
 ui (docs/health-connect.md 5 and 12):
 
@@ -155,4 +157,65 @@ ui (docs/health-connect.md 5 and 12):
   alert saying where to find it instead of doing nothing.
 - the screen keeps swift's card order and copy with "Apple Health" replaced;
   the action area sits below the scroll view like swift's safe-area inset.
+
+## data archive (both platforms) vs swift DataArchiveManager / DataExporter
+
+design: docs/health-connect.md 6 and 13.
+
+- own archive type `twilight-expo-backup` schema 1, because swift backups
+  embed app-blocking profiles this port cannot produce; a port file must never
+  half-import into swift. the port reads swift `twilight-full-backup` schema
+  1-2 one way (the sleep profile's sessions, sleep settings, appearance,
+  tombstones; profiles, scheduler state and breaks are skipped) and never
+  writes swift archives. healthkit imports and edited healthkit nights from a
+  swift backup stay local and are never exported to health connect.
+- field names say `health` instead of `healthKit`; new fields:
+  `isHealthAdopted`, `healthProvider`, `metadata.platform`, tombstone
+  `recordIds`. missing optional keys decode to defaults (swift parity for
+  tombstones).
+- `healthSyncEnabled` is exported but never restored: it is device and
+  permission state (swift restores it).
+- restored owned nights become pending with a fresh clock version above the
+  file's and the local one; swift copies the file's sync flags, which on
+  health connect would let an older record silently win.
+- device-bound health connect state (record ids, written flags, mirror,
+  links, token, outbox, deletion ledger) is never exported and never taken
+  from a file. restored imports arrive detached and re-link when a health
+  connect night matches their key, so the absence rule never deletes them
+  (swift defect 8). restoring a deleted night clears its deletion ledger row
+  and its pending remote delete.
+- the preview counts a session as updated only when its content changed;
+  sync bookkeeping alone is not an update (swift compares the whole record).
+- if the device already has an active session, the backup's active session
+  is skipped (swift imports it and keeps "the most recent" authoritative,
+  which can leave two active sessions).
+- stricter validation with clear copy: end after start, at most one active
+  session, valid time zones, minutes 0-1439, theme and provider values
+  ("This backup contains an invalid sleep session (id).", "This backup
+  contains more than one active sleep session.", "This backup contains
+  invalid settings (field)."). "This file is not a Twilight backup." drops
+  swift's "full".
+- pre-import safety backups go to `<documents>/DataBackups` (swift:
+  application support) and only the newest 10 are kept (swift keeps all).
+- demo isolation: the Data section is hidden while sample data is active
+  (swift parity), the screen redirects to Settings during demo, and demo
+  sessions are never exported or imported.
+- markdown export: "-" instead of the em dash, "In Progress" / "Completed"
+  instead of emoji, one profile named "Sleep", "Each session represents a
+  single sleep period."; the break rows and csv break columns stay empty for
+  format parity. the session export button is always enabled (swift disables
+  it without profiles; the port always has its one profile).
+- android "Save to Device": every export (backup, csv, markdown) first asks
+  "Save to Device" or "Share" in a material dialog. save opens the system
+  create-document picker (storage access framework; Downloads or any folder,
+  editable file name) through the local kotlin module
+  `modules/twilight-document-save`, and a toast confirms "Saved <file>". the
+  android share sheet offers no local save target (only Quick Share, Drive,
+  Gmail), and a folder-tree picker cannot choose Downloads. swift and ios rely
+  on the share sheet's "Save to Files". the import picker on android also
+  accepts files labeled text/plain or octet-stream, because some providers
+  mislabel .json files.
+- the settings row icon is `externaldrive`: swift's
+  `externaldrive.badge.arrow.up.and.down` is not an SF Symbols 7 name. no
+  analytics events (telemetrydeck is out of scope).
 

@@ -696,7 +696,9 @@ the provider while twilight is in the background).
     documented hc guarantee: the first draft stated that "hc reads are
     consistent after the grant callback", which no page read here says. the
     e2e run checks it (7.3 step 2); if the first read after the grant is
-    empty, add the same single delayed retry as swift.
+    empty, add the same single delayed retry as swift. verified on android
+    16 (13): the first read right after a fresh grant returned every record,
+    including the 45-day-old one, so no retry is added.
 11. no custom metadata -> session id from `clientRecordId`, original tag from
     recording method on rehydration.
 12. rationale activity and play console declaration are mandatory on android.
@@ -1522,7 +1524,8 @@ the port never writes swift archives.
 - files: `twilight_backup_<yyyyMMdd_HHmmss>.json`,
   `twilight_sessions_<epoch>.csv|md`; shared with `expo-sharing`; import via
   `expo-document-picker` (`application/json`) and `expo-file-system`. add the
-  three with `bunx expo install`.
+  three with `bunx expo install`. android also saves to the device through
+  the create-document picker (13).
 
 ### 6.6 ui
 
@@ -1532,7 +1535,8 @@ Data" -> `src/app/data-management.tsx`: "Backup & Restore" (Export Full
 Backup, Import Backup, swift footer adapted without profiles and scheduler),
 "Sorting", "Date & Time", "Session Export Format", export button. pickers use
 the existing `MenuPicker` (ios menu, android material dropdown). alerts:
-"Data Error", "Import Backup" (Cancel / Import), "Import Complete".
+"Data Error", "Import Backup" (Cancel / Import), "Import Complete". android:
+every export first asks "Save to Device" / "Share" (13).
 
 ---
 
@@ -2025,7 +2029,67 @@ not run (the host disk filled up, 1.8 GB free, and the avd no longer
 starts): 18 reinstall rehydration and the fresh-grant first read (2.10 item
 10) after `adb uninstall` (hc kept twilight's 3 records after uninstall;
 the app was reinstalled but never launched), 13 crash mid-pull, 19 archive
-(other slice), 23 device restore, 24 background notification end.
+(other slice), 23 device restore, 24 background notification end. 18, the
+fresh-grant first read and 19 ran in the archive slice (13).
+
+---
+
+## 13. implementation notes (archive slice)
+
+files: pure format, swift decoding, validation and the merge planner in
+`src/domain/archive/` (`archive-format.ts`, `archive-merge.ts`,
+`session-export.ts`); sql in `src/data/archive-repo.ts`; the manager
+(pre-import backup, re-plan inside `runExclusive`, settings) in
+`src/services/archive/archive-manager.ts` with injected file io; expo wiring
+in `src/services/archive/app-archive.ts`; ui in `src/app/data-management.tsx`
+and `src/components/settings/DataSection.tsx` (one import, one element in
+`settings.tsx`). swift `DataArchiveTombstoneTests` are ported by name in
+`archive-format.test.ts`.
+
+decisions the design left open or got wrong:
+
+1. 6.5 / 6.6 android "save to device": the android share sheet has no local
+   save target (only Quick Share, Drive, Gmail on the emulator), so a user
+   could not keep a backup file on the phone. a folder-tree picker
+   (`ACTION_OPEN_DOCUMENT_TREE`, expo-file-system `pickDirectoryAsync`)
+   cannot choose Downloads on android 11+. the port adds the local kotlin
+   module `modules/twilight-document-save` (android only, no config plugin):
+   `saveTextDocument(name, mime, contents)` starts `ACTION_CREATE_DOCUMENT`
+   through the expo activity-result registry (it delivers
+   `onActivityResult`, unlike the permission path in 2.8), writes the text
+   with `openOutputStream(uri, "wt")` on io, deletes the document if the
+   write fails, and returns the display name, or null when the user backs
+   out. the contents stay in the call (an intent extra has a ~1 mb binder
+   limit).
+2. on android every export asks first, in a material dialog: title "Export
+   Full Backup" / "Export Sessions", "Save the backup file on this device, or
+   share it with another app." (CSV / Markdown for sessions), buttons Cancel /
+   Share / Save to Device; dismissing it is a cancel. a saved file shows the
+   toast "Saved <display name>"; a cancelled picker shows nothing. ios (and an
+   android build without the module) goes straight to the share sheet, which
+   has "Save to Files".
+3. the android import picker also accepts `text/plain` and
+   `application/octet-stream`, because some providers label .json that way;
+   csv and markdown exports stay unselectable (`text/csv`, `text/markdown`).
+4. 6.4 step 6: the wind-down notification is rescheduled by the existing
+   `_layout.tsx` effect when the settings store refreshes; `runExclusive`
+   requests `sync('full')` when it ends.
+
+verified on `Twilight_Pixel_9_B` (android 16), with hc holding 8 seeder
+records (one 45 days old, one night split in two, one night written by both
+seeder builds) and 3 twilight records left by an uninstalled install:
+
+| step | observed |
+|---|---|
+| 2.10 item 10 / 7.3 step 2: first read after a FRESH grant | `adb uninstall`, install, onboarding: the hc sheet (read + write) and the separate past-data screen, allow all. the first pass logged `install id changed`, then `inbound full: 8 records, 7 nights, +5 ~0 -0 rehydrated 3`: every foreign record including the 45-day-old one, the split night as one session, the two-app night superseded by the overlapping twilight night. no retry needed |
+| 18 reinstall rehydration | the 3 twilight records came back with their original session ids, tags from the recording method (Manual Log x2, Sleep Mode), the remote versions learned and nothing pending (no re-export); the next changes pass was `+0 ~0 -0`. editing the Nov 2 night (wake 8:40 -> 9:45) updated the same hc record id with a higher clock version; hc still held 11 records |
+| 19 export | a deleted import gave a tombstone; Display Mode Sunset, Theme Amethyst, wind-down off. Export Full Backup -> dialog -> Save to Device -> the create-document picker opened in Downloads with `twilight_backup_<utc>.json` filled in -> Save -> `/sdcard/Download/twilight_backup_20261109_045538.json` (5.4 kB, 7 sessions, 1 tombstone with its record id, settings and appearance). csv and markdown saved the same way (`.csv`, `.md` kept). Back in the picker = cancel, no alert. Share opened the system share sheet |
+| 19 restore | `adb shell pm clear` (it also revokes the hc permissions), onboarding with hc denied, Import Backup -> picker (only the json selectable) -> preview "Sessions: 7 total, 7 new, 0 updated. Sleep settings changes: 1. Appearance changes: 2." -> Import -> "Import Complete" with the safety backup name; `DataBackups/` holds it. Sunset, Amethyst and wind-down off restored. owned nights pending with a fresh clock version, imports detached with their night keys, no links, ledger or outbox rows |
+| 19 enable hc | grant (hc does not show its sheet again after one denial, 12) -> Turn on: `inbound full: 8 records, 7 nights, +0 ~0 -0 rehydrated 0`; the 3 owned nights replaced their existing hc records (same record ids, new versions), the 4 imports re-linked (5 links), the tombstoned night stayed out; hc still 11 records. two more Pulls: identical counts |
+
+not run here: 13 crash mid-pull, 23 device restore, 24 background
+notification end, and an invalid file through the real picker (decode and
+copy are covered by unit tests).
 
 ---
 

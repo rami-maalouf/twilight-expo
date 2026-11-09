@@ -91,3 +91,24 @@ the dev server (`http://localhost:8083`).
 
 Foreign sleep for tests comes from the throwaway seeder apps described in
 `docs/health-connect.md` 7.2 (`com.rami.twilight.hcseeder` and `.b`).
+
+## Data export and import (both platforms)
+
+Settings -> Data -> Import & Export Data (hidden while sample data is active),
+ported from Swift `DataArchiveManager` / `DataExporter`
+(`docs/health-connect.md` 6 and 13):
+
+- Export Full Backup writes a versioned `twilight-expo-backup` JSON file
+  (sessions, sleep settings, appearance, Health Connect tombstones). Import
+  Backup previews the merge, saves a safety backup to `<documents>/DataBackups`
+  (newest 10 kept) and merges by session id. Swift `twilight-full-backup`
+  files import one way.
+- CSV and Markdown session export with sort order and UTC/local timestamps.
+- iOS exports through the share sheet ("Save to Files" lives there). Android
+  asks "Save to Device" or "Share": Save to Device opens the system
+  create-document picker (Downloads or any folder, editable file name) through
+  the local module `modules/twilight-document-save`, because the Android share
+  sheet has no local save target.
+- pure format, validation and merge rules: `src/domain/archive/`; file io and
+  wiring: `src/services/archive/`, `src/data/archive-repo.ts`; ui:
+  `src/app/data-management.tsx`, `src/components/settings/DataSection.tsx`.
