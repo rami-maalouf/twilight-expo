@@ -7,6 +7,7 @@ import { Canvas, Circle, DashPathEffect, Line, Path, RoundedRect, vec } from '@s
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 
 import {
   calculateYAxisDomain,
@@ -129,6 +130,8 @@ export function WeekChart({
   };
   const scrubGesture = usePanGesture({
     minDistance: 0,
+    activeOffsetX: [-8, 8],
+    failOffsetY: [-8, 8],
     runOnJS: true,
     onBegin: (e) => setSelectedIndex(indexAtX(e.x)),
     onUpdate: (e) => setSelectedIndex(indexAtX(e.x)),
@@ -290,18 +293,27 @@ export function WeekChart({
             <Text style={styles.popoverDate}>{selected.dateLabel}</Text>
             <View style={styles.popoverDivider} />
             <View style={styles.popoverRow}>
-              <Text style={[styles.popoverDuration, { color: theme.textPrimary }]}>
-                {formatHm(selected.durationSeconds)}
-              </Text>
-              {selected.changePercent != null && (
-                <Text
-                  style={[
-                    styles.popoverChange,
-                    { color: fixed(selected.changePercent >= 0 ? GREEN : RED) },
-                  ]}>
-                  {selected.changePercent >= 0 ? '↗' : '↘'}{' '}
-                  {Math.abs(Math.trunc(selected.changePercent))}%
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <SymbolView name="moon.zzz.fill" size={14} tintColor={theme.accent} />
+                <Text style={[styles.popoverDuration, { color: theme.textPrimary }]}>
+                  {formatHm(selected.durationSeconds)}
                 </Text>
+              </View>
+              {selected.changePercent != null && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <SymbolView
+                    name={selected.changePercent >= 0 ? 'arrow.up.right' : 'arrow.down.right'}
+                    size={12}
+                    tintColor={fixed(selected.changePercent >= 0 ? GREEN : RED)}
+                  />
+                  <Text
+                    style={[
+                      styles.popoverChange,
+                      { color: fixed(selected.changePercent >= 0 ? GREEN : RED) },
+                    ]}>
+                    {Math.abs(Math.trunc(selected.changePercent))}%
+                  </Text>
+                </View>
               )}
             </View>
             {(
@@ -312,10 +324,15 @@ export function WeekChart({
             ).map(([label, dev, fallback]) => {
               if (dev == null) return null;
               const { text, color } = deviationText(dev, fixed);
+              const iconName = dev === 0 ? 'checkmark.circle.fill' : dev > 0 ? 'arrow.right' : 'arrow.left';
+              const iconColor = color || fallback;
               return (
                 <View key={label} style={styles.popoverRow}>
                   <Text style={styles.popoverDevLabel}>{label}</Text>
-                  <Text style={[styles.popoverDevValue, { color: color || fallback }]}>{text}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <SymbolView name={iconName} size={12} tintColor={iconColor} />
+                    <Text style={[styles.popoverDevValue, { color: iconColor }]}>{text}</Text>
+                  </View>
                 </View>
               );
             })}

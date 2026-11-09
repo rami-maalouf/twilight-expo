@@ -143,6 +143,8 @@ export function SleepRegularityCard({
 
   const scrub = usePanGesture({
     minDistance: 0,
+    activeOffsetX: [-8, 8],
+    failOffsetY: [-8, 8],
     runOnJS: true,
     onBegin: (e) => setSelectedIndex(nearestIndex(e.x)),
     onUpdate: (e) => setSelectedIndex(nearestIndex(e.x)),
@@ -294,7 +296,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     width: '100%',
   },
-  windowPicker: { width: 188, flexGrow: 0, flexShrink: 0 },
+  windowPicker: { maxWidth: 188, flex: 1, minWidth: 0, flexShrink: 1 },
   headerSpacer: { flexGrow: 1, minWidth: 8 },
   headline: { fontSize: 17, fontWeight: '600', fontVariant: ['tabular-nums'] },
   captionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },

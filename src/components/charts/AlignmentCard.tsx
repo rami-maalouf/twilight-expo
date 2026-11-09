@@ -10,7 +10,7 @@ import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
 import { Card } from '@/components/common/Card';
 import { HistoryRangeChip, type DashboardHistoryRange } from '@/components/dashboard/HistoryRangeChip';
-import { InsightPills, type InsightItem } from '@/components/dashboard/InsightPills';
+import { type InsightItem } from '@/components/dashboard/InsightPills';
 import type { AlignmentScorePoint } from '@/domain/metrics/analyzer';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 import { catmullRomPath } from './path-utils';
@@ -171,6 +171,10 @@ export function AlignmentCard({
           ? fixed(RED)
           : fixed(ORANGE);
 
+  const pillBg =
+    theme.name === 'sunset' ? 'rgba(255, 255, 255, 0.55)' : 'rgba(28, 28, 30, 0.55)';
+  const secondary = theme.name === 'sunset' ? '#5c4b5e' : '#98989f';
+
   const pills: InsightItem[] = [
     {
       title: 'daily',
@@ -218,6 +222,8 @@ export function AlignmentCard({
 
   const scrub = usePanGesture({
     minDistance: 0,
+    activeOffsetX: [-8, 8],
+    failOffsetY: [-8, 8],
     runOnJS: true,
     onBegin: (e) => setSelectedIndex(nearestIndex(e.x)),
     onUpdate: (e) => setSelectedIndex(nearestIndex(e.x)),
@@ -254,15 +260,48 @@ export function AlignmentCard({
         </View>
 
         <View style={styles.pillsRow}>
-          <View style={styles.pillsFlex}>
-            <InsightPills items={pills} />
-          </View>
-          <View style={styles.streakPill}>
-            <View style={styles.streakRow}>
-              <SymbolView name="flame.fill" size={16} weight="semibold" tintColor={fixed(ORANGE)} />
-              <Text style={[styles.streakValue, { color: fixed(ORANGE) }]}>{currentStreak}</Text>
+          {pills.map((item) => (
+            <View key={item.title} style={[styles.pill, { backgroundColor: pillBg }]}>
+              <Text
+                style={[styles.pillTitle, { color: secondary }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}>
+                {item.title.toUpperCase()}
+              </Text>
+              <Text
+                style={[styles.pillValue, { color: item.tint }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}>
+                {item.value}
+              </Text>
+              <Text
+                style={[styles.pillSubtitle, { color: secondary }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}>
+                {item.subtitle}
+              </Text>
             </View>
-            <Text style={styles.streakSubtitle}>
+          ))}
+          <View style={[styles.pill, { backgroundColor: pillBg }]}>
+            <Text
+              style={[styles.pillTitle, { color: secondary }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}>
+              STREAK
+            </Text>
+            <View style={styles.streakRow}>
+              <SymbolView name="flame.fill" size={15} weight="semibold" tintColor={fixed(ORANGE)} />
+              <Text style={[styles.pillValue, { color: fixed(ORANGE) }]}>{currentStreak}</Text>
+            </View>
+            <Text
+              style={[styles.pillSubtitle, { color: secondary }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}>
               {bestStreak > 0 ? `best ${bestStreak}d` : 'hit 70+'}
             </Text>
           </View>
@@ -419,19 +458,17 @@ const styles = StyleSheet.create({
   headline: { fontSize: 17, fontWeight: '600' },
   emptyText: { fontSize: 15, paddingVertical: 24 },
   pillsRow: { flexDirection: 'row', gap: 8 },
-  pillsFlex: { flex: 3 },
-  streakPill: {
+  pill: {
     flex: 1,
     gap: 3,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(28, 28, 30, 0.55)',
-    justifyContent: 'center',
   },
+  pillTitle: { fontSize: 10, fontWeight: '700' },
+  pillValue: { fontSize: 15, fontWeight: '600' },
+  pillSubtitle: { fontSize: 11 },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  streakValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  streakSubtitle: { fontSize: 11, color: '#98989f' },
   yLabel: {
     position: 'absolute',
     left: 0,

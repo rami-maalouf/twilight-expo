@@ -348,6 +348,8 @@ export function TimingCard({
 
   const scrub = usePanGesture({
     minDistance: 0,
+    activeOffsetX: [-8, 8],
+    failOffsetY: [-8, 8],
     runOnJS: true,
     onBegin: (e) => setSelectedIndex(nearestIndex(e.x)),
     onUpdate: (e) => setSelectedIndex(nearestIndex(e.x)),

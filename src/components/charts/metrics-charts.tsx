@@ -56,6 +56,8 @@ function useScrub(count: number, xAt: (i: number) => number) {
   };
   const gesture = usePanGesture({
     minDistance: 0,
+    activeOffsetX: [-8, 8],
+    failOffsetY: [-8, 8],
     runOnJS: true,
     onBegin: (e) => setSelected(nearest(e.x)),
     onUpdate: (e) => setSelected(nearest(e.x)),

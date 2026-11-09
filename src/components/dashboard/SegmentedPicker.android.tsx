@@ -72,7 +72,7 @@ export function SegmentedPicker<T extends string>({
                       ? String(colors.activeContentColor)
                       : String(colors.inactiveContentColor)
                   }
-                  style={{ typography: 'labelLarge', fontWeight: '600' }}>
+                  style={{ typography: 'labelMedium', fontWeight: '600' }}>
                   {option}
                 </Text>
               </SegmentedButton.Label>

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Canvas, LinearGradient, RoundedRect, vec } from '@shopify/react-native-skia';
 
 import { Card } from '@/components/common/Card';
 import { FadeInSlide } from '@/components/common/FadeInSlide';
@@ -64,6 +65,24 @@ function nowMinutesAndToday(): { minutes: number; today: CalendarDay } {
     minutes: p.hour * 60 + p.minute,
     today: { year: p.year, month: p.month, day: p.day },
   };
+}
+
+function EmptyWeekChartIcon({ color }: { color: string }) {
+  return (
+    <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+      <Canvas style={{ width: 44, height: 44 }}>
+        <RoundedRect x={2} y={18} width={10} height={24} r={3}>
+          <LinearGradient start={vec(0, 0)} end={vec(0, 44)} colors={['rgba(255,255,255,0.6)', color]} />
+        </RoundedRect>
+        <RoundedRect x={17} y={2} width={10} height={40} r={3}>
+          <LinearGradient start={vec(0, 0)} end={vec(0, 44)} colors={['rgba(255,255,255,0.6)', color]} />
+        </RoundedRect>
+        <RoundedRect x={32} y={12} width={10} height={30} r={3}>
+          <LinearGradient start={vec(0, 0)} end={vec(0, 44)} colors={['rgba(255,255,255,0.6)', color]} />
+        </RoundedRect>
+      </Canvas>
+    </View>
+  );
 }
 
 export default function DashboardScreen() {
@@ -277,8 +296,8 @@ export default function DashboardScreen() {
       <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingTop: insets.top + (Platform.OS === 'android' ? 16 : 12) }]} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.greetingRow}>
-            <Pressable onPress={shuffleGreeting} hitSlop={6}>
-              <Text style={[styles.greeting, { color: theme.textPrimary }]}>
+            <Pressable onPress={shuffleGreeting} hitSlop={6} style={styles.greetingButton}>
+              <Text style={[styles.greeting, { color: theme.textPrimary }]} numberOfLines={1}>
                 {greeting || (isSleeping ? 'Good Night 🌙' : 'Good Morning ☀️')}
               </Text>
             </Pressable>
@@ -319,7 +338,7 @@ export default function DashboardScreen() {
               ) : (
                 <Card>
                   <View style={styles.emptyChart}>
-                    <SymbolView name="chart.bar.fill" size={50} tintColor={theme.accent} />
+                    <EmptyWeekChartIcon color={theme.accent} />
                     <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
                       Your sleep story starts tonight
                     </Text>
@@ -400,12 +419,13 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   header: { gap: 2 },
-  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  greetingButton: { flexShrink: 1 },
   greeting: { fontSize: 34, fontWeight: '700' },
   date: { fontSize: 15 },
   analytics: { gap: 16, alignSelf: 'stretch' },
   chartSpacer: { height: 12 },
-  emptyChart: { alignItems: 'center', gap: 8, paddingVertical: 40 },
+  emptyChart: { alignItems: 'center', justifyContent: 'center', height: 300, gap: 10, paddingVertical: 20 },
   emptyTitle: { fontSize: 17, fontWeight: '600' },
   emptySubtitle: { fontSize: 15, textAlign: 'center' },
 });

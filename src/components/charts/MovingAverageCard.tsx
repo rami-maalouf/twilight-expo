@@ -217,6 +217,8 @@ export function MovingAverageCard({
 
   const scrub = usePanGesture({
     minDistance: 0,
+    activeOffsetX: [-8, 8],
+    failOffsetY: [-8, 8],
     runOnJS: true,
     onBegin: (e) => setSelectedIndex(nearestIndex(e.x)),
     onUpdate: (e) => setSelectedIndex(nearestIndex(e.x)),
@@ -377,7 +379,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     width: '100%',
   },
-  windowPicker: { width: 188, flexGrow: 0, flexShrink: 0 },
+  windowPicker: { maxWidth: 188, flex: 1, minWidth: 0, flexShrink: 1 },
   headerSpacer: { flexGrow: 1, minWidth: 8 },
   chartFrame: { alignSelf: 'stretch', width: '100%', height: CHART_HEIGHT },
   headline: { fontSize: 17, fontWeight: '600' },

@@ -116,11 +116,25 @@ export function MetricsEmptyState() {
   return (
     <View style={styles.card}>
       <View style={styles.empty}>
-        <SymbolView
-          name="chart.line.uptrend.xyaxis.circle.fill"
-          size={44}
-          tintColor={theme.actionPrimary}
-        />
+        {Platform.OS === 'android' ? (
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: theme.actionPrimary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <SymbolView name="chart.line.uptrend.xyaxis.circle.fill" size={26} tintColor="#ffffff" />
+          </View>
+        ) : (
+          <SymbolView
+            name="chart.line.uptrend.xyaxis.circle.fill"
+            size={44}
+            tintColor={theme.actionPrimary}
+          />
+        )}
         <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
           Not enough nights for metrics yet
         </Text>
