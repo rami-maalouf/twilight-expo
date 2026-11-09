@@ -11,6 +11,7 @@ import { configureForegroundNotifications, updateWindDownNotification } from '@/
 import { useForegroundRefresh } from '@/services/use-foreground-refresh';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
 import { useExternalSleepActions } from '@/services/use-external-sleep-actions';
+import { useRatingPrompt } from '@/services/use-rating-prompt';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -38,6 +39,8 @@ export default function RootLayout() {
   useExternalSleepActions();
   // reread sessions and settings on every return to the foreground
   useForegroundRefresh();
+  // review prompt from the third launch, once per version
+  useRatingPrompt();
 
   // wind-down reminder: (re)schedule on launch, bedtime change, and toggle
   const windDownEnabled = useSettings((s) => s.windDownReminderEnabled);
