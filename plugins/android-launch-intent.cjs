@@ -7,7 +7,9 @@
 // - a link that brings an existing task back after process death arrives
 //   through onNewIntent before react native is running and would be lost.
 //   keeping it as the activity intent lets Linking.getInitialURL() see it.
-const { withMainActivity } = require('expo/config-plugins');
+// - fontScale added to configChanges so system font scale change does not
+//   destroy/recreate MainActivity or mount a second react root.
+const { withMainActivity, withAndroidManifest } = require('expo/config-plugins');
 
 const MARK = '// twilight: launch intent hygiene';
 const GUARD = `    ${MARK}\n    if (savedInstanceState != null) intent?.data = null\n`;
@@ -25,7 +27,23 @@ function insertBefore(contents, anchor, text) {
   return `${contents.slice(0, index)}${text}${contents.slice(index)}`;
 }
 
+function withFontScaleConfig(config) {
+  return withAndroidManifest(config, (cfg) => {
+    const mainActivity = cfg.modResults.manifest.application?.[0]?.activity?.find(
+      (a) => a.$?.['android:name'] === '.MainActivity'
+    );
+    if (mainActivity && mainActivity.$) {
+      const current = mainActivity.$['android:configChanges'] || '';
+      if (!current.includes('fontScale')) {
+        mainActivity.$['android:configChanges'] = current ? `${current}|fontScale` : 'fontScale';
+      }
+    }
+    return cfg;
+  });
+}
+
 module.exports = function withLaunchIntentHygiene(config) {
+  config = withFontScaleConfig(config);
   return withMainActivity(config, (config) => {
     let { contents } = config.modResults;
     if (config.modResults.language !== 'kt') {
