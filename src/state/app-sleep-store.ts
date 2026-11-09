@@ -4,9 +4,14 @@
 import { useStore } from 'zustand';
 
 import { sessionRepo } from '../data/app-db';
+import { mirrorSleepControls } from '../services/sleep-controls';
 import { createSleepStore, type SleepState } from './sleep-store';
 
 export const appSleepStore = createSleepStore(sessionRepo);
+
+// the android quick settings tile and launcher shortcuts follow every
+// session change, with or without ui (the headless task uses this store too)
+mirrorSleepControls(appSleepStore);
 
 export function useSleepStore<T>(selector: (state: SleepState) => T): T {
   return useStore(appSleepStore, selector);

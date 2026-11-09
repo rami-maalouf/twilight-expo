@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pre-adaptive (android 7.1) shortcut icon: glyph on a night sky circle -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+  <path
+      android:fillColor="@color/twilight_shortcut_background"
+      android:pathData="M24,0a24,24 0,1 1,0 48a24,24 0,1 1,0 -48z" />
+  <group
+      android:translateX="12"
+      android:translateY="12">
+    <path
+        android:fillColor="@color/twilight_shortcut_moon"
+        android:pathData="M12.34,2.02C6.59,1.82 2,6.42 2,12c0,5.52 4.48,10 10,10 3.71,0 6.93,-2.02 8.66,-5.02 -7.51,-0.25 -12.09,-8.43 -8.32,-14.96z" />
+  </group>
+</vector>

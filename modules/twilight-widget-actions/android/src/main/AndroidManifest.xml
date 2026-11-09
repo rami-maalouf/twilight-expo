@@ -24,5 +24,24 @@
     <service
       android:name="expo.modules.twilightwidgetactions.TwilightSessionTaskService"
       android:exported="false" />
+    <!-- quick settings tile (swift SleepModeControlWidget) -->
+    <service
+      android:name="expo.modules.twilightwidgetactions.TwilightSleepTileService"
+      android:exported="true"
+      android:icon="@drawable/twilight_notification_moon"
+      android:label="@string/twilight_tile_name"
+      android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+      <intent-filter>
+        <action android:name="android.service.quicksettings.action.QS_TILE" />
+      </intent-filter>
+    </service>
+    <!-- launcher shortcut trampoline: records the press and opens the app -->
+    <activity
+      android:name="expo.modules.twilightwidgetactions.TwilightSleepShortcutActivity"
+      android:excludeFromRecents="true"
+      android:exported="false"
+      android:noHistory="true"
+      android:taskAffinity=""
+      android:theme="@android:style/Theme.NoDisplay" />
   </application>
 </manifest>

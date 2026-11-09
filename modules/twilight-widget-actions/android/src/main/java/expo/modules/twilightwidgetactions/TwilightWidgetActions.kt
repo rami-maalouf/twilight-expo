@@ -20,7 +20,8 @@ object TwilightWidgetActions {
   private const val KEY_AT = "at"
   private const val KEY_ORIGIN = "origin"
   private const val TAG = "TwilightWidgets"
-  // widget presses open the app and must run right away; session
+  // widget, quick settings tile and launcher shortcut presses open the app
+  // and must run right away (ORIGIN_WIDGET); session
   // notification presses run in the background and keep their press time
   const val ORIGIN_WIDGET = "widget"
   const val ORIGIN_NOTIFICATION = "notification"
@@ -63,10 +64,14 @@ object TwilightWidgetActions {
       .commit()
   }
 
-  private fun open(context: Context) {
-    val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
-    launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+  // brings the app's task to the front as it was (or starts it)
+  fun launchIntent(context: Context): Intent? =
+    context.packageManager.getLaunchIntentForPackage(context.packageName)
+      ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+
+  fun open(context: Context) {
+    val launch = launchIntent(context) ?: return
     runCatching { context.startActivity(launch) }
-      .onFailure { Log.w(TAG, "could not open the app from a widget", it) }
+      .onFailure { Log.w(TAG, "could not open the app", it) }
   }
 }

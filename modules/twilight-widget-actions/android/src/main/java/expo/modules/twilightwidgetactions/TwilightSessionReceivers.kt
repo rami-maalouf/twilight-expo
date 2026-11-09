@@ -22,11 +22,15 @@ class TwilightSessionActionReceiver : BroadcastReceiver() {
       TwilightSessionNotification.ACTION_STOP -> {
         TwilightWidgetActions.record(appContext, "stop", TwilightWidgetActions.ORIGIN_NOTIFICATION)
         TwilightSessionNotification.cancel(appContext, TwilightSessionNotification.KIND_SLEEP)
+        // the tile and shortcuts follow at once too; js republishes the real
+        // state when it applies the press
+        TwilightSleepControls.publish(appContext, null)
         TwilightSessionTaskService.start(appContext)
       }
       TwilightSessionNotification.ACTION_START -> {
         TwilightWidgetActions.record(appContext, "start", TwilightWidgetActions.ORIGIN_NOTIFICATION)
         TwilightSessionNotification.cancel(appContext, TwilightSessionNotification.KIND_WIND_DOWN)
+        TwilightSleepControls.publish(appContext, System.currentTimeMillis())
         TwilightSessionTaskService.start(appContext)
       }
       TwilightSessionNotification.ACTION_DISMISSED ->
