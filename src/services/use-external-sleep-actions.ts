@@ -4,7 +4,7 @@
 // pending action an android home-widget press leaves behind, and a session
 // notification press the headless task missed
 import { useEffect } from 'react';
-import { Alert, AppState, Linking } from 'react-native';
+import { Alert, AppState, Linking, Platform } from 'react-native';
 
 import { consumePendingWidgetAction } from '../../modules/twilight-widget-actions';
 import { appSleepStore } from '../state/app-sleep-store';
@@ -49,9 +49,13 @@ export function useExternalSleepActions() {
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'active') queueWidgetAction();
     });
+    // android: the quick settings shade can cover the app without pausing
+    // it, so a tile press made over the app only shows as regained focus
+    const focus = Platform.OS === 'android' ? AppState.addEventListener('focus', queueWidgetAction) : null;
     return () => {
       unsubscribe();
       sub.remove();
+      focus?.remove();
     };
   }, []);
 }
