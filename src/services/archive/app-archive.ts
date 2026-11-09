@@ -7,6 +7,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
+import DocumentSave from '../../../modules/twilight-document-save';
 import { archiveRepo, settingsStore } from '../../data/app-db';
 import { ArchiveError } from '../../domain/archive/archive-format';
 import {
@@ -54,38 +55,76 @@ export const archiveManager = new ArchiveManager({
   platform: Platform.OS,
 });
 
+// where an export goes: the system share sheet (swift ShareSheetPresenter), or
+// on android a file the user saves through the create-document picker,
+// because the android share sheet has no local save target (13)
+export type ExportDestination = 'share' | 'device';
+
+export type ExportOutcome = { kind: 'shared' } | { kind: 'saved'; displayName: string } | { kind: 'cancelled' };
+
+export const canSaveToDevice = Platform.OS === 'android' && DocumentSave != null;
+
+interface ExportFile {
+  name: string;
+  contents: string;
+  mimeType: string;
+  uti: string;
+  title: string;
+}
+
 // swift TemporaryExportFileManager + ShareSheetPresenter
-async function shareText(name: string, contents: string, mimeType: string, uti: string, title: string) {
-  const file = new File(Paths.cache, name);
-  file.create({ overwrite: true });
-  file.writeSync(contents);
-  await Sharing.shareAsync(file.uri, { mimeType, UTI: uti, dialogTitle: title });
+async function deliver(destination: ExportDestination, file: ExportFile): Promise<ExportOutcome> {
+  if (destination === 'device') {
+    if (!DocumentSave) throw new Error('Saving files is not available on this device.');
+    const saved = await DocumentSave.saveTextDocument(file.name, file.mimeType, file.contents);
+    return saved ? { kind: 'saved', displayName: saved.displayName } : { kind: 'cancelled' };
+  }
+  const cached = new File(Paths.cache, file.name);
+  cached.create({ overwrite: true });
+  cached.writeSync(file.contents);
+  await Sharing.shareAsync(cached.uri, { mimeType: file.mimeType, UTI: file.uti, dialogTitle: file.title });
+  return { kind: 'shared' };
 }
 
-export async function exportFullBackup(): Promise<void> {
-  await shareText(
-    archiveManager.backupFilename(),
-    archiveManager.exportArchiveJson(),
-    'application/json',
-    'public.json',
-    'Export Full Backup'
-  );
+export function exportFullBackup(destination: ExportDestination = 'share'): Promise<ExportOutcome> {
+  return deliver(destination, {
+    name: archiveManager.backupFilename(),
+    contents: archiveManager.exportArchiveJson(),
+    mimeType: 'application/json',
+    uti: 'public.json',
+    title: 'Export Full Backup',
+  });
 }
 
-export async function exportSessions(options: {
+export function exportSessions(options: {
   format: ExportFormat;
   sortDirection: ExportSortDirection;
   timeZone: ExportTimeZone;
-}): Promise<void> {
+  destination?: ExportDestination;
+}): Promise<ExportOutcome> {
+  const { destination = 'share', ...rest } = options;
   const nowMs = Date.now();
   const sessions = archiveRepo.listSessions();
-  const exportOptions = { ...options, deviceZone: deviceTimeZone(), nowMs };
+  const exportOptions = { ...rest, deviceZone: deviceTimeZone(), nowMs };
   const base = `twilight_sessions_${Math.floor(nowMs / 1000)}`;
-  if (options.format === 'csv') {
-    await shareText(`${base}.csv`, exportSessionsCsv(sessions, exportOptions), 'text/csv', 'public.comma-separated-values-text', 'Export Sessions');
-  } else {
-    await shareText(`${base}.md`, exportSessionsMarkdown(sessions, exportOptions), 'text/markdown', 'net.daringfireball.markdown', 'Export Sessions');
-  }
+  return deliver(
+    destination,
+    rest.format === 'csv'
+      ? {
+          name: `${base}.csv`,
+          contents: exportSessionsCsv(sessions, exportOptions),
+          mimeType: 'text/csv',
+          uti: 'public.comma-separated-values-text',
+          title: 'Export Sessions',
+        }
+      : {
+          name: `${base}.md`,
+          contents: exportSessionsMarkdown(sessions, exportOptions),
+          mimeType: 'text/markdown',
+          uti: 'net.daringfireball.markdown',
+          title: 'Export Sessions',
+        }
+  );
 }
 
 // null when the user cancels the picker

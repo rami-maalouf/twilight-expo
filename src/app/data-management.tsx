@@ -11,6 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  ToastAndroid,
   View,
   type StyleProp,
   type ViewStyle,
@@ -25,7 +26,15 @@ import { settingsStore } from '@/data/app-db';
 import { ArchiveError } from '@/domain/archive/archive-format';
 import { confirmationMessage, successMessage } from '@/domain/archive/archive-merge';
 import type { ExportFormat, ExportSortDirection, ExportTimeZone } from '@/domain/archive/session-export';
-import { exportFullBackup, exportSessions, importBackup, pickBackup } from '@/services/archive/app-archive';
+import {
+  canSaveToDevice,
+  exportFullBackup,
+  exportSessions,
+  importBackup,
+  pickBackup,
+  type ExportDestination,
+  type ExportOutcome,
+} from '@/services/archive/app-archive';
 import { useSettings } from '@/state/settings-state';
 import { useTheme, useThemeControls } from '@/theme/ThemeProvider';
 
@@ -35,6 +44,7 @@ const SORT_LABELS: Record<ExportSortDirection, string> = {
 };
 const TIME_ZONE_LABELS: Record<ExportTimeZone, string> = { utc: 'UTC', local: 'Local' };
 const FORMAT_LABELS: Record<ExportFormat, string> = { csv: 'CSV', markdown: 'Markdown (AI-friendly)' };
+const FORMAT_FILE_LABELS: Record<ExportFormat, string> = { csv: 'CSV', markdown: 'Markdown' };
 
 function formatExportedAt(ms: number): string {
   return new Date(ms).toLocaleString([], {
@@ -49,6 +59,29 @@ function formatExportedAt(ms: number): string {
 function errorMessage(error: unknown): string {
   if (error instanceof ArchiveError) return error.message;
   return error instanceof Error && error.message ? error.message : 'An unknown error occurred. Please try again.';
+}
+
+// android: the share sheet has no local save target, so every export asks
+// whether to save a file on the device or share it (docs/health-connect.md 13).
+// ios: the share sheet already offers "Save to Files".
+function chooseDestination(title: string, message: string): Promise<ExportDestination | null> {
+  if (!canSaveToDevice) return Promise.resolve('share');
+  return new Promise((resolve) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+        { text: 'Share', onPress: () => resolve('share') },
+        { text: 'Save to Device', onPress: () => resolve('device') },
+      ],
+      { cancelable: true, onDismiss: () => resolve(null) }
+    );
+  });
+}
+
+function announce(outcome: ExportOutcome) {
+  if (outcome.kind === 'saved') ToastAndroid.show(`Saved ${outcome.displayName}`, ToastAndroid.SHORT);
 }
 
 function SectionHeader({ title }: { title: string }) {
@@ -128,9 +161,14 @@ export default function DataManagementScreen() {
   const showError = (error: unknown) => Alert.alert('Data Error', errorMessage(error));
 
   const onExportBackup = async () => {
+    const destination = await chooseDestination(
+      'Export Full Backup',
+      'Save the backup file on this device, or share it with another app.'
+    );
+    if (!destination) return;
     setIsPreparingBackup(true);
     try {
-      await exportFullBackup();
+      announce(await exportFullBackup(destination));
     } catch (error) {
       showError(error);
     } finally {
@@ -170,9 +208,14 @@ export default function DataManagementScreen() {
   };
 
   const onExportSessions = async () => {
+    const destination = await chooseDestination(
+      'Export Sessions',
+      `Save the ${FORMAT_FILE_LABELS[format]} file on this device, or share it with another app.`
+    );
+    if (!destination) return;
     setIsGenerating(true);
     try {
-      await exportSessions({ format, sortDirection, timeZone });
+      announce(await exportSessions({ format, sortDirection, timeZone, destination }));
     } catch (error) {
       showError(error);
     } finally {
