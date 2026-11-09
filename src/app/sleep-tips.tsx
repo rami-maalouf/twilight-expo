@@ -1,6 +1,7 @@
 // ports: Views/SleepHygieneTipsView.swift - the wind-down routine timeline
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
@@ -62,8 +63,17 @@ export default function SleepTipsScreen() {
       <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
         <View style={styles.toolbarSpacer} />
         <View style={styles.toolbarSpacer} />
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.doneButton}>
-          <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          style={styles.doneButton}
+          accessibilityRole="button"
+          accessibilityLabel="Close">
+          {Platform.OS === 'android' ? (
+            <SymbolView name="xmark" size={20} tintColor={theme.textPrimary} />
+          ) : (
+            <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
+          )}
         </Pressable>
       </View>
       <ScrollView
@@ -89,7 +99,7 @@ export default function SleepTipsScreen() {
             return (
               <View key={step.hoursBefore} style={styles.timelineRow}>
                 <View style={styles.timelineRail}>
-                  <View style={[styles.timelineDot, { backgroundColor: fixed(step.color) }]}>
+                  <View style={[styles.timelineDot, { backgroundColor: `${fixed(step.color)}33` }]}>
                     <Text style={styles.timelineEmoji}>{step.emoji}</Text>
                   </View>
                   {!isLast && <View style={styles.timelineLine} />}

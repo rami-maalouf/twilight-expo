@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -66,27 +66,21 @@ export default function RootLayout() {
             <Stack.Screen name="sleep-tips" options={{ presentation: 'modal' }} />
             <Stack.Screen
               name="timeline-sheet"
-              options={
-                Platform.OS === 'ios'
-                  ? {
-                      presentation: 'formSheet',
-                      sheetAllowedDetents: [0.82, 1.0],
-                      sheetGrabberVisible: true,
-                    }
-                  : { presentation: 'modal' }
-              }
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.82, 1.0],
+                sheetGrabberVisible: true,
+                sheetCornerRadius: 28,
+              }}
             />
             <Stack.Screen
               name="metrics-explanation"
-              options={
-                Platform.OS === 'ios'
-                  ? {
-                      presentation: 'formSheet',
-                      sheetAllowedDetents: [0.6, 1.0],
-                      sheetGrabberVisible: true,
-                    }
-                  : { presentation: 'modal' }
-              }
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.6, 1.0],
+                sheetGrabberVisible: true,
+                sheetCornerRadius: 28,
+              }}
             />
           </Stack>
           <DemoExitControl />

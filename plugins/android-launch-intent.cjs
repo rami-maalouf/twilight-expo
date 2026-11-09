@@ -9,7 +9,9 @@
 //   keeping it as the activity intent lets Linking.getInitialURL() see it.
 // - fontScale added to configChanges so system font scale change does not
 //   destroy/recreate MainActivity or mount a second react root.
-const { withMainActivity, withAndroidManifest } = require('expo/config-plugins');
+// - alertDialogTheme configured to Material 3 with 28dp corners so app alerts
+//   follow Material 3 instead of legacy AppCompat styles.
+const { withMainActivity, withAndroidManifest, withAndroidStyles, AndroidConfig } = require('expo/config-plugins');
 
 const MARK = '// twilight: launch intent hygiene';
 const GUARD = `    ${MARK}\n    if (savedInstanceState != null) intent?.data = null\n`;
@@ -42,20 +44,70 @@ function withFontScaleConfig(config) {
   });
 }
 
-module.exports = function withLaunchIntentHygiene(config) {
+function withM3AlertTheme(config) {
+  return withAndroidStyles(config, (cfg) => {
+    AndroidConfig.Styles.setStylesItem({
+      parent: { name: 'AppTheme' },
+      xml: cfg.modResults,
+      item: { $: { name: 'alertDialogTheme' }, _: '@style/M3AlertDialogTheme' },
+    });
+    AndroidConfig.Styles.setStylesItem({
+      parent: { name: 'AppTheme' },
+      xml: cfg.modResults,
+      item: { $: { name: 'materialAlertDialogTheme' }, _: '@style/M3AlertDialogTheme' },
+    });
+    const styles = cfg.modResults.resources.style || [];
+    if (!styles.some((s) => s.$?.name === 'M3AlertDialogTheme')) {
+      styles.push({
+        $: {
+          name: 'M3AlertDialogTheme',
+          parent: 'ThemeOverlay.Material3.MaterialAlertDialog',
+        },
+        item: [
+          { $: { name: 'shapeAppearanceCornerExtraLarge' }, _: '@style/ShapeAppearance.M3.Corner.Dialog' },
+          { $: { name: 'shapeAppearanceCornerMedium' }, _: '@style/ShapeAppearance.M3.Corner.Dialog' },
+          { $: { name: 'cornerSize' }, _: '28dp' },
+          { $: { name: 'colorPrimary' }, _: '#00D4FF' },
+          { $: { name: 'colorAccent' }, _: '#00D4FF' },
+        ],
+      });
+    }
+    if (!styles.some((s) => s.$?.name === 'ShapeAppearance.M3.Corner.Dialog')) {
+      styles.push({
+        $: {
+          name: 'ShapeAppearance.M3.Corner.Dialog',
+          parent: '',
+        },
+        item: [
+          { $: { name: 'cornerSize' }, _: '28dp' },
+        ],
+      });
+    }
+    cfg.modResults.resources.style = styles;
+    return cfg;
+  });
+}
+
+function withLaunchIntentHygiene(config) {
   config = withFontScaleConfig(config);
-  return withMainActivity(config, (config) => {
-    let { contents } = config.modResults;
-    if (config.modResults.language !== 'kt') {
+  config = withM3AlertTheme(config);
+  return withMainActivity(config, (cfg) => {
+    let { contents } = cfg.modResults;
+    if (cfg.modResults.language !== 'kt') {
       throw new Error('plugins/android-launch-intent expects a kotlin MainActivity');
     }
-    if (contents.includes(MARK)) return config;
+    if (contents.includes(MARK)) return cfg;
     if (!contents.includes('import android.content.Intent')) {
       contents = insertBefore(contents, 'import android.os.Bundle', 'import android.content.Intent\n');
     }
     contents = insertBefore(contents, '    super.onCreate(', GUARD);
     contents = insertBefore(contents, '  /**\n   * Returns the name of the main component', `${NEW_INTENT}\n`);
-    config.modResults.contents = contents;
-    return config;
+    cfg.modResults.contents = contents;
+    return cfg;
   });
-};
+}
+
+withLaunchIntentHygiene.withFontScaleConfig = withFontScaleConfig;
+withLaunchIntentHygiene.withM3AlertTheme = withM3AlertTheme;
+
+module.exports = withLaunchIntentHygiene;

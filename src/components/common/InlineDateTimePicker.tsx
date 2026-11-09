@@ -11,6 +11,7 @@ interface Props {
   mode: 'date' | 'time';
   themeVariant: 'light' | 'dark';
   accentColor?: string;
+  title?: string;
   onValueChange: (date: Date) => void;
   style?: StyleProp<ViewStyle>;
 }
@@ -27,6 +28,7 @@ export function InlineDateTimePicker({
   mode,
   themeVariant,
   accentColor,
+  title,
   onValueChange,
   style,
 }: Props) {
@@ -38,23 +40,35 @@ export function InlineDateTimePicker({
         display="compact"
         themeVariant={themeVariant}
         accentColor={accentColor}
-        onValueChange={(_, date) => {
+        onChange={(_, date) => {
           if (date) onValueChange(date);
         }}
         style={style}
       />
     );
   }
-  const chipBg = themeVariant === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.12)';
-  const chipText = themeVariant === 'light' ? '#1c1c1e' : '#ffffff';
+  const isLight = themeVariant === 'light';
+  const chipBg = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.12)';
+  const chipText = isLight ? '#1c1c1e' : '#ffffff';
+  const effectiveTitle = title ?? (mode === 'time' ? 'Select time' : 'Select date');
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${effectiveTitle}, ${label(value, mode)}`}
+      android_ripple={{
+        color: isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.2)',
+        borderless: false,
+      }}
       style={[styles.chip, { backgroundColor: chipBg }, style]}
       onPress={() =>
         DateTimePickerAndroid.open({
           value,
           mode,
-          onValueChange: (_, date) => {
+          design: 'material',
+          title: effectiveTitle,
+          positiveButton: accentColor ? { textColor: accentColor } : undefined,
+          negativeButton: accentColor ? { textColor: accentColor } : undefined,
+          onChange: (_, date) => {
             if (date) onValueChange(date);
           },
         })
@@ -71,6 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 11,
     paddingVertical: 6,
+    overflow: 'hidden',
   },
   chipLabel: {
     fontSize: 15,

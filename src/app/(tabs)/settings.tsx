@@ -187,9 +187,11 @@ export default function SettingsScreen() {
                   <Text style={[styles.goalLabel, { color: fixed(INDIGO) }]}>Bedtime</Text>
                 </View>
                 <InlineDateTimePicker
+                  title="Bedtime"
                   value={minutesToDate(optimalSleepMinutes)}
                   mode="time"
                   themeVariant={pickerVariant}
+                  accentColor={theme.accent}
                   onValueChange={(date) => {
                     setSetting('optimalSleepMinutes', date.getHours() * 60 + date.getMinutes());
                   }}
@@ -202,9 +204,11 @@ export default function SettingsScreen() {
                   <Text style={[styles.goalLabel, { color: fixed(ORANGE) }]}>Wake Up</Text>
                 </View>
                 <InlineDateTimePicker
+                  title="Wake Up"
                   value={minutesToDate(optimalWakeMinutes)}
                   mode="time"
                   themeVariant={pickerVariant}
+                  accentColor={theme.accent}
                   onValueChange={(date) => {
                     setSetting('optimalWakeMinutes', date.getHours() * 60 + date.getMinutes());
                   }}

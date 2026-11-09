@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
@@ -67,8 +67,17 @@ export default function MetricsExplanationScreen() {
       <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
         <View style={styles.toolbarSpacer} />
         <Text style={[styles.navTitle, { color: theme.textPrimary }]}>Analytics Guide</Text>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.doneButton}>
-          <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          style={styles.doneButton}
+          accessibilityRole="button"
+          accessibilityLabel="Close">
+          {Platform.OS === 'android' ? (
+            <SymbolView name="xmark" size={20} tintColor={theme.textPrimary} />
+          ) : (
+            <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
+          )}
         </Pressable>
       </View>
       <ScrollView

@@ -119,7 +119,7 @@ export function CircularTimePicker({
   const moonColor = fixed(MOON_COLOR);
   const sunColor = fixed(SUN_COLOR);
   const arcColors = ARC_COLORS.map(fixed);
-  const box = size + 80;
+  const box = size + 120;
   const center = box / 2;
   const radius = size / 2;
 

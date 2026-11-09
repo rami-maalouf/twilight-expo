@@ -39,4 +39,41 @@ describe('plugins/android-launch-intent', () => {
       'keyboard|keyboardHidden|orientation|screenSize|fontScale'
     );
   });
+
+  it('configures M3AlertDialogTheme with 28dp corners in styles.xml', async () => {
+    const rawConfig = {
+      name: 'Twilight',
+      slug: 'twilight',
+      _internal: { projectRoot: '.' },
+      mods: {},
+    };
+    const pluginResult = withLaunchIntentHygiene(rawConfig);
+    const stylesAction = pluginResult.mods?.android?.styles;
+    expect(stylesAction).toBeDefined();
+
+    const mockStyles = {
+      modResults: {
+        resources: {
+          style: [
+            {
+              $: { name: 'AppTheme', parent: 'Theme.AppCompat.DayNight.NoActionBar' },
+              item: [],
+            },
+          ],
+        },
+      },
+    };
+
+    const evaluated = await stylesAction(mockStyles);
+    const appTheme = evaluated.modResults.resources.style.find(
+      (s: any) => s.$?.name === 'AppTheme'
+    );
+    expect(appTheme.item.some((i: any) => i.$?.name === 'alertDialogTheme')).toBe(true);
+
+    const m3Dialog = evaluated.modResults.resources.style.find(
+      (s: any) => s.$?.name === 'M3AlertDialogTheme'
+    );
+    expect(m3Dialog).toBeDefined();
+    expect(m3Dialog.item.some((i: any) => i.$?.name === 'cornerSize' && i._ === '28dp')).toBe(true);
+  });
 });

@@ -5,7 +5,7 @@ import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CircularTimePicker } from '@/components/common/CircularTimePicker';
@@ -125,6 +125,7 @@ export default function LogEditorScreen() {
             <Text style={[styles.panelCaption, { color: theme.textSecondary }]}>Wake day</Text>
             <InlineDateTimePicker
               value={new Date(wakeDaySel.year, wakeDaySel.month - 1, wakeDaySel.day, 12)}
+              title="Wake day"
               mode="date"
               themeVariant={theme.name === 'sunset' ? 'light' : 'dark'}
               accentColor={theme.actionPrimary}
@@ -237,7 +238,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   panelCaption: { fontSize: 12 },
-  datePicker: { alignSelf: 'flex-start', marginLeft: -8 },
+  datePicker: { alignSelf: 'flex-start', marginLeft: Platform.OS === 'ios' ? -8 : 0 },
   goalScore: { fontSize: 17, fontVariant: ['tabular-nums'] },
   goalSubtitle: { fontSize: 12 },
   scheduleCard: {
