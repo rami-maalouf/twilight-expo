@@ -3,10 +3,11 @@
 // grids, duration momentum, trends analysis, rolling consistency, rolling
 // components with filter, sleep debt, weekday averages, histogram, footer
 // tiles, toolbar (timeline + guide)
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useScrollToTop } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { Screen } from '@/components/common/Screen';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
@@ -73,6 +74,9 @@ export default function MetricsScreen() {
   const refresh = useSleepStore((s) => s.refresh);
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
   const optimalWakeMinutes = useSettings((s) => s.optimalWakeMinutes);
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<any>(null);
+  useScrollToTop(scrollRef);
 
   const [range, setRange] = useState<MetricsRange>('90D');
   const [filter, setFilter] = useState<Filter>('All');
@@ -194,8 +198,9 @@ export default function MetricsScreen() {
   return (
     <Screen>
       <ScrollView
+        ref={scrollRef}
         testID="demo.metrics.scroll"
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + (Platform.OS === 'android' ? 16 : 12) }]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Metrics</Text>

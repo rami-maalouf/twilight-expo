@@ -2,10 +2,11 @@
 // greeting (tap to shuffle) + info button, date line, view-mode segmented
 // picker, per-mode analytics cards (Week | Trend | Time | SRI | Score),
 // status card with streak, fadeInSlide entrances
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useScrollToTop } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { Card } from '@/components/common/Card';
 import { FadeInSlide } from '@/components/common/FadeInSlide';
@@ -267,10 +268,13 @@ export default function DashboardScreen() {
 
   const chartWidth = width - 16 * 2 - 16 * 2;
   const hasWeekData = trackedDataPoints(weekData).length > 0;
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<any>(null);
+  useScrollToTop(scrollRef);
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingTop: insets.top + (Platform.OS === 'android' ? 16 : 12) }]} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.greetingRow}>
             <Pressable onPress={shuffleGreeting} hitSlop={6}>

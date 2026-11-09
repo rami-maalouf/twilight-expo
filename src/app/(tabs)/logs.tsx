@@ -2,9 +2,10 @@
 // large title, + toolbar button, valid sessions newest first, swipe to delete,
 // tap to edit (editor sheet lands in task 13)
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { useCallback } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef } from 'react';
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect, useScrollToTop } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LogRow } from '@/components/logs/LogRow';
 import { Screen } from '@/components/common/Screen';
@@ -14,6 +15,9 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 export default function LogsScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const listRef = useRef<any>(null);
+  useScrollToTop(listRef);
   const sessions = useSleepStore((s) => s.sessions);
   const deleteSession = useSleepStore((s) => s.deleteSession);
   const refresh = useSleepStore((s) => s.refresh);
@@ -31,22 +35,21 @@ export default function LogsScreen() {
   return (
     <Screen>
       <FlatList
+        ref={listRef}
         data={sessions}
         keyExtractor={(s) => s.id}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + (Platform.OS === 'android' ? 16 : 12) }]}
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={styles.addRow}>
-              <Pressable
-                testID="add-log"
-                accessibilityRole="button"
-                accessibilityLabel="Add sleep log"
-                onPress={() => openEditor(null)}
-                style={styles.addButton}>
-                <SymbolView name="plus" size={22} tintColor={theme.accent} />
-              </Pressable>
-            </View>
             <Text style={[styles.title, { color: theme.textPrimary }]}>Sleep Logs</Text>
+            <Pressable
+              testID="add-log"
+              accessibilityRole="button"
+              accessibilityLabel="Add sleep log"
+              onPress={() => openEditor(null)}
+              style={[styles.addButton, { backgroundColor: theme.name === 'sunset' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(28, 28, 30, 0.7)' }]}>
+              <SymbolView name="plus" size={22} tintColor={theme.accent} />
+            </Pressable>
           </View>
         }
         ListEmptyComponent={
@@ -74,13 +77,11 @@ export default function LogsScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 60, paddingBottom: 120 },
-  header: { gap: 8, marginBottom: 16 },
-  addRow: { flexDirection: 'row', justifyContent: 'flex-end' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(28, 28, 30, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -10,9 +10,9 @@ import { LiveActivitySettingRows } from '@/components/settings/LiveActivitySetti
 import { MenuPicker } from '@/components/settings/MenuPicker';
 import { demoDataManager } from '@/data/app-db';
 import * as Notifications from 'expo-notifications';
-import { router } from 'expo-router';
+import { router, useScrollToTop } from 'expo-router';
 import type { SymbolViewProps } from 'expo-symbols';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -27,6 +27,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
 import type { ThemeMode, ThemePalette } from '@/domain/models';
@@ -34,30 +35,33 @@ import { appSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { useFixedColor, useTheme, useThemeControls } from '@/theme/ThemeProvider';
 
+const RED = '#ff3b30';
 const INDIGO = '#5856d6';
 const ORANGE = '#ff9500';
-const RED = '#ff3b30';
 
 const MODE_LABELS: Record<ThemeMode, string> = {
-  system: 'System',
-  light: 'Sunset',
-  dark: 'Night Sky',
-};
-const PALETTE_LABELS: Record<ThemePalette, string> = {
-  twilight: 'Twilight (Blue/Teal)',
-  amethyst: 'Amethyst (Purple/Blue)',
+  system: 'Match system',
+  light: 'Sunset light',
+  dark: 'Night dark',
 };
 
-function goalLabel(sleepMinutes: number, wakeMinutes: number): string {
-  let diff = wakeMinutes - sleepMinutes;
-  if (diff < 0) diff += 24 * 60;
-  const hours = Math.trunc(diff / 60);
-  const minutes = diff % 60;
-  return minutes === 0 ? `${hours} hr` : `${hours} hr ${minutes} min`;
-}
+const PALETTE_LABELS: Record<ThemePalette, string> = {
+  twilight: 'Twilight',
+  amethyst: 'Amethyst',
+};
 
 function minutesToDate(minutes: number): Date {
-  return new Date(2000, 0, 1, Math.trunc(minutes / 60), minutes % 60);
+  const d = new Date();
+  d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+  return d;
+}
+
+function goalLabel(sleepMin: number, wakeMin: number): string {
+  let diff = wakeMin - sleepMin;
+  if (diff <= 0) diff += 24 * 60;
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  return m === 0 ? `${h} hrs` : `${h}h ${m}m`;
 }
 
 function Row({
@@ -78,6 +82,9 @@ function SectionHeader({ title, color }: { title: string; color: string }) {
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<any>(null);
+  useScrollToTop(scrollRef);
   const fixed = useFixedColor();
   const { mode, palette, setMode, setPalette } = useThemeControls();
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
@@ -154,7 +161,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingTop: insets.top + (Platform.OS === 'android' ? 16 : 12) }]} showsVerticalScrollIndicator={false}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>Sleep Settings</Text>
 
         {/* support row */}
@@ -357,7 +364,8 @@ export default function SettingsScreen() {
                   `${scheduled.length} scheduled`,
                   scheduled
                     .map((n) => `${n.identifier}: ${JSON.stringify(n.trigger)}`)
-                    .join('\n') || 'none'
+                    .join('\
+') || 'none'
                 );
               }}>
               <Row rowBg={rowBg}>
@@ -426,11 +434,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: 'rgba(38, 38, 38, 1)',
   },
-  goalPillText: { fontSize: 15, fontWeight: '500', color: '#ffffff' },
-  toggleRow: { alignItems: 'center' },
-  toggleTexts: { flex: 1 },
-  demoDataRow: { flexDirection: 'column', alignItems: 'flex-start', gap: 8 },
-  demoDataBody: { fontSize: 15 },
-  demoDataCaption: { fontSize: 12 },
-  routineLink: { fontSize: 15 },
+  goalPillText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
+  toggleRow: { justifyContent: 'space-between' },
+  toggleTexts: { flex: 1, paddingRight: 12 },
+  routineLink: { fontSize: 17, flex: 1 },
+  demoDataRow: { flexDirection: 'column', alignItems: 'flex-start', gap: 8, paddingVertical: 14 },
+  demoDataBody: { fontSize: 14, lineHeight: 20 },
+  demoDataCaption: { fontSize: 12, lineHeight: 16 },
 });
