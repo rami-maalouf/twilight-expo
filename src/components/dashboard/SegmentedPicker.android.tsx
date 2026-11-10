@@ -2,7 +2,7 @@
 // inactive segments use a solid track fill (same family as cards / actionSecondary)
 // and matching border colors so Material's outline stroke does not read as an
 // empty wireframe. selected uses actionPrimary.
-// source: https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/segmentedbutton/
+// source: https://docs.expo.dev/versions/v58.0.0/sdk/ui/jetpack-compose/segmentedbutton/
 import {
   Host,
   SegmentedButton,

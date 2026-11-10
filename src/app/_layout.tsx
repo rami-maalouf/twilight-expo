@@ -6,11 +6,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { settingsStore } from '@/data/app-db';
 import { DemoExitControl } from '@/components/demo/DemoExitControl';
-import { updateWindDownNotification } from '@/services/notifications';
+import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+
+configureForegroundNotifications();
 
 function ThemedStatusBar() {
   const theme = useTheme();

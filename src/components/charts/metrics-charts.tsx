@@ -4,7 +4,7 @@
 import { Canvas, Circle, DashPathEffect, Line, Path, RoundedRect, Skia, vec } from '@shopify/react-native-skia';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture, type PanGesture } from 'react-native-gesture-handler';
 
 import type {
   ConsistencyPoint,
@@ -54,12 +54,13 @@ function useScrub(count: number, xAt: (i: number) => number) {
     }
     return best;
   };
-  const gesture = Gesture.Pan()
-    .minDistance(0)
-    .runOnJS(true)
-    .onBegin((e) => setSelected(nearest(e.x)))
-    .onUpdate((e) => setSelected(nearest(e.x)))
-    .onFinalize(() => setSelected(null));
+  const gesture = usePanGesture({
+    minDistance: 0,
+    runOnJS: true,
+    onBegin: (e) => setSelected(nearest(e.x)),
+    onUpdate: (e) => setSelected(nearest(e.x)),
+    onFinalize: () => setSelected(null),
+  });
   return { selected, gesture };
 }
 

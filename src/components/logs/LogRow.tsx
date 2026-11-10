@@ -61,8 +61,11 @@ export function LogRow({
     <ReanimatedSwipeable
       friction={2}
       rightThreshold={40}
+      // one background behind row + separator, so a hairline that rounds to
+      // zero pixels cannot leave a gap showing the delete action behind it
+      childrenContainerStyle={{ backgroundColor: rowBg }}
       renderRightActions={() => <DeleteAction onDelete={onDelete} />}>
-      <Pressable onPress={onPress} style={[styles.row, { backgroundColor: rowBg }]}>
+      <Pressable onPress={onPress} style={styles.row}>
         <View style={styles.texts}>
           <Text style={[styles.day, { color: theme.textPrimary }]}>{formatDayLabel(session)}</Text>
           <Text style={[styles.times, { color: timesColor }]}>
@@ -78,9 +81,7 @@ export function LogRow({
         </View>
       </Pressable>
       {!isLast && (
-        <View style={[styles.separatorTrack, { backgroundColor: rowBg }]}>
-          <View style={styles.separator} />
-        </View>
+        <View style={styles.separator} />
       )}
     </ReanimatedSwipeable>
   );
@@ -102,7 +103,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   badgeText: { fontSize: 17, fontVariant: ['tabular-nums'] },
-  separatorTrack: {},
   separator: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: 'rgba(84, 84, 88, 0.6)',

@@ -18,7 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
@@ -163,12 +163,13 @@ export function CircularTimePicker({
     setDragAngles(null);
   };
 
-  const pan = Gesture.Pan()
-    .minDistance(0)
-    .runOnJS(true)
-    .onBegin((e) => handleTouch(e.x, e.y, true))
-    .onUpdate((e) => handleTouch(e.x, e.y, false))
-    .onFinalize(endDrag);
+  const pan = usePanGesture({
+    minDistance: 0,
+    runOnJS: true,
+    onBegin: (e) => handleTouch(e.x, e.y, true),
+    onUpdate: (e) => handleTouch(e.x, e.y, false),
+    onFinalize: endDrag,
+  });
 
   const arc = arcPath(size, box, sleepAngle, wakeAngle);
   let sweepEnd = wakeAngle - sleepAngle;

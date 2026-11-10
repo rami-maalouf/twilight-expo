@@ -5,7 +5,7 @@
 import { Canvas, Circle, DashPathEffect, Line, Path, Skia, vec } from '@shopify/react-native-skia';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 
 import { Card } from '@/components/common/Card';
 import { HistoryRangeChip, type DashboardHistoryRange } from '@/components/dashboard/HistoryRangeChip';
@@ -215,12 +215,13 @@ export function MovingAverageCard({
     return best;
   };
 
-  const scrub = Gesture.Pan()
-    .minDistance(0)
-    .runOnJS(true)
-    .onBegin((e) => setSelectedIndex(nearestIndex(e.x)))
-    .onUpdate((e) => setSelectedIndex(nearestIndex(e.x)))
-    .onFinalize(() => setSelectedIndex(null));
+  const scrub = usePanGesture({
+    minDistance: 0,
+    runOnJS: true,
+    onBegin: (e) => setSelectedIndex(nearestIndex(e.x)),
+    onUpdate: (e) => setSelectedIndex(nearestIndex(e.x)),
+    onFinalize: () => setSelectedIndex(null),
+  });
 
   const header = (
     <View style={styles.headerRow}>

@@ -1,9 +1,9 @@
 // ports: TwilightApp.swift (TabView) - standard system tab bar, tinted accent
 // native tabs follow the app theme (not only os appearance). source:
 // https://docs.expo.dev/router/advanced/native-tabs/
-// https://docs.expo.dev/versions/v57.0.0/sdk/router/native-tabs/
+// https://docs.expo.dev/versions/v58.0.0/sdk/router/native-tabs/
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationTheme } from 'expo-router';
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/native-tabs';
 
 import { useTheme } from '@/theme/ThemeProvider';
 

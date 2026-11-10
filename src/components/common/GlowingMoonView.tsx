@@ -34,14 +34,31 @@ function GlowLayer({
   color: string;
   size: number;
 }) {
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(breath.value, [0, 1], [opacity * 0.5, opacity * 1.6]),
-    shadowRadius: interpolate(breath.value, [0, 1], [radius * 0.6, radius * 1.5]),
+  // the original animates a blur radius. a native shadow (a blur that follows
+  // the icon alpha) is re-rendered whenever any prop on its view changes, so the
+  // shadows stay static and wrappers animate: scale on the outer view, and a
+  // cross-fade from the tight (0.6r) to the wide (1.5r) shadow for the blur.
+  const scaleStyle = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(breath.value, [0, 1], [1.0, 1.15]) }],
   }));
+  const tightStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(breath.value, [0, 1], [opacity * 0.5, 0]),
+  }));
+  const wideStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(breath.value, [0, 1], [0, opacity * 1.6]),
+  }));
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.center, style, { shadowColor: color, shadowOpacity: 1, shadowOffset: { width: 0, height: 0 } }]}>
-      <MoonIcon color={color} size={size} />
+    <Animated.View style={[StyleSheet.absoluteFill, styles.center, scaleStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.center, tightStyle]}>
+        <View style={[styles.glow, { shadowColor: color, shadowRadius: radius * 0.6 }]}>
+          <MoonIcon color={color} size={size} />
+        </View>
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.center, wideStyle]}>
+        <View style={[styles.glow, { shadowColor: color, shadowRadius: radius * 1.5 }]}>
+          <MoonIcon color={color} size={size} />
+        </View>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -100,4 +117,5 @@ export function GlowingMoonView({
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
+  glow: { shadowOpacity: 1, shadowOffset: { width: 0, height: 0 } },
 });
