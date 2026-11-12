@@ -57,4 +57,17 @@ describe('sleep store', () => {
     store.getState().deleteSession(id);
     expect(store.getState().sessions).toHaveLength(0);
   });
+
+  test('resetAllSessions removes completed and active sessions', () => {
+    const { store } = setup();
+    store.getState().toggleSleep(T0);
+    store.getState().toggleSleep(T0 + 8 * HOURS);
+    store.getState().toggleSleep(T0 + 20 * HOURS);
+    expect(store.getState().sessions).toHaveLength(1);
+    expect(store.getState().activeSession).not.toBeNull();
+
+    store.getState().resetAllSessions();
+    expect(store.getState().sessions).toHaveLength(0);
+    expect(store.getState().activeSession).toBeNull();
+  });
 });

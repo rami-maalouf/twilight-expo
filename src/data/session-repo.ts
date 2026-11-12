@@ -120,6 +120,12 @@ export class SessionRepo {
     this.db.runSync('delete from sleep_sessions where id = ?', [id]);
   }
 
+  // dev "Reset Sleep Data" (swift deletes every session of the profile,
+  // the active one included)
+  deleteAllSessions(): void {
+    this.db.runSync('delete from sleep_sessions', []);
+  }
+
   replaceSessionsWithPrefix(prefix: string, sessions: readonly SleepSession[]): void {
     this.deleteSessionsWithPrefix(prefix);
     for (const session of sessions) {

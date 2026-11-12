@@ -31,6 +31,8 @@ export interface SleepState {
     input: { startTime: number; endTime: number; startTimeZone: string; endTimeZone: string }
   ) => void;
   deleteSession: (id: string) => void;
+  // dev settings "Reset Sleep Data": every session, the active one included
+  resetAllSessions: () => void;
 }
 
 function deviceTimeZone(): string {
@@ -81,6 +83,11 @@ export function createSleepStore(
 
       deleteSession: (id) => {
         repo.deleteSession(id);
+        set(load());
+      },
+
+      resetAllSessions: () => {
+        repo.deleteAllSessions();
         set(load());
       },
     };
