@@ -5,14 +5,22 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { settingsStore } from '@/data/app-db';
+import { AppAlertHost } from '@/components/common/AppAlertHost';
 import { DemoExitControl } from '@/components/demo/DemoExitControl';
+import { HomeWidgetSync } from '@/components/widgets/HomeWidgetSync';
 import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
+import { useForegroundRefresh } from '@/services/use-foreground-refresh';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
+import { useExternalSleepActions } from '@/services/use-external-sleep-actions';
+import { useRatingPrompt } from '@/services/use-rating-prompt';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 configureForegroundNotifications();
+
+// material 3 bottom sheets use 28dp top corners; ios keeps the system sheet
+const ANDROID_SHEET = Platform.OS === 'android' ? { sheetCornerRadius: 28 } : {};
 
 function ThemedStatusBar() {
   const theme = useTheme();
@@ -31,6 +39,12 @@ export default function RootLayout() {
 
   // live activity lifecycle (parity + superpower wiring)
   useLiveActivitySync();
+  // start/stop from home widgets and twilight://sleep links
+  useExternalSleepActions();
+  // reread sessions and settings on every return to the foreground
+  useForegroundRefresh();
+  // review prompt from the third launch, once per version
+  useRatingPrompt();
 
   // wind-down reminder: (re)schedule on launch, bedtime change, and toggle
   const windDownEnabled = useSettings((s) => s.windDownReminderEnabled);
@@ -45,6 +59,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider store={settingsStore} desaturated={isSleeping}>
       <ThemedStatusBar />
+      <HomeWidgetSync />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View style={{ flex: 1 }}>
           {!isOnboarded && <Redirect href="/onboarding" />}
@@ -55,30 +70,25 @@ export default function RootLayout() {
             <Stack.Screen name="sleep-tips" options={{ presentation: 'modal' }} />
             <Stack.Screen
               name="timeline-sheet"
-              options={
-                Platform.OS === 'ios'
-                  ? {
-                      presentation: 'formSheet',
-                      sheetAllowedDetents: [0.82, 1.0],
-                      sheetGrabberVisible: true,
-                    }
-                  : { presentation: 'modal' }
-              }
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.82, 1.0],
+                sheetGrabberVisible: true,
+                ...ANDROID_SHEET,
+              }}
             />
             <Stack.Screen
               name="metrics-explanation"
-              options={
-                Platform.OS === 'ios'
-                  ? {
-                      presentation: 'formSheet',
-                      sheetAllowedDetents: [0.6, 1.0],
-                      sheetGrabberVisible: true,
-                    }
-                  : { presentation: 'modal' }
-              }
+              options={{
+                presentation: 'formSheet',
+                sheetAllowedDetents: [0.6, 1.0],
+                sheetGrabberVisible: true,
+                ...ANDROID_SHEET,
+              }}
             />
           </Stack>
           <DemoExitControl />
+          <AppAlertHost />
         </View>
       </GestureHandlerRootView>
     </ThemeProvider>

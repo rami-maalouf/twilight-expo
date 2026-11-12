@@ -31,6 +31,7 @@ jest.mock('@/components/charts/path-utils', () => ({
 jest.mock('expo-router', () => ({
   ...jest.requireActual('expo-router'),
   useFocusEffect: jest.fn(),
+  useScrollToTop: jest.fn(),
   router: { push: jest.fn(), back: jest.fn() },
 }));
 

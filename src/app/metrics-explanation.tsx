@@ -4,10 +4,13 @@ import { router } from 'expo-router';
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressableFeedback } from '@/components/common/PressableFeedback';
 import { Screen } from '@/components/common/Screen';
+import { SheetCloseButton } from '@/components/common/SheetCloseButton';
+import { SheetDragHandle, sheetToolbarTop } from '@/components/common/SheetDragHandle';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const SRI_RESEARCH_URL = 'https://www.nature.com/articles/s41598-017-03171-4';
@@ -63,13 +66,12 @@ export default function MetricsExplanationScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <Screen starCount={20}>
-      <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
+    <Screen starCount={20} withStatusScrim={false}>
+      <SheetDragHandle />
+      <View style={[styles.toolbar, { paddingTop: sheetToolbarTop(insets.top) }]}>
         <View style={styles.toolbarSpacer} />
         <Text style={[styles.navTitle, { color: theme.textPrimary }]}>Analytics Guide</Text>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.doneButton}>
-          <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
-        </Pressable>
+        <SheetCloseButton onPress={() => router.back()} iconColor={theme.textPrimary} doneColor={theme.actionPrimary} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -107,13 +109,13 @@ export default function MetricsExplanationScreen() {
           </View>,
           ...(item.link
             ? [
-                <Pressable
+                <PressableFeedback
                   key={`${item.title}-link`}
                   testID="metrics.sri.research-link"
                   accessibilityRole="link"
                   onPress={() => Linking.openURL(item.link!.url)}>
                   <Text style={[styles.link, { color: theme.accent }]}>{item.link.label}</Text>
-                </Pressable>,
+                </PressableFeedback>,
               ]
             : []),
         ])}
@@ -132,8 +134,6 @@ const styles = StyleSheet.create({
   },
   toolbarSpacer: { width: 48 },
   navTitle: { fontSize: 17, fontWeight: '600' },
-  doneButton: { minWidth: 48, alignItems: 'flex-end' },
-  done: { fontSize: 17, fontWeight: '600' },
   content: { paddingHorizontal: 16, paddingTop: 12, gap: 24 },
   title: { fontSize: 22, fontWeight: '700' },
   intro: { fontSize: 17 },

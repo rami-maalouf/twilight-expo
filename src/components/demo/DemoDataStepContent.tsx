@@ -2,9 +2,10 @@
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { FadeInSlide } from '@/components/common/FadeInSlide';
+import { ON_FILL_RIPPLE, PressableFeedback } from '@/components/common/PressableFeedback';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const DETAILS: { icon: SymbolViewProps['name']; text: string }[] = [
@@ -61,8 +62,10 @@ export function DemoDataStepContent({
       </View>
 
       <FadeInSlide delay={0.34} slideOffset={18} style={styles.actionArea}>
-        <Pressable
+        <PressableFeedback
           testID="explore-demo-data"
+          accessibilityRole="button"
+          rippleColor={ON_FILL_RIPPLE}
           disabled={isImporting}
           onPress={onExplore}
           style={[
@@ -77,10 +80,16 @@ export function DemoDataStepContent({
           <Text style={styles.primaryLabel}>
             {isImporting ? 'Loading your future data...' : 'Explore my data'}
           </Text>
-        </Pressable>
-        <Pressable testID="skip-demo-data" disabled={isImporting} onPress={onSkip} hitSlop={8}>
+        </PressableFeedback>
+        <PressableFeedback
+          testID="skip-demo-data"
+          accessibilityRole="button"
+          disabled={isImporting}
+          onPress={onSkip}
+          hitSlop={8}
+          style={styles.skipButton}>
           <Text style={[styles.skipLabel, { color: theme.textSecondary }]}>Skip for now</Text>
-        </Pressable>
+        </PressableFeedback>
       </FadeInSlide>
     </View>
   );
@@ -90,6 +99,9 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 28 },
   spacer: { flex: 1 },
+  // a text button: the ripple needs a rounded box around the label (the
+  // negative margin keeps the label where it was)
+  skipButton: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, marginVertical: -6 },
   content: { alignItems: 'stretch', gap: 20 },
   hero: {
     width: 96,

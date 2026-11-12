@@ -15,12 +15,12 @@
     "android": {
       "package": "com.rami.twilight.port",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A1520",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true
     },
     "web": {
       "output": "static",
@@ -37,12 +37,74 @@
         }
       ],
       "expo-widgets",
+      [
+        "./plugins/android-widgets/index.cjs",
+        {
+          "widgets": [
+            {
+              "name": "TwilightSleepStatus",
+              "displayName": "Sleep Status",
+              "description": "See whether you are asleep, how long you have slept, and start or end sleep from your home screen.",
+              "ios": null,
+              "android": {
+                "minWidth": 110,
+                "minHeight": 110,
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "both",
+                "initialLayout": "widgets/sleep-status.android.tsx",
+                "previewImage": "twilight_widget_preview_status"
+              }
+            },
+            {
+              "name": "TwilightSleepMode",
+              "displayName": "Sleep Mode",
+              "description": "Open Twilight and start or stop sleep mode.",
+              "ios": null,
+              "android": {
+                "minWidth": 110,
+                "minHeight": 40,
+                "targetCellWidth": 2,
+                "targetCellHeight": 1,
+                "resizeMode": "horizontal",
+                "initialLayout": "widgets/sleep-mode.android.tsx",
+                "previewImage": "twilight_widget_preview_mode"
+              }
+            },
+            {
+              "name": "TwilightSleepOverview",
+              "displayName": "Sleep Overview",
+              "description": "Last night's sleep against your goal, your 7-night average, and your bedtime and wake targets.",
+              "ios": null,
+              "android": {
+                "minWidth": 250,
+                "minHeight": 110,
+                "targetCellWidth": 4,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal",
+                "initialLayout": "widgets/sleep-overview.android.tsx",
+                "previewImage": "twilight_widget_preview_overview"
+              }
+            }
+          ]
+        }
+      ],
+      "./plugins/android-launch-intent.cjs",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#00D4FF",
+          "enableRemoteNotifications": false
+        }
+      ],
       "expo-sqlite",
       "@react-native-community/datetimepicker",
       "expo-font",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

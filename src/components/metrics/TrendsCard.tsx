@@ -3,7 +3,7 @@
 import { BlurView } from 'expo-blur';
 import { Canvas, Path } from '@shopify/react-native-skia';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import type { TrendPeriod } from '@/domain/metrics/analyzer';
 import type { CalendarDay } from '@/domain/models';
@@ -77,7 +77,7 @@ export function TrendsCard({
 
   return (
     <View style={styles.card}>
-      <BlurView intensity={70} tint={tint} style={StyleSheet.absoluteFill} />
+      <BlurView intensity={70} tint={tint} style={[StyleSheet.absoluteFill, Platform.OS === 'android' && { backgroundColor: theme.cardBackground }]} />
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>Trends Analysis</Text>
         {insight && <Text style={[styles.insight, { color: theme.textSecondary }]}>{insight}</Text>}

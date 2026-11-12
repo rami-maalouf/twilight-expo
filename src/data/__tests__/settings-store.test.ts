@@ -56,4 +56,15 @@ describe('SettingsStore', () => {
     expect(s.themeMode).toBe('dark');
     expect(s.optimalSleepMinutes).toBe(22 * 60);
   });
+  test('getProfileId generates an 8-char uppercase hex id and persists it', () => {
+    const kv = memoryKv();
+    const store = new SettingsStore(kv);
+    const id1 = store.getProfileId();
+    expect(id1).toMatch(/^[0-9A-F]{8}$/);
+    const id2 = store.getProfileId();
+    expect(id2).toBe(id1);
+
+    const reloaded = new SettingsStore(kv);
+    expect(reloaded.getProfileId()).toBe(id1);
+  });
 });

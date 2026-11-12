@@ -2,12 +2,14 @@
 // horizontal bars bed -> wake per night, indigo/orange endpoints, dashed
 // target rules, hour x-axis on the 18:00 offset scale
 import { Canvas, Circle, DashPathEffect, Line, RoundedRect, vec } from '@shopify/react-native-skia';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
+import { SheetCloseButton } from '@/components/common/SheetCloseButton';
+import { SheetDragHandle, sheetToolbarTop } from '@/components/common/SheetDragHandle';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import { MetricsEmptyState } from '@/components/metrics/primitives';
 import { formatMonthDay } from '@/components/charts/date-scale';
@@ -47,7 +49,8 @@ export default function TimelineSheetScreen() {
   const sessions = useSleepStore((s) => s.sessions);
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
   const optimalWakeMinutes = useSettings((s) => s.optimalWakeMinutes);
-  const [range, setRange] = useState<MetricsRange>('90D');
+  const { initialRange } = useLocalSearchParams<{ initialRange?: MetricsRange }>();
+  const [range, setRange] = useState<MetricsRange>(initialRange && RANGES.includes(initialRange) ? initialRange : '90D');
 
   const { records, targetSleep, targetWake } = useMemo(() => {
     const analyzer = new SleepMetricsAnalyzer(sessions, {
@@ -72,12 +75,12 @@ export default function TimelineSheetScreen() {
   const upper = maxValue + pad;
 
   const chartW = width - 20 * 2;
-  const leftMargin = 44;
+  const leftMargin = 52;
   const plotW = chartW - leftMargin - 10;
   const rowH = 24;
   const chartH = Math.max(360, records.length * rowH);
   const xPos = (offset: number) => leftMargin + ((offset - lower) / (upper - lower || 1)) * plotW;
-  const yPos = (i: number) => 10 + i * ((chartH - 30) / Math.max(records.length, 1));
+  const yPos = (i: number) => 18 + i * ((chartH - 36) / Math.max(records.length, 1));
 
   const hourTicks: number[] = [];
   for (let h = Math.ceil(lower); h <= Math.floor(upper); h++) hourTicks.push(h);
@@ -86,13 +89,12 @@ export default function TimelineSheetScreen() {
   const dateStep = Math.max(1, Math.floor(records.length / dateTickCount));
 
   return (
-    <Screen starCount={20}>
-      <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
+    <Screen starCount={20} withStatusScrim={false}>
+      <SheetDragHandle />
+      <View style={[styles.toolbar, { paddingTop: sheetToolbarTop(insets.top) }]}>
         <View style={styles.toolbarSpacer} />
         <Text style={[styles.navTitle, { color: theme.textPrimary }]}>Sleep/Wake Trend</Text>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.doneButton}>
-          <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
-        </Pressable>
+        <SheetCloseButton onPress={() => router.back()} iconColor={theme.textPrimary} doneColor={theme.actionPrimary} />
       </View>
       <View
         style={[
@@ -210,8 +212,6 @@ const styles = StyleSheet.create({
   },
   toolbarSpacer: { width: 48 },
   navTitle: { fontSize: 17, fontWeight: '600' },
-  doneButton: { minWidth: 48, alignItems: 'flex-end' },
-  done: { fontSize: 17, fontWeight: '600' },
   body: { flex: 1, paddingHorizontal: 20, paddingTop: 12, gap: 14 },
   heading: { fontSize: 17, fontWeight: '600' },
   subtitle: { fontSize: 15 },
@@ -235,6 +235,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(28, 28, 30, 0.55)',
     marginBottom: 16,
   },
-  dateLabel: { position: 'absolute', left: 0, width: 40, fontSize: 9, color: '#8e8e93' },
+  dateLabel: { position: 'absolute', left: 8, width: 44, fontSize: 9, color: '#8e8e93' },
   hourLabel: { position: 'absolute', width: 24, textAlign: 'center', fontSize: 10, color: '#8e8e93' },
 });

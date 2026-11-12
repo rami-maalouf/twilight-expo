@@ -3,11 +3,13 @@
 // grids, duration momentum, trends analysis, rolling consistency, rolling
 // components with filter, sleep debt, weekday averages, histogram, footer
 // tiles, toolbar (timeline + guide)
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useScrollToTop } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
+import { IconButton } from '@/components/common/IconButton';
 import { Screen } from '@/components/common/Screen';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import {
@@ -73,6 +75,10 @@ export default function MetricsScreen() {
   const refresh = useSleepStore((s) => s.refresh);
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
   const optimalWakeMinutes = useSettings((s) => s.optimalWakeMinutes);
+  const profileId = useSettings((s) => s.profileId);
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<any>(null);
+  useScrollToTop(scrollRef);
 
   const [range, setRange] = useState<MetricsRange>('90D');
   const [filter, setFilter] = useState<Filter>('All');
@@ -167,7 +173,7 @@ export default function MetricsScreen() {
     { title: 'Range Start', valueText: analyzer.firstTrackedDate ? formatAbbrevDate(analyzer.firstTrackedDate) : '-', icon: 'calendar', iconColor: GRAY },
     { title: 'Total Data Range', valueText: `${analyzer.dataRangeDays} days`, icon: 'calendar.badge.clock', iconColor: GRAY },
     { title: 'All-Time Nights', valueText: `${analyzer.records.length}`, icon: 'moon.stars', iconColor: GRAY },
-    { title: 'Profile ID', valueText: 'D122B33A', icon: 'person.text.rectangle', iconColor: GRAY },
+    { title: 'Profile ID', valueText: profileId, icon: 'number.square', iconColor: GRAY },
   ];
 
   const latest = (get: (p: (typeof data.consistencySeries)[number]) => number | null) => {
@@ -194,18 +200,28 @@ export default function MetricsScreen() {
   return (
     <Screen>
       <ScrollView
+        ref={scrollRef}
         testID="demo.metrics.scroll"
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + (Platform.OS === 'android' ? 16 : 12) }]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Metrics</Text>
           <View style={styles.toolbar}>
-            <Pressable testID="timeline-button" onPress={() => router.push('/timeline-sheet')} hitSlop={6}>
+            <IconButton
+              testID="timeline-button"
+              accessibilityLabel="Sleep & Wake Timeline"
+              iconSize={20}
+              onPress={() => router.push({ pathname: '/timeline-sheet', params: { initialRange: range } })}>
               <SymbolView name="chart.bar.xaxis" size={20} tintColor={theme.textPrimary} />
-            </Pressable>
-            <Pressable testID="guide-button" onPress={() => router.push('/metrics-explanation')} hitSlop={6}>
+            </IconButton>
+            <IconButton
+              testID="guide-button"
+              accessibilityLabel="Metrics Guide"
+              iconSize={20}
+              edge="end"
+              onPress={() => router.push('/metrics-explanation')}>
               <SymbolView name="info.circle" size={20} tintColor={theme.textPrimary} />
-            </Pressable>
+            </IconButton>
           </View>
         </View>
 
@@ -338,7 +354,8 @@ const styles = StyleSheet.create({
   content: { paddingTop: 70, paddingHorizontal: 20, paddingBottom: 130, gap: 20 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 34, fontWeight: '700' },
-  toolbar: { flexDirection: 'row', gap: 18 },
+  // android: adjacent 48dp icon button targets, like a material top app bar
+  toolbar: { flexDirection: 'row', gap: Platform.OS === 'android' ? 0 : 18 },
   description: { fontSize: 15 },
   pickerRow: { flexDirection: 'row' },
   chipRow: { flexDirection: 'row', gap: 8 },

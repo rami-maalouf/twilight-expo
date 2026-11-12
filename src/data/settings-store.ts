@@ -85,6 +85,26 @@ export class SettingsStore {
     return null;
   }
 
+  getProfileId(): string {
+    const KEY = `${PREFIX}profileId`;
+    const existing = this.kv.getItemSync(KEY);
+    if (existing != null) {
+      try {
+        const parsed: unknown = JSON.parse(existing);
+        if (typeof parsed === 'string' && /^[0-9A-F]{8}$/.test(parsed)) return parsed;
+      } catch {
+        // regenerate
+      }
+    }
+    let hex = '';
+    while (hex.length < 8) {
+      hex += Math.floor(Math.random() * 0xffffffff).toString(16).toUpperCase();
+    }
+    const id = hex.slice(0, 8);
+    this.kv.setItemSync(KEY, JSON.stringify(id));
+    return id;
+  }
+
   load(): SleepSettingsData {
     return {
       isOnboarded: this.get('isOnboarded'),

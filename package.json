@@ -1,6 +1,6 @@
 {
   "name": "twilight",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~58.0.27",
@@ -16,11 +16,13 @@
     "expo-image": "~58.0.18",
     "expo-linear-gradient": "~58.0.3",
     "expo-linking": "~58.0.16",
+    "expo-localization": "~58.0.5",
     "expo-notifications": "~58.1.8",
     "expo-router": "~58.0.30",
     "expo-splash-screen": "~58.0.13",
     "expo-sqlite": "~58.0.15",
     "expo-status-bar": "~58.0.4",
+    "expo-store-review": "~58.0.2",
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.7",
     "expo-web-browser": "~58.0.7",

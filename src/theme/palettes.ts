@@ -38,7 +38,7 @@ export const PALETTES: Record<ThemeName, AppTheme> = {
     cardBackground: 'rgba(28, 37, 89, 0.8)',
     textPrimary: '#ffffff',
     textSecondary: '#a3b1d6',
-    accent: '#4f5bd5',
+    accent: '#8c94ff',
     success: '#4cd964',
     warning: '#ffcc00',
     actionPrimary: '#4f5bd5',
