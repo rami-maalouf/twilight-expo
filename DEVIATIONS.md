@@ -118,8 +118,7 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   - the welcome moon's glow blurs icon copies with a render effect (swift
     `.blur(radius:)`); ios keeps its native shadow glow.
   - logs: besides the swipe, a long press deletes after a confirm dialog and
-    talkback gets a "Delete" action; a full left swipe deletes like swift's
-    default `.swipeActions`. the swipe tracks the finger 1:1.
+    talkback gets a "Delete" action (ios keeps tap-to-edit for any hold).
   - predictive back is on (`predictiveBackGestureEnabled`); the back edge
     swipe closes the log editor and the back key closes the wind-down tips
     without errors (checked on android 16). back on Metrics, Logs or
@@ -129,6 +128,10 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
     changes in place. open editor state is lost, and dev builds log a
     one-off "configured linking in multiple places" warning while the old
     root unmounts; only one root remains.
+- logs swipe (both platforms): a full left swipe deletes like swift's
+  default `.swipeActions` and the row tracks the finger 1:1. on a full
+  swipe the row snaps back to the delete button before it is removed,
+  where swift slides it off (visual only).
 - charts use @shopify/react-native-skia instead of Swift Charts. Aug 11
   dashboard features (Trend 7/30 window, Time Sleep/Wake/Both chart, duration-
   tinted averages, in-card history chip, Dev settings demo onboarding) match
