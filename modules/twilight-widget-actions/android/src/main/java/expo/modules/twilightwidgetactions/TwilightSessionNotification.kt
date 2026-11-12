@@ -173,7 +173,6 @@ object TwilightSessionNotification {
   // after a reboot or an app update: alarms are gone and notifications may be
   internal fun restore(context: Context) {
     val stored = storedSpec(context) ?: return
-    if (stored.kind == KIND_SLEEP) TwilightWidgetTicker.setTicking(context, true)
     runCatching { post(context, stored) }
       .onFailure { Log.w(TAG, "could not restore the session notification", it) }
   }

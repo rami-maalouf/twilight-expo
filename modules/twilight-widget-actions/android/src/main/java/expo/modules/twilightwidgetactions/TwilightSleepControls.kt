@@ -50,9 +50,10 @@ object TwilightSleepControls {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return
     val manager = context.getSystemService(ShortcutManager::class.java) ?: return
     val shortcut = if (sleeping) shortcut(context, SHORTCUT_STOP) else shortcut(context, SHORTCUT_START)
-    // rate limited while the app is in the background; the next foreground
-    // publish catches up
-    runCatching { manager.dynamicShortcuts = listOf(shortcut) }
+    // rate limited while the app is in the background (setDynamicShortcuts
+    // returns false then); the app republishes on every foreground
+    runCatching { manager.setDynamicShortcuts(listOf(shortcut)) }
+      .onSuccess { updated -> if (!updated) Log.w(TAG, "launcher shortcut update rate limited") }
       .onFailure { Log.w(TAG, "could not update the launcher shortcuts", it) }
   }
 

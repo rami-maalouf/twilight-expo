@@ -46,11 +46,23 @@ class TwilightSessionTickReceiver : BroadcastReceiver() {
   }
 }
 
-// alarms do not survive a reboot, and an update can clear the notification
+// alarms do not survive a reboot, and an update can clear the notification.
+// the widget ticker and the tile follow the session mirror, so they come
+// back even with the sleep notification off. a time zone or clock change
+// removes the wind-down countdown: its bedtime instant may be wrong now, and
+// the app reposts the right one on its next foreground
 class TwilightSessionRestoreReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
-    if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
-    TwilightSessionNotification.restore(context.applicationContext)
+    val appContext = context.applicationContext
+    when (intent.action) {
+      Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED -> {
+        TwilightWidgetTicker.setTicking(appContext, TwilightSleepControls.isSleeping(appContext))
+        TwilightSleepTileService.refresh(appContext)
+        TwilightSessionNotification.restore(appContext)
+      }
+      Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_TIME_CHANGED ->
+        TwilightSessionNotification.cancel(appContext, TwilightSessionNotification.KIND_WIND_DOWN)
+    }
   }
 }
 

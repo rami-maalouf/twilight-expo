@@ -44,15 +44,29 @@ object TwilightWidgetTicker {
     }
   }
 
+  // the app publishes new props from the js thread while this runs on the
+  // main thread, so the props are rewritten only if they are still the ones
+  // read (a stale write would bring back "asleep" after a wake up), and the
+  // ticker stops as soon as the session mirror says the session is over
   internal fun tick(context: Context) {
-    val names = widgetNames(context)
+    if (!TwilightSleepControls.isSleeping(context)) {
+      setTicking(context, false)
+      return
+    }
     val preferences = context.getSharedPreferences(WIDGETS_PREFERENCES, Context.MODE_PRIVATE)
     var sleeping = false
-    for (name in names) {
+    for (name in widgetNames(context)) {
       val key = "__expo_widgets_${name}_props"
-      val props = preferences.getString(key, null)?.let { runCatching { JSONObject(it) }.getOrNull() } ?: continue
-      sleeping = sleeping || props.optBoolean("sleeping", false)
+      val raw = preferences.getString(key, null) ?: continue
+      val props = runCatching { JSONObject(raw) }.getOrNull() ?: continue
+      if (!props.optBoolean("sleeping", false)) continue
+      sleeping = true
       props.put("renderKey", System.currentTimeMillis().toDouble())
+      // a publish landed since the read: it re-renders the widget itself.
+      // expo-widgets offers no lock, so a write in the few microseconds
+      // between this check and the commit can still be lost; the mirror
+      // check above then stops the ticker on the next tick
+      if (preferences.getString(key, null) != raw) continue
       preferences.edit().putString(key, props.toString()).commit()
       context.sendBroadcast(
         Intent(INTERACTION_ACTION)

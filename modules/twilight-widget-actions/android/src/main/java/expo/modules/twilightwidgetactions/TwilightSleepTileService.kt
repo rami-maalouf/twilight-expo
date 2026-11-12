@@ -44,7 +44,7 @@ class TwilightSleepTileService : TileService() {
     runCatching {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
         startActivityAndCollapse(
-          PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+          PendingIntent.getActivity(this, REQUEST_OPEN, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         )
       } else {
         @Suppress("DEPRECATION")
@@ -70,6 +70,9 @@ class TwilightSleepTileService : TileService() {
 
   companion object {
     private const val TAG = "TwilightSleepTile"
+    // the app's 41xx pending intent codes (4_127 widget ticker, 4_130-4_135
+    // session notification)
+    private const val REQUEST_OPEN = 4_128
 
     // the instance systemui is listening to, if any (main thread only)
     private var listening: TwilightSleepTileService? = null

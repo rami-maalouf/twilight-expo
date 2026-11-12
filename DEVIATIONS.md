@@ -218,7 +218,8 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
     away, and a dismissed countdown stays away until the bedtime changes.
     like the ios countdown it is posted only when the app comes to the
     foreground inside the window; no alarm schedules it while the app is
-    closed.
+    closed. a time zone or clock change removes a posted countdown (its
+    bedtime may no longer be right); the next foreground reposts it.
   - standard notification templates instead of expo-widgets 58
     `createCustomNotification`: custom RemoteViews can never be promoted to
     a live update, have no chronometer (the elapsed time would only move
@@ -248,7 +249,8 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
     entry in app.json, with the teal accent; the countdown uses gold).
   - the notification is reposted after a reboot or an app update (alarms
     and possibly the notification are gone); a relaunch reconciles it with
-    the stored session.
+    the stored session. the widgets' minute refresh and the tile come back
+    then too, with or without the notification.
 - settings while a session is active (swift isBlocking): the orange lock
   row with swift's copy sits above Sleep Goal and the Wind-Down / sleep
   notification toggles are disabled; bedtime and wake stay editable like
