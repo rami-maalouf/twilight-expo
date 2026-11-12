@@ -14,6 +14,7 @@ import { useThemeControls } from '../theme/ThemeProvider';
 import { createHomeWidgetPublisher } from './home-widget-publisher';
 import { buildHomeWidgetSnapshot } from './home-widget-snapshot';
 import { HOME_WIDGETS_SUPPORTED, publishHomeWidgets } from './home-widgets';
+import { deviceClock } from '../utils/locale-format';
 
 const MINUTE_MS = 60_000;
 
@@ -29,6 +30,9 @@ export function useHomeWidgetSync() {
   const { mode, palette } = useThemeControls();
   const systemScheme = useColorScheme();
   const [publisher] = useState(() => createHomeWidgetPublisher(publishHomeWidgets, warn));
+  // bumped on every foreground: the snapshot is rebuilt then, so a changed
+  // 12/24-hour setting or locale reaches the widgets
+  const [foregrounds, setForegrounds] = useState(0);
 
   useEffect(() => {
     if (!HOME_WIDGETS_SUPPORTED) return;
@@ -41,12 +45,13 @@ export function useHomeWidgetSync() {
           optimalWakeMinutes,
           themeMode: mode,
           themePalette: palette,
+          clock: deviceClock(),
         })
       );
     } catch (error) {
       warn(error);
     }
-  }, [publisher, activeSession, sessions, optimalSleepMinutes, optimalWakeMinutes, mode, palette]);
+  }, [publisher, activeSession, sessions, optimalSleepMinutes, optimalWakeMinutes, mode, palette, foregrounds]);
 
   // 'system' display mode resolves light/dark when the widget renders
   useEffect(() => {
@@ -57,7 +62,9 @@ export function useHomeWidgetSync() {
   useEffect(() => {
     if (!HOME_WIDGETS_SUPPORTED) return;
     const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active') publisher.refresh();
+      if (next !== 'active') return;
+      publisher.refresh();
+      setForegrounds((n) => n + 1);
     });
     return () => sub.remove();
   }, [publisher]);

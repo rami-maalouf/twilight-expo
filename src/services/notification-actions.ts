@@ -16,6 +16,7 @@ import { HOME_WIDGETS_SUPPORTED, publishHomeWidgets } from './home-widgets';
 import { syncLiveActivityNow } from './live-activity-sync';
 import { drainPendingPresses, planNotificationAction, queueSleepLinkAction } from './sleep-links';
 import { showAlert } from '../components/common/app-alert';
+import { deviceClock } from '../utils/locale-format';
 
 function warn(error: unknown) {
   if (__DEV__) console.warn('[notification action]', error);
@@ -35,6 +36,7 @@ function publishWidgetsNow(): void {
         optimalWakeMinutes: settingsStore.get('optimalWakeMinutes'),
         themeMode: settingsStore.get('themeMode'),
         themePalette: settingsStore.get('themePalette'),
+        clock: deviceClock(),
       }),
       renderKey: Date.now(),
     });

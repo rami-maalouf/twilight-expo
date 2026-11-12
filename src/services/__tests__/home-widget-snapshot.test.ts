@@ -63,6 +63,20 @@ describe('buildHomeWidgetSnapshot', () => {
     expect(props.startedAt).toBe('10:42 PM');
   });
 
+  test('times follow the device 12/24-hour setting like the app and the notification', () => {
+    const start = NIGHT0 + 42 * 60_000;
+    const h24 = buildHomeWidgetSnapshot(
+      input({ activeSession: session('a', start, null), clock: { locale: 'en-US', hour12: false } }),
+      start
+    );
+    expect(h24.startedAt).toBe('22:42');
+    expect(h24.bedtime).toBe('22:00');
+    expect(h24.wake).toBe('07:00');
+    const h12 = buildHomeWidgetSnapshot(input({ clock: { locale: 'en-US', hour12: true } }), start);
+    expect(h12.bedtime).toBe('10:00 PM');
+    expect(h12.wake).toBe('7:00 AM');
+  });
+
   test('last night is the newest session, with progress toward the goal', () => {
     const sessions = [
       session('new', NIGHT0 + 24 * HOUR, 7.2),

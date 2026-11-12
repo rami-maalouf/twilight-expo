@@ -1,7 +1,8 @@
 // pure snapshot builder for the android home-screen widgets. mirrors what the
 // dashboard shows (last night = newest valid session, 7-night average = the
 // "avg sleep" pill) so the widget and the app never disagree.
-// no react, react-native or expo imports: unit-tested in node.
+// no react or react-native imports (the device clock is passed in):
+// unit-tested in node.
 import type { HomeWidgetColors, HomeWidgetProps } from '../../widgets/home-widget-props';
 import { DEFAULT_SETTINGS, type SleepSession, type ThemeMode, type ThemePalette } from '../domain/models';
 import {
@@ -18,6 +19,7 @@ import {
 } from '../domain/metrics/week-data';
 import { sessionDurationSeconds, sleepGoalSeconds } from '../domain/session-rules';
 import { PALETTES, type AppTheme } from '../theme/palettes';
+import { formatMinuteTime, formatTime } from '../utils/locale-format';
 
 export interface HomeWidgetInput {
   activeSession: SleepSession | null;
@@ -27,6 +29,9 @@ export interface HomeWidgetInput {
   optimalWakeMinutes: number;
   themeMode: ThemeMode;
   themePalette: ThemePalette;
+  // the device's 12/24-hour setting and locale (locale-format deviceClock),
+  // like the app and the notification; omitted: swift's fixed "h:mm a"
+  clock?: { locale?: string; hour12?: boolean };
 }
 
 // swift ProfileWidgetEntryView tints the idle moon `.teal`; the port uses the
@@ -54,6 +59,23 @@ export function widgetColors(theme: AppTheme): HomeWidgetColors {
     track: light ? 'rgba(45, 27, 46, 0.14)' : 'rgba(255, 255, 255, 0.14)',
     halo: light ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.12)',
   };
+}
+
+// a fully specified clock never reads the device (node-safe)
+function fixedClock(clock: HomeWidgetInput['clock']): Required<NonNullable<HomeWidgetInput['clock']>> | null {
+  return clock?.hour12 == null ? null : { locale: clock.locale ?? 'en-US', hour12: clock.hour12 };
+}
+
+function minuteTime(minutes: number, clock: HomeWidgetInput['clock']): string {
+  const fixed = fixedClock(clock);
+  return fixed ? formatMinuteTime(minutes, fixed) : formatClockTime(timeOffsetFromMinutes(minutes));
+}
+
+function startedAt(session: SleepSession, clock: HomeWidgetInput['clock']): string {
+  const fixed = fixedClock(clock);
+  return fixed
+    ? formatTime(session.startTime, { ...fixed, timeZone: session.startTimeZone })
+    : formatClockTime(timeOffsetOfInstant(session.startTime, session.startTimeZone));
 }
 
 export function buildHomeWidgetSnapshot(
@@ -85,11 +107,9 @@ export function buildHomeWidgetSnapshot(
   return {
     sleeping: activeSession != null,
     sessionStartMs: activeSession?.startTime ?? 0,
-    startedAt: activeSession
-      ? formatClockTime(timeOffsetOfInstant(activeSession.startTime, activeSession.startTimeZone))
-      : '',
-    bedtime: formatClockTime(timeOffsetFromMinutes(optimalSleepMinutes)),
-    wake: formatClockTime(timeOffsetFromMinutes(optimalWakeMinutes)),
+    startedAt: activeSession ? startedAt(activeSession, input.clock) : '',
+    bedtime: minuteTime(optimalSleepMinutes, input.clock),
+    wake: minuteTime(optimalWakeMinutes, input.clock),
     goal,
     lastNight: last ? formatDurationHm(lastSeconds) : '',
     lastNightProgress: progress,
