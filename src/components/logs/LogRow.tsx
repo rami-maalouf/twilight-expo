@@ -62,8 +62,7 @@ function DeleteAction({
     () => isFullSwipe(translation.value, rowWidth),
     (beyond, previous) => {
       if (beyond !== previous) scheduleOnRN(onFullSwipeChange, beyond);
-    },
-    [rowWidth]
+    }
   );
   return (
     <Animated.View
