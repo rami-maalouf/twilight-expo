@@ -14,6 +14,13 @@ const IS_ANDROID = Platform.OS === 'android';
 // corner (android 16 settings groups are 20+)
 export const SECTION_RADIUS = IS_ANDROID ? 16 : 10;
 
+// ios secondaryLabel: the dark value on night sky rows, the light one on
+// sunset rows (the dark gray reads at ~2.6:1 there)
+export function useSecondaryLabel(): string {
+  const theme = useTheme();
+  return theme.name === 'sunset' ? 'rgba(60, 60, 67, 0.6)' : '#98989f';
+}
+
 export function useRowBackground(): string {
   const theme = useTheme();
   return theme.name === 'sunset' ? 'rgba(255, 255, 255, 0.75)' : '#1c1c1e';
@@ -113,8 +120,8 @@ export function RowLabel({ children, color, style }: { children: ReactNode; colo
 
 export const settingsStyles = StyleSheet.create({
   trailing: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  value: { fontSize: 17, color: '#98989f', flexShrink: 1 },
-  description: { fontSize: 12, color: '#98989f', marginTop: 2 },
+  value: { fontSize: 17, flexShrink: 1 },
+  description: { fontSize: 12, marginTop: 2 },
 });
 
 const styles = StyleSheet.create({

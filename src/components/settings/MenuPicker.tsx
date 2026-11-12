@@ -5,7 +5,7 @@ import { ActionSheetIOS, Text } from 'react-native';
 import { NativeSymbol } from '@/components/common/NativeSymbol';
 import { playHaptic } from '@/services/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
-import { RowLabel, SettingsRow, settingsStyles } from './SettingsList';
+import { RowLabel, SettingsRow, settingsStyles, useSecondaryLabel } from './SettingsList';
 
 export interface MenuPickerProps<T extends string> {
   label: string;
@@ -29,6 +29,7 @@ export function MenuPicker<T extends string>({
   testID,
 }: MenuPickerProps<T>) {
   const theme = useTheme();
+  const secondary = useSecondaryLabel();
   return (
     <SettingsRow
       testID={testID}
@@ -50,10 +51,10 @@ export function MenuPicker<T extends string>({
         );
       }}>
       <RowLabel color={theme.textPrimary}>{label}</RowLabel>
-      <Text style={settingsStyles.value} numberOfLines={1}>
+      <Text style={[settingsStyles.value, { color: secondary }]} numberOfLines={1}>
         {labels[value]}
       </Text>
-      <NativeSymbol name="chevron.up.chevron.down" size={12} tintColor="#98989f" />
+      <NativeSymbol name="chevron.up.chevron.down" size={12} tintColor={secondary} />
     </SettingsRow>
   );
 }

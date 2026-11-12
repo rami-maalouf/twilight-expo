@@ -18,7 +18,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { NativeSymbol } from '@/components/common/NativeSymbol';
 import { playHaptic } from '@/services/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
-import { RowLabel, SettingsRow, settingsStyles } from './SettingsList';
+import { RowLabel, SettingsRow, settingsStyles, useSecondaryLabel } from './SettingsList';
 import type { MenuPickerProps } from './MenuPicker';
 
 export function MenuPicker<T extends string>({
@@ -31,6 +31,7 @@ export function MenuPicker<T extends string>({
   testID,
 }: MenuPickerProps<T>) {
   const theme = useTheme();
+  const secondary = useSecondaryLabel();
   const isLight = theme.name === 'sunset';
   const [expanded, setExpanded] = useState(false);
 
@@ -43,10 +44,10 @@ export function MenuPicker<T extends string>({
       onPress={() => setExpanded(true)}>
       <RowLabel color={theme.textPrimary}>{label}</RowLabel>
       <View style={styles.trailing}>
-        <Text style={settingsStyles.value} numberOfLines={1}>
+        <Text style={[settingsStyles.value, { color: secondary }]} numberOfLines={1}>
           {labels[value]}
         </Text>
-        <NativeSymbol name="chevron.up.chevron.down" size={14} tintColor="#98989f" />
+        <NativeSymbol name="chevron.up.chevron.down" size={14} tintColor={secondary} />
         {/* the compose host only anchors the menu under the value, so the
             value stays plain text that can truncate before the chevron */}
         <Host style={styles.menuAnchor} colorScheme={isLight ? 'light' : 'dark'} seedColor={theme.accent} pointerEvents="none">

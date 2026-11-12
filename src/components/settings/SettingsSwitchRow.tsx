@@ -5,7 +5,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
-import { SettingsRow, settingsStyles } from './SettingsList';
+import { SettingsRow, settingsStyles, useSecondaryLabel } from './SettingsList';
 import { SettingsSwitch, SWITCH_ROW_TOGGLES } from './SettingsSwitch';
 
 export function SettingsSwitchRow({
@@ -26,10 +26,11 @@ export function SettingsSwitchRow({
   testID?: string;
 }) {
   const theme = useTheme();
+  const secondary = useSecondaryLabel();
   const texts = (
     <View style={styles.texts}>
       <Text style={[styles.title, { color: theme.textPrimary }, disabled && styles.disabledText]}>{title}</Text>
-      <Text style={settingsStyles.description}>{description}</Text>
+      <Text style={[settingsStyles.description, { color: secondary }]}>{description}</Text>
     </View>
   );
   const control = (
