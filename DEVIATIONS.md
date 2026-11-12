@@ -290,7 +290,12 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   updates on every session change from any surface (`src/services/
   sleep-controls.ts`, wired to the app store, so the headless notification
   task updates it too); a session notification press updates it at once
-  natively. swift reloads the control on every change the same way. the
+  natively, and the app republishes the mirror on every foreground so a
+  change it missed (or a rate-limited shortcut update) catches up. swift
+  reloads the control on every change the same way. pending presses keep
+  one slot per origin (swift has one slot): a widget, tile or shortcut
+  press never replaces a session notification press that has not been
+  applied yet, and the app applies both in press order. the
   tile is an active tile (`ACTIVE_TILE`): each change redraws it in the
   shade even while the shade is closed, and a tile that systemui still
   holds after a tap is redrawn in place.

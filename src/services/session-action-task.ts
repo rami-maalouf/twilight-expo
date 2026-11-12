@@ -11,7 +11,7 @@ export function registerSessionActionTask(): void {
   if (Platform.OS !== 'android') return;
   AppRegistry.registerHeadlessTask(SESSION_ACTION_TASK, () => async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { runPendingNotificationAction } = require('./notification-actions') as typeof import('./notification-actions');
-    await runPendingNotificationAction();
+    const { runPendingPresses } = require('./notification-actions') as typeof import('./notification-actions');
+    await runPendingPresses();
   });
 }

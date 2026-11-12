@@ -42,27 +42,44 @@ object TwilightWidgetActions {
     return true
   }
 
+  // the oldest pending press, once; call again until null. a notification
+  // press and a later widget press are both kept, so the app applies them in
+  // press order (a wake up at T, then the "Start Sleep" the tile offered)
   @Synchronized
   fun consume(context: Context): Map<String, Any>? {
     val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-    val action = preferences.getString(KEY_ACTION, null) ?: return null
-    val at = preferences.getLong(KEY_AT, 0L)
-    val origin = preferences.getString(KEY_ORIGIN, null) ?: ORIGIN_WIDGET
-    preferences.edit().clear().commit()
-    return mapOf(KEY_ACTION to action, KEY_AT to at.toDouble(), KEY_ORIGIN to origin)
+    val oldest = listOf(ORIGIN_NOTIFICATION, ORIGIN_WIDGET).mapNotNull { slot ->
+      val action = preferences.getString(key(slot, KEY_ACTION), null) ?: return@mapNotNull null
+      Pending(slot, action, preferences.getLong(key(slot, KEY_AT), 0L))
+    }.minByOrNull { it.at } ?: return null
+    // an older build kept every origin in the widget slot with an "origin" key
+    val origin = if (oldest.slot == ORIGIN_WIDGET) preferences.getString(KEY_ORIGIN, null) ?: ORIGIN_WIDGET else oldest.slot
+    val editor = preferences.edit().remove(key(oldest.slot, KEY_ACTION)).remove(key(oldest.slot, KEY_AT))
+    if (oldest.slot == ORIGIN_WIDGET) editor.remove(KEY_ORIGIN)
+    editor.commit()
+    return mapOf(KEY_ACTION to oldest.action, KEY_AT to oldest.at.toDouble(), KEY_ORIGIN to origin)
   }
 
-  // one slot, like swift's SharedData.pendingExternalAction: a newer press
-  // replaces an older one that was never consumed
+  private data class Pending(val slot: String, val action: String, val at: Long)
+
+  // one slot per origin, like swift's SharedData.pendingExternalAction: a
+  // newer press replaces an older one of the same origin that was never
+  // consumed. a widget, tile or shortcut press never replaces a
+  // notification press, which carries the time the session ends or starts
   @Synchronized
   fun record(context: Context, action: String, origin: String = ORIGIN_WIDGET) {
-    context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+    val editor = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
       .edit()
-      .putString(KEY_ACTION, action)
-      .putLong(KEY_AT, System.currentTimeMillis())
-      .putString(KEY_ORIGIN, origin)
-      .commit()
+      .putString(key(origin, KEY_ACTION), action)
+      .putLong(key(origin, KEY_AT), System.currentTimeMillis())
+    if (origin != ORIGIN_NOTIFICATION) editor.remove(KEY_ORIGIN)
+    editor.commit()
   }
+
+  // the widget slot keeps the original keys ("action", "at"), so a press
+  // stored by an older build is still found after an update
+  private fun key(origin: String, name: String) =
+    if (origin == ORIGIN_NOTIFICATION) "$ORIGIN_NOTIFICATION.$name" else name
 
   // brings the app's task to the front as it was (or starts it)
   fun launchIntent(context: Context): Intent? =

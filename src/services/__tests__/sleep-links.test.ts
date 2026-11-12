@@ -18,6 +18,8 @@ import {
   subscribeSleepLinkActions,
   takeSleepLinkAction,
   WIDGET_ACTION_MAX_AGE_MS,
+  drainPendingPresses,
+  type PendingPress,
 } from '../sleep-links';
 
 const T0 = Date.UTC(2025, 0, 15, 5, 0, 0);
@@ -131,6 +133,92 @@ describe('freshWidgetAction', () => {
   test('notification presses are left to planNotificationAction', () => {
     expect(freshWidgetAction({ action: 'stop', at: NOW - 1_000, origin: 'notification' }, NOW)).toBeNull();
     expect(freshWidgetAction({ action: 'stop', at: NOW - 1_000, origin: 'widget' }, NOW)).toBe('stop');
+  });
+
+  test('a press a few seconds ahead of the js clock (ntp correction) still runs, like notification presses', () => {
+    expect(freshWidgetAction({ action: 'start', at: NOW + 4_000 }, NOW)).toBe('start');
+    expect(freshWidgetAction({ action: 'start', at: NOW + 6_000 }, NOW)).toBeNull();
+  });
+});
+
+describe('drainPendingPresses', () => {
+  // the native two-slot store (TwilightWidgetActions.kt): one press per
+  // origin, the oldest handed out first
+  function nativeStore(presses: PendingPress[]) {
+    const slots = new Map<string, PendingPress>();
+    for (const press of presses) slots.set(press.origin ?? 'widget', press);
+    return () => {
+      const oldest = [...slots.values()].sort((a, b) => a.at - b.at)[0] ?? null;
+      if (oldest) slots.delete(oldest.origin ?? 'widget');
+      return oldest;
+    };
+  }
+
+  // the app's handlers over a real store: notification presses at their
+  // press time, widget presses through the "Pause..." toggle path
+  function run(store: ReturnType<typeof setup>['store'], consume: () => PendingPress | null, now: number) {
+    const messages: (string | null)[] = [];
+    return drainPendingPresses(
+      consume,
+      {
+        applyNotification: async (pending) => {
+          const plan = planNotificationAction(pending, store.getState(), now);
+          if (plan) store.getState().toggleSleep(plan.atMs);
+        },
+        queueWidget: (action) => messages.push(performSleepLinkAction(action, true, store, now).message),
+      },
+      () => now
+    ).then(() => messages);
+  }
+
+  test('a wake up from the notification survives a later tile press: the night ends at the press, then the tile starts a new one', async () => {
+    const { store } = setup();
+    store.getState().toggleSleep(T0);
+    const wake = T0 + 8 * HOUR;
+    // the headless task never ran; the tile then offered "Start Sleep"
+    const consume = nativeStore([
+      { action: 'stop', at: wake, origin: 'notification' },
+      { action: 'start', at: wake + 30_000, origin: 'widget' },
+    ]);
+    const messages = await run(store, consume, wake + 40_000);
+    expect(store.getState().sessions[0]).toMatchObject({ startTime: T0, endTime: wake });
+    expect(store.getState().activeSession?.startTime).toBe(wake + 40_000);
+    expect(messages).toEqual([null]);
+    expect(consume()).toBeNull();
+  });
+
+  test('a stale "asleep" widget pressed after the notification wake up only explains', async () => {
+    const { store } = setup();
+    store.getState().toggleSleep(T0);
+    const wake = T0 + 8 * HOUR;
+    const consume = nativeStore([
+      { action: 'stop', at: wake + 20_000, origin: 'widget' },
+      { action: 'stop', at: wake, origin: 'notification' },
+    ]);
+    const messages = await run(store, consume, wake + 30_000);
+    expect(store.getState().sessions[0]).toMatchObject({ endTime: wake });
+    expect(store.getState().activeSession).toBeNull();
+    expect(messages).toEqual([SLEEP_LINK_MESSAGES.notActive]);
+  });
+
+  test('a late widget press is dropped, the notification press still applies', async () => {
+    const { store } = setup();
+    store.getState().toggleSleep(T0);
+    const wake = T0 + 8 * HOUR;
+    const consume = nativeStore([
+      { action: 'stop', at: wake, origin: 'notification' },
+      { action: 'start', at: wake + 1_000, origin: 'widget' },
+    ]);
+    const messages = await run(store, consume, wake + WIDGET_ACTION_MAX_AGE_MS + 5_000);
+    expect(store.getState().sessions[0]).toMatchObject({ endTime: wake });
+    expect(store.getState().activeSession).toBeNull();
+    expect(messages).toEqual([]);
+  });
+
+  test('stops on a store that never empties', async () => {
+    const consume = jest.fn(() => ({ action: 'start', at: 0, origin: 'widget' }));
+    await drainPendingPresses(consume, { applyNotification: async () => {}, queueWidget: () => {} }, () => 0);
+    expect(consume.mock.calls.length).toBeLessThanOrEqual(4);
   });
 });
 

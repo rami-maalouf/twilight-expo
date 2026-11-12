@@ -6,15 +6,12 @@
 import { useEffect } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
 
-import { consumePendingWidgetAction } from '../../modules/twilight-widget-actions';
-import { appSleepStore } from '../state/app-sleep-store';
+import { appSleepStore, resyncAppSleepControls } from '../state/app-sleep-store';
 import { useSettings } from '../state/settings-state';
-import { applyNotificationAction } from './notification-actions';
+import { runPendingPresses } from './notification-actions';
 import {
-  freshWidgetAction,
   performSleepLinkAction,
   queueLaunchSleepLink,
-  queueSleepLinkAction,
   subscribeSleepLinkActions,
   takeSleepLinkAction,
 } from './sleep-links';
@@ -27,32 +24,31 @@ function runPending() {
   if (message) showAlert('Pause...', message);
 }
 
-function queueWidgetAction() {
-  const pending = consumePendingWidgetAction();
-  // a session notification press the headless task did not get to
-  if (pending?.origin === 'notification') {
-    applyNotificationAction(pending).catch(() => {});
-    return;
-  }
-  const action = freshWidgetAction(pending);
-  if (action) queueSleepLinkAction(action);
+// widget, tile and shortcut presses, and session notification presses the
+// headless task did not get to
+function queueWidgetActions() {
+  runPendingPresses().catch(() => {});
 }
 
 export function useExternalSleepActions() {
   useEffect(() => {
     const unsubscribe = subscribeSleepLinkActions(runPending);
-    queueWidgetAction();
+    queueWidgetActions();
     runPending();
     // the launch link, in case expo-router's initial url timed out
     Linking.getInitialURL()
       .then(queueLaunchSleepLink)
       .catch(() => {});
     const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active') queueWidgetAction();
+      if (next !== 'active') return;
+      // the tile and shortcut mirror can change natively behind js (a
+      // notification press, a rate-limited shortcut update): republish it
+      resyncAppSleepControls();
+      queueWidgetActions();
     });
     // android: the quick settings shade can cover the app without pausing
     // it, so a tile press made over the app only shows as regained focus
-    const focus = Platform.OS === 'android' ? AppState.addEventListener('focus', queueWidgetAction) : null;
+    const focus = Platform.OS === 'android' ? AppState.addEventListener('focus', queueWidgetActions) : null;
     return () => {
       unsubscribe();
       sub.remove();

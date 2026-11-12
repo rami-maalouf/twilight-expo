@@ -10,23 +10,33 @@ import type { StoreApi } from 'zustand/vanilla';
 import { setSleepControlsState } from '../../modules/twilight-widget-actions';
 import type { SleepState } from '../state/sleep-store';
 
+export interface SleepControlsMirror {
+  stop: () => void;
+  // publishes the current state even when js thinks it is unchanged: the
+  // native side changes the mirror behind js's back (a session notification
+  // press flips it before js applies the press) and a background shortcut
+  // update can be rate-limited, so the app republishes on every foreground
+  resync: () => void;
+}
+
 export function mirrorSleepControls(
   store: StoreApi<SleepState>,
   publish: (sleepingSinceMs: number | null) => void = setSleepControlsState
-): () => void {
+): SleepControlsMirror {
   // undefined until the first publish: every process publishes once, which
   // also repairs a mirror that missed a change while js was not running
   let published: number | null | undefined;
-  const sync = (state: SleepState) => {
+  const sync = (state: SleepState, force = false) => {
     const sleepingSinceMs = state.activeSession?.startTime ?? null;
-    if (sleepingSinceMs === published) return;
+    if (!force && sleepingSinceMs === published) return;
     published = sleepingSinceMs;
     try {
       publish(sleepingSinceMs);
     } catch {
-      // the controls catch up on the next change
+      // the controls catch up on the next change or foreground
     }
   };
   sync(store.getState());
-  return store.subscribe(sync);
+  const stop = store.subscribe((state) => sync(state));
+  return { stop, resync: () => sync(store.getState(), true) };
 }

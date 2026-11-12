@@ -11,7 +11,13 @@ export const appSleepStore = createSleepStore(sessionRepo);
 
 // the android quick settings tile and launcher shortcuts follow every
 // session change, with or without ui (the headless task uses this store too)
-mirrorSleepControls(appSleepStore);
+const sleepControls = mirrorSleepControls(appSleepStore);
+
+// republishes the mirror unconditionally (on foreground and after a session
+// notification press, which changes it natively)
+export function resyncAppSleepControls(): void {
+  sleepControls.resync();
+}
 
 export function useSleepStore<T>(selector: (state: SleepState) => T): T {
   return useStore(appSleepStore, selector);

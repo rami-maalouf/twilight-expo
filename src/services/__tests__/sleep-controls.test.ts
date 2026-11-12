@@ -61,9 +61,18 @@ describe('mirrorSleepControls', () => {
     expect(publish.mock.calls).toEqual([[null], [T0]]);
   });
 
+  test('resync republishes an unchanged state (the native side flipped the mirror behind js)', () => {
+    const { store, publish } = setup();
+    store.getState().toggleSleep(T0);
+    const mirror = mirrorSleepControls(store, publish);
+    mirror.resync();
+    mirror.resync();
+    expect(publish.mock.calls).toEqual([[T0], [T0], [T0]]);
+  });
+
   test('unsubscribes', () => {
     const { store, publish } = setup();
-    const stop = mirrorSleepControls(store, publish);
+    const { stop } = mirrorSleepControls(store, publish);
     stop();
     store.getState().toggleSleep(T0);
     expect(publish).toHaveBeenCalledTimes(1);

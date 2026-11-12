@@ -17,6 +17,9 @@ export const SLEEP_STOP_URL = 'twilight://sleep/stop';
 // right away, so a late one (the launch failed, the app was force-stopped)
 // must not start or end a session by surprise the next time it opens
 export const WIDGET_ACTION_MAX_AGE_MS = 2 * 60_000;
+// tolerated clock skew between the press and the js clock (an ntp
+// correction between a press and its consume), for every origin
+const CLOCK_SKEW_MS = 5_000;
 
 export function freshWidgetAction(
   pending: { action: string; at: number; origin?: string } | null,
@@ -26,7 +29,7 @@ export function freshWidgetAction(
   if (pending == null || pending.origin === 'notification') return null;
   if (pending.action !== 'start' && pending.action !== 'stop') return null;
   const age = nowMs - pending.at;
-  return age >= 0 && age <= WIDGET_ACTION_MAX_AGE_MS ? pending.action : null;
+  return age >= -CLOCK_SKEW_MS && age <= WIDGET_ACTION_MAX_AGE_MS ? pending.action : null;
 }
 
 // a session notification press runs in the background and keeps its press
@@ -34,8 +37,38 @@ export function freshWidgetAction(
 // then, even if js only gets to it when the app next opens. older than this
 // it no longer describes the current night and is dropped.
 export const NOTIFICATION_ACTION_MAX_AGE_MS = 12 * 3600_000;
-// tolerated clock skew between the press and the js clock
-const CLOCK_SKEW_MS = 5_000;
+
+export interface PendingPress {
+  action: string;
+  at: number;
+  origin?: string;
+}
+
+// the native store keeps one press per origin and hands out the oldest
+// first (TwilightWidgetActions.kt consume), so a notification press and a
+// later widget, tile or shortcut press both run, in press order:
+// notification presses through `applyNotification` (at their press time),
+// fresh widget presses through `queueWidget` (the "Pause..." toggle path)
+export async function drainPendingPresses(
+  consume: () => PendingPress | null,
+  handlers: {
+    applyNotification: (pending: PendingPress) => Promise<unknown>;
+    queueWidget: (action: SleepLinkAction) => void;
+  },
+  now: () => number = Date.now
+): Promise<void> {
+  // two slots; the bound only guards against a store that never empties
+  for (let i = 0; i < 4; i++) {
+    const pending = consume();
+    if (pending == null) return;
+    if (pending.origin === 'notification') {
+      await handlers.applyNotification(pending);
+      continue;
+    }
+    const action = freshWidgetAction(pending, now());
+    if (action) handlers.queueWidget(action);
+  }
+}
 
 export interface PlannedNotificationAction {
   action: SleepLinkAction;

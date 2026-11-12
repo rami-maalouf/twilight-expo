@@ -10,11 +10,11 @@ import {
   type PendingWidgetAction,
 } from '../../modules/twilight-widget-actions';
 import { settingsStore } from '../data/app-db';
-import { appSleepStore } from '../state/app-sleep-store';
+import { appSleepStore, resyncAppSleepControls } from '../state/app-sleep-store';
 import { buildHomeWidgetSnapshot } from './home-widget-snapshot';
 import { HOME_WIDGETS_SUPPORTED, publishHomeWidgets } from './home-widgets';
 import { syncLiveActivityNow } from './live-activity-sync';
-import { freshWidgetAction, planNotificationAction, queueSleepLinkAction } from './sleep-links';
+import { drainPendingPresses, planNotificationAction, queueSleepLinkAction } from './sleep-links';
 import { showAlert } from '../components/common/app-alert';
 
 function warn(error: unknown) {
@@ -56,6 +56,9 @@ export async function applyNotificationAction(
     ? planNotificationAction(pending, store.getState(), nowMs)
     : null;
   const result = plan ? store.getState().toggleSleep(plan.atMs) : null;
+  // the receiver already flipped the tile and shortcut mirror natively; a
+  // press that did not apply leaves the store unchanged, so republish
+  resyncAppSleepControls();
   await syncLiveActivityNow().catch(warn);
   if (result) publishWidgetsNow();
   // like the ios live activity button: the short-sleep joke only shows when
@@ -64,15 +67,13 @@ export async function applyNotificationAction(
   return result != null;
 }
 
-// the headless task: takes whatever is pending. a widget press that raced
-// in is queued for the ui, which runs it once mounted (use-external-sleep-actions)
-export async function runPendingNotificationAction(): Promise<void> {
-  const pending = consumePendingWidgetAction();
-  if (pending == null) return;
-  if (pending.origin === 'notification') {
-    await applyNotificationAction(pending);
-    return;
-  }
-  const action = freshWidgetAction(pending);
-  if (action) queueSleepLinkAction(action);
+// every pending press, oldest first: notification presses apply at their
+// press time, a widget, tile or shortcut press is queued for the ui, which
+// runs it once mounted (use-external-sleep-actions). the headless task and
+// the ui's launch / foreground checks both run this
+export function runPendingPresses(): Promise<void> {
+  return drainPendingPresses(consumePendingWidgetAction, {
+    applyNotification: (pending) => applyNotificationAction(pending).catch(warn),
+    queueWidget: queueSleepLinkAction,
+  });
 }
