@@ -111,6 +111,27 @@ adb shell dumpsys shortcut | rg -A2 com.rami.twilight.port
 adb shell dumpsys activity service com.android.systemui/.SystemUIService | rg -m1 TwilightSleepTile
 ```
 
+## Android look and feel
+
+Android uses Material 3 equivalents of the Swift controls: Jetpack Compose
+switches, menus, alert dialogs and time/date dialogs from `@expo/ui`, bottom
+sheets with a drag handle, ripples and 48dp icon buttons, native Android
+haptics, and times that follow the system 24-hour setting. iOS keeps the
+SwiftUI-style port. Every difference is listed in `DEVIATIONS.md`.
+
+Material Symbols stand in for SF Symbols (`src/components/common/native-symbol-map.ts`).
+SF `.fill` names render solid from a generated subset of Google's variable
+font. After mapping a new `.fill` symbol, regenerate it:
+
+```bash
+# MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf from
+# https://github.com/google/material-design-icons/tree/master/variablefont
+uv run scripts/generate-filled-symbols.py "<path to the variable font>"
+```
+
+The symbol map test fails when a name used in `src/` has no mapping or a
+`.fill` mapping has no filled glyph.
+
 ## Rating prompt
 
 From the third launch, once per app version, Twilight asks for a review

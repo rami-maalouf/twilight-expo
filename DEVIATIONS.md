@@ -62,21 +62,72 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   turning it on restores it), and a changed goal or bedtime resyncs it; the
   original only reads the toggle when a session starts.
 - android (original is ios-only): the live activity becomes an ongoing
-  session notification (see below); home-screen widgets are android-only. compact inline date/time pickers do not exist, so
-  settings and the log editor use a value chip that opens the system dialog.
-  ios keeps the native compact style. icons use Material Symbols via NativeSymbol
-  (SF string names render nothing on android). dashboard and metrics segmented
-  pickers use `@expo/ui` controls: SwiftUI segmented Picker on ios, Material 3
-  SegmentedButton on android with palette fills (actionPrimary selected,
-  actionSecondary-family inactive, borders matched to fills so they do not read
-  as empty outlines). settings appearance rows on android show the value and
-  chevron like ios and open an `@expo/ui` material 3 selectable dropdown menu
-  (the universal Picker's exposed-dropdown text field is wider than the row).
-  native tabs, status bar, and system chrome
-  follow the in-app display mode via Appearance.setColorScheme plus NativeTabs
-  colors. form sheets fall back to full-screen modals. cards
-  add android elevation. the moon glow still uses ios-style shadows, which are
-  weaker on android.
+  session notification (see below); home-screen widgets are android-only.
+  native tabs, status bar, and system chrome follow the in-app display mode
+  via Appearance.setColorScheme plus NativeTabs colors. the android ui uses
+  material 3 equivalents of the swift controls (details in the next bullet).
+- android material 3 ui (ios keeps the swiftui-style port unless noted):
+  - icons are Material Symbols through `NativeSymbol`. expo-symbols only ships
+    the outlined (FILL 0) font, so sf `.fill` names render from a FILL 1
+    subset generated from google's variable font
+    (`scripts/generate-filled-symbols.py` -> `assets/fonts/MaterialSymbolsFilled.ttf`,
+    apache 2.0); the outlined glyph shows until that font has loaded. filled
+    glyphs come in one weight (400).
+  - date and time: no compact inline pickers exist, so settings and the log
+    editor show a value chip that opens jetpack compose material 3 dialogs:
+    a time dialog titled "Bedtime" / "Wake Up" in the device's 12/24-hour
+    format, and the m3 date picker for "Wake day" (it keeps material's own
+    "Select date" title; expo-ui exposes no custom title). times follow the
+    android "use 24-hour format" switch through expo-localization, like
+    swift's DateFormatter .short style.
+  - settings: one rounded block per section (16dp corners, swift 10), 56dp
+    rows with a ripple, m3 switches tinted with the palette accent. the whole
+    switch row toggles and reads as one switch to talkback (on ios only the
+    switch toggles, like swift's Toggle row). appearance rows open an m3
+    selectable dropdown menu anchored under the value; long values
+    truncate before the chevron.
+  - app alerts ("Pause...", Remove Demo Data, delete log, errors) are jetpack
+    compose m3 dialogs tinted from the palette; ios keeps UIAlertController.
+    a single-button alert cannot be dismissed with back or the scrim, like
+    android's own `Alert.alert` default. without a mounted host (the
+    headless notification task) android falls back to `Alert.alert`.
+  - sheets (timeline 0.82/1.0, guide 0.6/1.0) are react-native-screens
+    material bottom sheets with 28dp corners and a 32x4dp drag handle drawn
+    by the screen (react-native-screens draws ios' grabber only); the close
+    control is an "X" icon button instead of the blue "Done", and the log
+    editor closes with an "X" instead of "Cancel".
+  - every tappable control has a ripple bounded to its shape (icon buttons
+    an unbounded 24dp one with a 48dp target); ios dims pressed controls.
+  - haptics use android's own constants (`src/services/haptics.ts`): segment
+    tick for display mode / theme color, gesture start, clock tick and
+    confirm on the circular time picker; ios keeps swift's impact styles.
+  - cards keep a tuned translucent tonal fill per palette (`cardBackground`)
+    with elevation instead of a real blur: expo-blur's android blur needs a
+    BlurTargetView around the starfield and costs a blur pass per frame.
+  - large numerals: android has no rounded system face (swift `.rounded`),
+    so they stay roboto with tabular digits.
+  - chart cards on narrow widths (320dp, large text) wrap the value and the
+    90D/All chip onto a right-aligned second line instead of overflowing.
+  - while asleep the palette swaps to its desaturated version on both
+    platforms (swift grays the whole root with `.grayscale(1.0)`); android
+    additionally grays the emoji (greeting, "😴 mode activated", tips) with a
+    render effect on those texts. a root-wide filter measured ~1.7x slower
+    frames on the emulator, and ios react native has no grayscale filter,
+    so ios emoji stay in color.
+  - the welcome moon's glow blurs icon copies with a render effect (swift
+    `.blur(radius:)`); ios keeps its native shadow glow.
+  - logs: besides the swipe, a long press deletes after a confirm dialog and
+    talkback gets a "Delete" action; a full left swipe deletes like swift's
+    default `.swipeActions`. the swipe tracks the finger 1:1.
+  - predictive back is on (`predictiveBackGestureEnabled`); the back edge
+    swipe closes the log editor and the back key closes the wind-down tips
+    without errors (checked on android 16). back on Metrics, Logs or
+    Settings returns to Home first.
+  - a system font size change recreates the activity (android's default):
+    react native 0.88 does not relayout existing text when the font scale
+    changes in place. open editor state is lost, and dev builds log a
+    one-off "configured linking in multiple places" warning while the old
+    root unmounts; only one root remains.
 - charts use @shopify/react-native-skia instead of Swift Charts. Aug 11
   dashboard features (Trend 7/30 window, Time Sleep/Wake/Both chart, duration-
   tinted averages, in-card history chip, Dev settings demo onboarding) match
@@ -186,6 +237,17 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   - the notification is reposted after a reboot or an app update (alarms
     and possibly the notification are gone); a relaunch reconciles it with
     the stored session.
+- settings while a session is active (swift isBlocking): the orange lock
+  row with swift's copy sits above Sleep Goal and the Wind-Down / sleep
+  notification toggles are disabled; bedtime and wake stay editable like
+  swift. the dev-only Development section has swift's red "Restart
+  Onboarding" and "Reset Sleep Data" (deletes every session, the active one
+  included; widgets, tile and notification follow through the usual
+  session-change path), plus a port-only
+  "Show Scheduled Notifications" row.
+- onboarding steps show no back arrow (swift's NavigationStack shows one on
+  Schedule, Notifications and Demo data); system back works. the onboarding
+  routes belong to the health connect workstream and were not changed here.
 - settings "Go to settings to disable globally" (swift link at the end of
   Notifications, hidden while sleeping) opens the app's notification
   settings on android and the app's settings page on ios.
