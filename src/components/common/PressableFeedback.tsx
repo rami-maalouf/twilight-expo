@@ -27,6 +27,9 @@ export interface PressableFeedbackProps extends Omit<PressableProps, 'style'> {
 
 const IOS_PRESSED_OPACITY = 0.55;
 
+// ripple on a saturated fill (status buttons, save): light on any palette
+export const ON_FILL_RIPPLE = 'rgba(255, 255, 255, 0.28)';
+
 export function rippleColorFor(isLight: boolean): string {
   return isLight ? 'rgba(45, 27, 46, 0.14)' : 'rgba(255, 255, 255, 0.18)';
 }

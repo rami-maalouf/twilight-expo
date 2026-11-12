@@ -3,12 +3,12 @@
 // target rules, hour x-axis on the 18:00 offset scale
 import { Canvas, Circle, DashPathEffect, Line, RoundedRect, vec } from '@shopify/react-native-skia';
 import { router, useLocalSearchParams } from 'expo-router';
-import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
+import { SheetCloseButton } from '@/components/common/SheetCloseButton';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import { MetricsEmptyState } from '@/components/metrics/primitives';
 import { formatMonthDay } from '@/components/charts/date-scale';
@@ -92,18 +92,7 @@ export default function TimelineSheetScreen() {
       <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
         <View style={styles.toolbarSpacer} />
         <Text style={[styles.navTitle, { color: theme.textPrimary }]}>Sleep/Wake Trend</Text>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          style={styles.doneButton}
-          accessibilityRole="button"
-          accessibilityLabel="Close">
-          {Platform.OS === 'android' ? (
-            <SymbolView name="xmark" size={20} tintColor={theme.textPrimary} />
-          ) : (
-            <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
-          )}
-        </Pressable>
+        <SheetCloseButton onPress={() => router.back()} iconColor={theme.textPrimary} doneColor={theme.actionPrimary} />
       </View>
       <View
         style={[
@@ -221,8 +210,6 @@ const styles = StyleSheet.create({
   },
   toolbarSpacer: { width: 48 },
   navTitle: { fontSize: 17, fontWeight: '600' },
-  doneButton: { minWidth: 48, alignItems: 'flex-end' },
-  done: { fontSize: 17, fontWeight: '600' },
   body: { flex: 1, paddingHorizontal: 20, paddingTop: 12, gap: 14 },
   heading: { fontSize: 17, fontWeight: '600' },
   subtitle: { fontSize: 15 },

@@ -1,10 +1,10 @@
 // ports: Views/SleepHygieneTipsView.swift - the wind-down routine timeline
 import { router } from 'expo-router';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
+import { SheetCloseButton } from '@/components/common/SheetCloseButton';
 import { useSettings } from '@/state/settings-state';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
@@ -63,18 +63,7 @@ export default function SleepTipsScreen() {
       <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
         <View style={styles.toolbarSpacer} />
         <View style={styles.toolbarSpacer} />
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          style={styles.doneButton}
-          accessibilityRole="button"
-          accessibilityLabel="Close">
-          {Platform.OS === 'android' ? (
-            <SymbolView name="xmark" size={20} tintColor={theme.textPrimary} />
-          ) : (
-            <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
-          )}
-        </Pressable>
+        <SheetCloseButton onPress={() => router.back()} iconColor={theme.textPrimary} doneColor={theme.actionPrimary} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -139,8 +128,6 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   toolbarSpacer: { flex: 1 },
-  doneButton: { minWidth: 48, alignItems: 'flex-end' },
-  done: { fontSize: 17, fontWeight: '600' },
   content: { paddingHorizontal: 16, paddingTop: 12, gap: 24 },
   header: { gap: 8 },
   title: { fontSize: 28, fontWeight: '700' },

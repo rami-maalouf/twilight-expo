@@ -3,11 +3,12 @@
 // tap to edit (editor sheet lands in task 13)
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useCallback, useRef } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect, useScrollToTop } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LogRow } from '@/components/logs/LogRow';
+import { PressableFeedback } from '@/components/common/PressableFeedback';
 import { Screen } from '@/components/common/Screen';
 import type { SleepSession } from '@/domain/models';
 import { useSleepStore } from '@/state/app-sleep-store';
@@ -42,14 +43,14 @@ export default function LogsScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.textPrimary }]}>Sleep Logs</Text>
-            <Pressable
+            <PressableFeedback
               testID="add-log"
               accessibilityRole="button"
               accessibilityLabel="Add sleep log"
               onPress={() => openEditor(null)}
               style={[styles.addButton, { backgroundColor: theme.name === 'sunset' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(28, 28, 30, 0.7)' }]}>
               <SymbolView name="plus" size={22} tintColor={theme.accent} />
-            </Pressable>
+            </PressableFeedback>
           </View>
         }
         ListEmptyComponent={

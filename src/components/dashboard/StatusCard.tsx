@@ -6,9 +6,10 @@ import { Canvas, LinearGradient, Path, Skia, vec } from '@shopify/react-native-s
 // captions keep "Tap to ..." and drop the NFC clause (out of scope).
 // compact spacing matches Swift Aug 11 status-card compaction.
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/common/Card';
+import { ON_FILL_RIPPLE, PressableFeedback } from '@/components/common/PressableFeedback';
 import { formatDurationHm } from '@/domain/metrics/chart-data';
 import type { SleepSession } from '@/domain/models';
 import { sessionDurationSeconds } from '@/domain/session-rules';
@@ -57,12 +58,14 @@ function BigActionButton({
   testID?: string;
 }) {
   return (
-    <Pressable
+    <PressableFeedback
       testID={testID}
+      accessibilityRole="button"
       onPress={onPress}
+      rippleColor={ON_FILL_RIPPLE}
       style={[styles.actionButton, { backgroundColor: color }]}>
       <Text style={styles.actionLabel}>{label}</Text>
-    </Pressable>
+    </PressableFeedback>
   );
 }
 

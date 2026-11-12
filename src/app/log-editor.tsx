@@ -6,11 +6,13 @@ import { formatMinuteTime, formatDayDate } from '@/utils/locale-format';
 import { router, useLocalSearchParams } from 'expo-router';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useMemo, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CircularTimePicker } from '@/components/common/CircularTimePicker';
+import { ON_FILL_RIPPLE, PressableFeedback } from '@/components/common/PressableFeedback';
 import { Screen } from '@/components/common/Screen';
+import { SheetCloseButton } from '@/components/common/SheetCloseButton';
 import {
   editorTimesFromSession,
   epochFromDayMinutes,
@@ -101,9 +103,14 @@ export default function LogEditorScreen() {
     <Screen starCount={28}>
       {/* inline-title toolbar over the gradient; inset below android status bar */}
       <View style={[styles.toolbar, { paddingTop: insets.top + 18 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={8} testID="cancel-log">
-          <Text style={[styles.cancel, { color: theme.accent }]}>Cancel</Text>
-        </Pressable>
+        <SheetCloseButton
+          testID="cancel-log"
+          edge="start"
+          label="Cancel"
+          onPress={() => router.back()}
+          iconColor={theme.textPrimary}
+          doneColor={theme.accent}
+        />
         <Text style={[styles.title, { color: theme.textPrimary }]}>
           {existing ? 'Edit Log' : 'Log Sleep'}
         </Text>
@@ -188,13 +195,15 @@ export default function LogEditorScreen() {
 
       {/* pinned save bar; inset above android nav / home indicator */}
       <View style={[styles.saveBar, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-        <Pressable
+        <PressableFeedback
           testID="save-log"
+          accessibilityRole="button"
+          rippleColor={ON_FILL_RIPPLE}
           onPress={save}
           style={[styles.saveButton, { backgroundColor: theme.actionPrimary, shadowColor: theme.actionPrimary }]}>
           <Text style={styles.saveLabel}>{existing ? 'Save Changes' : 'Save Sleep Log'}</Text>
           <SymbolView name="arrow.right" size={15} weight="semibold" tintColor="#ffffff" />
-        </Pressable>
+        </PressableFeedback>
       </View>
     </Screen>
   );
@@ -216,8 +225,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
-  cancel: { fontSize: 17 },
-  cancelSpacer: { width: 52 },
+  // balances the close control so the title stays centered (android: the
+  // 24dp icon, the rest of its 48dp target overhangs the padding)
+  cancelSpacer: { width: Platform.OS === 'android' ? 24 : 52 },
   title: { fontSize: 17, fontWeight: '600' },
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 120, gap: 16 },
   controlsRow: { flexDirection: 'row', gap: 12 },

@@ -7,8 +7,9 @@ import { router, useFocusEffect, useScrollToTop } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
+import { IconButton } from '@/components/common/IconButton';
 import { Screen } from '@/components/common/Screen';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import {
@@ -206,22 +207,21 @@ export default function MetricsScreen() {
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>Metrics</Text>
           <View style={styles.toolbar}>
-            <Pressable
+            <IconButton
               testID="timeline-button"
-              accessibilityRole="button"
               accessibilityLabel="Sleep & Wake Timeline"
-              onPress={() => router.push({ pathname: '/timeline-sheet', params: { initialRange: range } })}
-              hitSlop={6}>
+              iconSize={20}
+              onPress={() => router.push({ pathname: '/timeline-sheet', params: { initialRange: range } })}>
               <SymbolView name="chart.bar.xaxis" size={20} tintColor={theme.textPrimary} />
-            </Pressable>
-            <Pressable
+            </IconButton>
+            <IconButton
               testID="guide-button"
-              accessibilityRole="button"
               accessibilityLabel="Metrics Guide"
-              onPress={() => router.push('/metrics-explanation')}
-              hitSlop={6}>
+              iconSize={20}
+              edge="end"
+              onPress={() => router.push('/metrics-explanation')}>
               <SymbolView name="info.circle" size={20} tintColor={theme.textPrimary} />
-            </Pressable>
+            </IconButton>
           </View>
         </View>
 
@@ -354,7 +354,8 @@ const styles = StyleSheet.create({
   content: { paddingTop: 70, paddingHorizontal: 20, paddingBottom: 130, gap: 20 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 34, fontWeight: '700' },
-  toolbar: { flexDirection: 'row', gap: 18 },
+  // android: adjacent 48dp icon button targets, like a material top app bar
+  toolbar: { flexDirection: 'row', gap: Platform.OS === 'android' ? 0 : 18 },
   description: { fontSize: 15 },
   pickerRow: { flexDirection: 'row' },
   chipRow: { flexDirection: 'row', gap: 8 },

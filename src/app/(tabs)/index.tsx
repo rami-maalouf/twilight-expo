@@ -11,6 +11,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimen
 import { Canvas, LinearGradient, RoundedRect, vec } from '@shopify/react-native-skia';
 
 import { Card } from '@/components/common/Card';
+import { IconButton } from '@/components/common/IconButton';
 import { FadeInSlide } from '@/components/common/FadeInSlide';
 import { Screen } from '@/components/common/Screen';
 import { InsightPills } from '@/components/dashboard/InsightPills';
@@ -299,14 +300,14 @@ export default function DashboardScreen() {
                 {greeting || (isSleeping ? 'Good Night 🌙' : 'Good Morning ☀️')}
               </Text>
             </Pressable>
-            <Pressable
-              hitSlop={8}
+            <IconButton
+              iconSize={16}
+              edge="end"
               onPress={() => router.push('/metrics-explanation')}
-              accessibilityRole="button"
               accessibilityLabel="Metrics info"
               testID="metrics-info">
               <SymbolView name="info.circle" size={16} tintColor={theme.textSecondary} />
-            </Pressable>
+            </IconButton>
           </View>
           <Text style={[styles.date, { color: theme.textSecondary }]}>{dateLine}</Text>
         </View>
