@@ -546,13 +546,35 @@ android 13 own-data window cannot mark old records as removed, 11.5):
 5. an explicit user edit of a `hc_remote_deleted` session clears the flag
    and exports it again (prior art used the same rule: "explicit remote
    removal pauses export until the next intentional local edit"). "Pull"
-   does not re-create them.
+   does not re-create them. an archive restore that changes an owned night
+   counts as such an edit (6.4).
+6. the held list only counts nights that still wait for a decision: an
+   edit, a local delete or a restore of a held night removes it, and the
+   list is read through a filter (session exists, `hc_remote_deleted = 1`).
+   "Remove from Twilight" therefore never deletes a night the user edited
+   and exported again, and the card count matches what the user can see.
+
+twilight's own deletes come back through the changes feed too. a
+`DeletionChange` (or a missing record on a full read) for a session that
+has an outbox row, or that is an owned night now under 5 min, is
+twilight's own delete: it confirms the outbox row and clears
+`hc_written`; it never reaches the policy above. the feed also replays old
+own upserts: an own upsert is never learned for such a session, and a
+replayed upsert with a lower version than `hc_remote_version` and another
+record id (a record twilight deleted and then wrote again) does not take
+the id back. an edit that makes an owned night valid again drops its
+pending outbox row (the record is wanted again), and an outbox row that
+drains for a night that is exportable makes the night pending, so it is
+written again in the same run. the full read ends two days after now, so a
+night whose wake time lies ahead is never missing from the own read.
 
 retention exception for imports: a foreign `DeletionChange` (or vanished
 import) for a night that ended more than 30 days before it was observed does
 not delete the local import. the import is detached instead: links removed,
 `health_import_detached = 1`. it stays in the journal and still blocks
-overlapping foreign nights. a detached import that later matches a mirror
+overlapping foreign nights, in the same pass too: the planner decides "aged
+out" before the reconcile, and only imports that will really be deleted
+leave the overlap checks. a detached import that later matches a mirror
 night by key re-links and updates. reason: hc auto-delete would otherwise
 erase the imported sleep history that sri and trends depend on. swift
 always deletes vanished imports (healthkit has no auto-delete); the
@@ -925,7 +947,10 @@ the clock rule at creation.
   and could land on the wrong calendar day. null offset -> device zone
   (swift fallback is `TimeZone.current`). start and end map independently.
   hermes `Intl` support for `Etc/GMT*` and the table zones is checked on the
-  emulator (7.3 step 16).
+  emulator (7.3 step 16). a matched import counts a zone as changed only
+  when the stored zone's offset at that instant differs: after travel the
+  same offset maps to another id (`Etc/GMT-2` for `Europe/Paris`), which
+  must not rewrite every import on every pass.
 - hc night key wake day = local date of the end instant shifted by the end
   offset (falls back to the device zone when the offset is null). the key no
   longer changes when the device travels (swift defect 3).
@@ -1055,8 +1080,8 @@ runExclusive:
      forceResync: clear token + mirror (keep tombstones, links, ledger)
      no token -> fullRead:
         token = getChangesToken()                               BEFORE the reads
-        own   = readSleep(own, epoch..now)                      paged
-        all   = readSleep(all, epoch..now)                      paged, own rows dropped
+        own   = readSleep(own, epoch..now+2d)                   paged
+        all   = readSleep(all, epoch..now+2d)                   paged, own rows dropped
         tx: replace the whole mirror with foreign(all)
             learn own ids/versions (max, self-heal 3.3)
             own records missing for hc_written=1 synced sessions -> remote-deletion policy (2.6)
@@ -1502,6 +1527,13 @@ the port never writes swift archives.
    imported sessions from the file arrive without links, so the absence rule
    never deletes them (2.4); they re-link when a mirror night matches their
    key, and otherwise stay as detached imports (fixes swift defect 8).
+   port rules beyond swift: a new import (not adopted) that overlaps a local
+   import of the same provider and source is skipped (the same night
+   imported under another id on another device); an owned night the restore
+   changes gets `hc_remote_deleted = 0` and leaves the held list (a restore
+   is an explicit edit, 2.6 rule 5); `healthSyncVersion` above 2^50 is
+   rejected as an invalid session (2^53 would stop "+1" from increasing);
+   the importer refuses while demo is active, also outside the ui.
 4. active session: if the device already has an active session, the
    incoming active session is skipped ("Your device already has an active
    session; it stays active and the backup's active session is skipped.").
