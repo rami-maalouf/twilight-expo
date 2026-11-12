@@ -167,16 +167,18 @@ export function SleepRegularityCard({
             />
           </View>
           <View style={styles.headerSpacer} />
-          <Text
-            testID="metrics.sri.score"
-            accessibilityLabel={`${windowDays(window)}-day SRI`}
-            accessibilityValue={{
-              text: selected?.rollingScore != null ? formatSriScore(selected.rollingScore) : 'Insufficient data',
-            }}
-            style={[styles.headline, { color: theme.actionPrimary }]}>
-            {formatSriScore(selected?.rollingScore)}
-          </Text>
-          <HistoryRangeChip range={historyRange} onToggle={onHistoryRangeToggle} />
+          <View style={styles.headerTrailing}>
+            <Text
+              testID="metrics.sri.score"
+              accessibilityLabel={`${windowDays(window)}-day SRI`}
+              accessibilityValue={{
+                text: selected?.rollingScore != null ? formatSriScore(selected.rollingScore) : 'Insufficient data',
+              }}
+              style={[styles.headline, { color: theme.actionPrimary }]}>
+              {formatSriScore(selected?.rollingScore)}
+            </Text>
+            <HistoryRangeChip range={historyRange} onToggle={onHistoryRangeToggle} />
+          </View>
         </View>
 
         <View style={styles.captionRow}>
@@ -289,16 +291,22 @@ export function SleepRegularityCard({
 
 const styles = StyleSheet.create({
   stack: { gap: 16, alignSelf: 'stretch' },
+  // a narrow card (320dp phones, large text) wraps the value and the history
+  // chip onto a right-aligned second line instead of pushing them off the card
   headerRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: 8,
+    columnGap: 8,
+    rowGap: 10,
     alignSelf: 'stretch',
     width: '100%',
   },
   // swift caps the window picker at 188 and lets it shrink on narrow cards
   windowPicker: { width: 188, flexShrink: 1, minWidth: 0 },
   headerSpacer: { flexGrow: 1, flexShrink: 0, minWidth: 8 },
+  headerTrailing: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headline: { fontSize: 17, fontWeight: '600', fontVariant: ['tabular-nums'] },
   captionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   caption: { fontSize: 12 },

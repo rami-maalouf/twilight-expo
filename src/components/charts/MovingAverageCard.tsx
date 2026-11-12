@@ -239,10 +239,12 @@ export function MovingAverageCard({
         />
       </View>
       <View style={styles.headerSpacer} />
-      <Text style={[styles.headline, { color: theme.actionPrimary }]}>
-        {fmtHours(latest?.movingAverageHours ?? null)}
-      </Text>
-      <HistoryRangeChip range={historyRange} onToggle={onHistoryRangeToggle} />
+      <View style={styles.headerTrailing}>
+        <Text style={[styles.headline, { color: theme.actionPrimary }]}>
+          {fmtHours(latest?.movingAverageHours ?? null)}
+        </Text>
+        <HistoryRangeChip range={historyRange} onToggle={onHistoryRangeToggle} />
+      </View>
     </View>
   );
 
@@ -372,16 +374,22 @@ export function MovingAverageCard({
 
 const styles = StyleSheet.create({
   stack: { gap: 12, alignSelf: 'stretch' },
+  // a narrow card (320dp phones, large text) wraps the value and the history
+  // chip onto a right-aligned second line instead of pushing them off the card
   headerRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: 8,
+    columnGap: 8,
+    rowGap: 10,
     alignSelf: 'stretch',
     width: '100%',
   },
   // swift caps the window picker at 188 and lets it shrink on narrow cards
   windowPicker: { width: 188, flexShrink: 1, minWidth: 0 },
   headerSpacer: { flexGrow: 1, flexShrink: 0, minWidth: 8 },
+  headerTrailing: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   chartFrame: { alignSelf: 'stretch', width: '100%', height: CHART_HEIGHT },
   headline: { fontSize: 17, fontWeight: '600' },
   emptyText: { fontSize: 15, paddingVertical: 24 },

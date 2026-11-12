@@ -712,10 +712,15 @@ export function TimingCard({
 
 const styles = StyleSheet.create({
   stack: { gap: 12, alignSelf: 'stretch' },
+  // a narrow card (320dp phones, large text) wraps the value and the history
+  // chip onto a right-aligned second line instead of pushing them off the card
   headerRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: 8,
+    columnGap: 8,
+    rowGap: 10,
     alignSelf: 'stretch',
     width: '100%',
   },
