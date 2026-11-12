@@ -48,7 +48,7 @@ import type { CalendarDay } from '@/domain/models';
 import { addDays, dayKey, zonedParts } from '@/domain/session-rules';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
-import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
+import { useAsleepEmojiStyle, useFixedColor, useTheme } from '@/theme/ThemeProvider';
 import { showAlert } from '@/components/common/app-alert';
 
 const VIEW_MODES = ['Week', 'Trend', 'Time', 'SRI', 'Score'] as const;
@@ -91,6 +91,7 @@ function EmptyWeekChartIcon({ color }: { color: string }) {
 export default function DashboardScreen() {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const emojiGray = useAsleepEmojiStyle();
   const { width } = useWindowDimensions();
 
   const activeSession = useSleepStore((s) => s.activeSession);
@@ -296,7 +297,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.greetingRow}>
             <Pressable onPress={shuffleGreeting} hitSlop={6} style={styles.greetingButton}>
-              <Text style={[styles.greeting, { color: theme.textPrimary }]} numberOfLines={1}>
+              <Text style={[styles.greeting, { color: theme.textPrimary }, emojiGray]} numberOfLines={1}>
                 {greeting || (isSleeping ? 'Good Night 🌙' : 'Good Morning ☀️')}
               </Text>
             </Pressable>

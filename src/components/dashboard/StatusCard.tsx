@@ -13,7 +13,7 @@ import { ON_FILL_RIPPLE, PressableFeedback } from '@/components/common/Pressable
 import { formatDurationHm } from '@/domain/metrics/chart-data';
 import type { SleepSession } from '@/domain/models';
 import { sessionDurationSeconds } from '@/domain/session-rules';
-import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
+import { useAsleepEmojiStyle, useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
 
 const FLAME_SVG =
@@ -84,6 +84,7 @@ export function StatusCard({
 }) {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const emojiGray = useAsleepEmojiStyle();
   const green = fixed(GREEN);
   const red = fixed(RED);
 
@@ -92,7 +93,7 @@ export function StatusCard({
       <View style={styles.stack}>
         {isSleeping ? (
           <>
-            <Text style={[styles.sleepingTitle, { color: theme.textPrimary }]}>
+            <Text style={[styles.sleepingTitle, { color: theme.textPrimary }, emojiGray]}>
               😴 mode activated
             </Text>
             <BigActionButton label="Wake Up" color={theme.warning} onPress={onToggle} />

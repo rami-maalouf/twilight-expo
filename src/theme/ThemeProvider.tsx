@@ -107,3 +107,14 @@ export function useThemeControls(): ThemeControls {
 export function useIsDesaturated(): boolean {
   return useContext(DesaturatedContext);
 }
+
+// emoji carry their own colors, which the palette swap cannot gray. android
+// 12+ grays them with a render effect on the text itself (a root-wide filter,
+// like swift's .grayscale on the app root, costs a full-window pass every
+// frame). ios react native has no grayscale filter, so emoji stay in color.
+const GRAYSCALE_STYLE = { filter: [{ grayscale: 1 }] };
+
+export function useAsleepEmojiStyle(): typeof GRAYSCALE_STYLE | undefined {
+  const desaturated = useContext(DesaturatedContext);
+  return desaturated && Platform.OS === 'android' ? GRAYSCALE_STYLE : undefined;
+}

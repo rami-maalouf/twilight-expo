@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/common/Screen';
 import { SheetCloseButton } from '@/components/common/SheetCloseButton';
 import { useSettings } from '@/state/settings-state';
-import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
+import { useAsleepEmojiStyle, useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
 const TIMELINE = [
   {
@@ -55,6 +55,7 @@ function clockString(minutes: number): string {
 export default function SleepTipsScreen() {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const emojiGray = useAsleepEmojiStyle();
   const insets = useSafeAreaInsets();
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
 
@@ -89,7 +90,7 @@ export default function SleepTipsScreen() {
               <View key={step.hoursBefore} style={styles.timelineRow}>
                 <View style={styles.timelineRail}>
                   <View style={[styles.timelineDot, { backgroundColor: `${fixed(step.color)}33` }]}>
-                    <Text style={styles.timelineEmoji}>{step.emoji}</Text>
+                    <Text style={[styles.timelineEmoji, emojiGray]}>{step.emoji}</Text>
                   </View>
                   {!isLast && <View style={styles.timelineLine} />}
                 </View>
