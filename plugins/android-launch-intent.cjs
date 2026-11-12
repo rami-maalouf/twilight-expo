@@ -7,11 +7,10 @@
 // - a link that brings an existing task back after process death arrives
 //   through onNewIntent before react native is running and would be lost.
 //   keeping it as the activity intent lets Linking.getInitialURL() see it.
-// - fontScale added to configChanges so system font scale change does not
-//   destroy/recreate MainActivity or mount a second react root.
-// - alertDialogTheme configured to Material 3 with 28dp corners so app alerts
-//   follow Material 3 instead of legacy AppCompat styles.
-const { withMainActivity, withAndroidManifest, withAndroidStyles, AndroidConfig } = require('expo/config-plugins');
+// - fontScale in MainActivity configChanges: a system font size change
+//   otherwise recreates the activity, mounts a second react root (expo-router
+//   then logs "configured linking in multiple places") and drops open state.
+const { withMainActivity, withAndroidManifest } = require('expo/config-plugins');
 
 const MARK = '// twilight: launch intent hygiene';
 const GUARD = `    ${MARK}\n    if (savedInstanceState != null) intent?.data = null\n`;
@@ -44,53 +43,8 @@ function withFontScaleConfig(config) {
   });
 }
 
-function withM3AlertTheme(config) {
-  return withAndroidStyles(config, (cfg) => {
-    AndroidConfig.Styles.setStylesItem({
-      parent: { name: 'AppTheme' },
-      xml: cfg.modResults,
-      item: { $: { name: 'alertDialogTheme' }, _: '@style/M3AlertDialogTheme' },
-    });
-    AndroidConfig.Styles.setStylesItem({
-      parent: { name: 'AppTheme' },
-      xml: cfg.modResults,
-      item: { $: { name: 'materialAlertDialogTheme' }, _: '@style/M3AlertDialogTheme' },
-    });
-    const styles = cfg.modResults.resources.style || [];
-    if (!styles.some((s) => s.$?.name === 'M3AlertDialogTheme')) {
-      styles.push({
-        $: {
-          name: 'M3AlertDialogTheme',
-          parent: 'ThemeOverlay.Material3.MaterialAlertDialog',
-        },
-        item: [
-          { $: { name: 'shapeAppearanceCornerExtraLarge' }, _: '@style/ShapeAppearance.M3.Corner.Dialog' },
-          { $: { name: 'shapeAppearanceCornerMedium' }, _: '@style/ShapeAppearance.M3.Corner.Dialog' },
-          { $: { name: 'cornerSize' }, _: '28dp' },
-          { $: { name: 'colorPrimary' }, _: '#00D4FF' },
-          { $: { name: 'colorAccent' }, _: '#00D4FF' },
-        ],
-      });
-    }
-    if (!styles.some((s) => s.$?.name === 'ShapeAppearance.M3.Corner.Dialog')) {
-      styles.push({
-        $: {
-          name: 'ShapeAppearance.M3.Corner.Dialog',
-          parent: '',
-        },
-        item: [
-          { $: { name: 'cornerSize' }, _: '28dp' },
-        ],
-      });
-    }
-    cfg.modResults.resources.style = styles;
-    return cfg;
-  });
-}
-
 function withLaunchIntentHygiene(config) {
   config = withFontScaleConfig(config);
-  config = withM3AlertTheme(config);
   return withMainActivity(config, (cfg) => {
     let { contents } = cfg.modResults;
     if (cfg.modResults.language !== 'kt') {
@@ -108,6 +62,5 @@ function withLaunchIntentHygiene(config) {
 }
 
 withLaunchIntentHygiene.withFontScaleConfig = withFontScaleConfig;
-withLaunchIntentHygiene.withM3AlertTheme = withM3AlertTheme;
 
 module.exports = withLaunchIntentHygiene;
