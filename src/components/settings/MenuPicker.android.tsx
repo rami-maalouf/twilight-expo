@@ -9,7 +9,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuPopup,
   Host,
-  RNHostView,
   SelectableDropdownMenuItem,
   Text as ComposeText,
 } from '@expo/ui/jetpack-compose';
@@ -44,16 +43,14 @@ export function MenuPicker<T extends string>({
       onPress={() => setExpanded(true)}>
       <RowLabel color={theme.textPrimary}>{label}</RowLabel>
       <View style={styles.trailing}>
-        <Host matchContents colorScheme={isLight ? 'light' : 'dark'} seedColor={theme.accent}>
+        <Text style={settingsStyles.value} numberOfLines={1}>
+          {labels[value]}
+        </Text>
+        <NativeSymbol name="chevron.up.chevron.down" size={14} tintColor="#98989f" />
+        {/* the compose host only anchors the menu under the value, so the
+            value stays plain text that can truncate before the chevron */}
+        <Host style={styles.menuAnchor} colorScheme={isLight ? 'light' : 'dark'} seedColor={theme.accent} pointerEvents="none">
           <Box>
-            <RNHostView matchContents>
-              <View style={settingsStyles.trailing} pointerEvents="none">
-                <Text style={settingsStyles.value} numberOfLines={1}>
-                  {labels[value]}
-                </Text>
-                <NativeSymbol name="chevron.up.chevron.down" size={14} tintColor="#98989f" />
-              </View>
-            </RNHostView>
             <DropdownMenuPopup expanded={expanded} onDismissRequest={() => setExpanded(false)}>
               <DropdownMenuGroup>
                 {options.map((item, index) => (
@@ -85,5 +82,6 @@ export function MenuPicker<T extends string>({
 
 const styles = StyleSheet.create({
   // the value may shrink (ellipsis) but never pushes the chevron off the row
-  trailing: { flexShrink: 1, maxWidth: '60%' },
+  trailing: { flexShrink: 1, maxWidth: '60%', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  menuAnchor: { position: 'absolute', left: 0, bottom: 0, width: 1, height: 1 },
 });
