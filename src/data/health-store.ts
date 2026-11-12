@@ -173,9 +173,21 @@ export class HealthStore {
     this.setState(key, value == null ? null : JSON.stringify(value));
   }
 
+  // held ids that still wait for a decision: the session exists and is still
+  // marked removed in health connect. an edit, a local delete or a restore
+  // ends the hold, so the card count and "Remove from Twilight" never reach
+  // a night the user already acted on (2.6)
   heldRemoteDeletions(): string[] {
     const ids = this.getJson<unknown>('heldRemoteDeletions');
-    return Array.isArray(ids) ? ids.filter((v): v is string => typeof v === 'string') : [];
+    if (!Array.isArray(ids)) return [];
+    return ids.filter((v): v is string => typeof v === 'string' && this.getSessionRow(v)?.hc_remote_deleted === 1);
+  }
+
+  releaseHeldRemoteDeletions(ids: readonly string[]): void {
+    const release = new Set(ids);
+    const held = this.getJson<unknown>('heldRemoteDeletions');
+    if (!Array.isArray(held) || !held.some((v) => release.has(v))) return;
+    this.setHeldRemoteDeletions(held.filter((v): v is string => typeof v === 'string' && !release.has(v)));
   }
 
   setHeldRemoteDeletions(ids: string[]): void {
@@ -267,12 +279,30 @@ export class HealthStore {
     });
   }
 
-  // own record seen in health connect: learn its id and version (3.3 self-heal)
-  learnOwnRecord(sessionId: string, record: HealthRecord, nowMs: number): void {
+  // twilight itself is removing this session's record: a pending outbox
+  // delete, or an owned night now under 5 min (2.5, 2.6). such a record
+  // is never learned, and its deletion is not a remote deletion
+  isTwilightDeleting(row: HealthSessionRow): boolean {
+    const out = toOutboundRow(row);
+    return this.hasOutboxRow(row.id) || (isOwnedForExport(out) && !isEndedValid(out));
+  }
+
+  // own record seen in health connect: learn its id and version (3.3 self-heal).
+  // `replay`: the record came from the changes feed, which replays old
+  // upserts; an older version of a record twilight already replaced
+  // (deleted, then written again under a new id) must not take the id back
+  learnOwnRecord(sessionId: string, record: HealthRecord, nowMs: number, options: { replay?: boolean } = {}): void {
     const row = this.getSessionRow(sessionId);
     if (!row) return;
     const out = toOutboundRow(row);
-    if (!isOwnedForExport(out) || out.hcRemoteDeleted) return;
+    if (!isOwnedForExport(out) || out.hcRemoteDeleted || this.isTwilightDeleting(row)) return;
+    if (
+      options.replay &&
+      row.hc_record_id !== record.recordId &&
+      record.clientRecordVersion < (row.hc_remote_version ?? 0)
+    ) {
+      return;
+    }
     const learning = learnOwnRecord(toOwnState(row), toRemoteOwn(record), nowMs);
     this.db.runSync('update sleep_sessions set hc_record_id = ?, hc_remote_version = ?, hc_written = 1 where id = ?', [
       record.recordId,
@@ -304,7 +334,35 @@ export class HealthStore {
     return outcome;
   }
 
-  // outbox row deleted remotely: the session (if still local) has no record now
+  // a DeletionChange for a twilight record (2.6). twilight's own deletes come
+  // back through the feed too: they confirm the outbox row or clear the
+  // written flag; only the rest go through the remote-deletion policy
+  applyOwnDeletionChange(sessionId: string, observedAtMs: number): 'own' | 'held' | 'agedOut' | null {
+    const row = this.getSessionRow(sessionId);
+    if (!row) return null;
+    if (this.isTwilightDeleting(row)) {
+      for (const outbox of this.listOutbox().filter((o) => o.session_id === sessionId)) {
+        this.confirmOutboxDeletion(outbox, observedAtMs);
+      }
+      this.clearWritten(sessionId);
+      return 'own';
+    }
+    return this.applyRemoteOwnDeletion(sessionId, observedAtMs);
+  }
+
+  // the outbox row's record is gone from health connect. a session that is
+  // exportable again (an edit made it valid while the delete waited) is
+  // written again rather than left marked synced with no record (2.6)
+  confirmOutboxDeletion(row: OutboxRow, nowMs: number): void {
+    this.removeOutbox(row.client_record_id);
+    const session = this.getSessionRow(row.session_id);
+    if (!session) return;
+    this.clearWritten(row.session_id);
+    const out = toOutboundRow(session);
+    if (isOwnedForExport(out) && isEndedValid(out) && !out.hcRemoteDeleted) this.bumpPending(row.session_id, nowMs);
+  }
+
+  // the session (if still local) has no record now
   clearWritten(sessionId: string): void {
     this.db.runSync('update sleep_sessions set hc_written = 0, hc_record_id = null where id = ?', [sessionId]);
   }
@@ -544,6 +602,15 @@ export class HealthStore {
        values (?, ?, ?, ?, ?, 0, ?)`,
       [clientRecordIdFor(row.id), row.id, row.hc_record_id, row.start_time, row.end_time ?? row.start_time, nowMs]
     );
+  }
+
+  hasOutboxRow(sessionId: string): boolean {
+    return this.db.getFirstSync<{ n: number }>('select 1 as n from hc_pending_deletions where session_id = ? limit 1', [sessionId]) != null;
+  }
+
+  // the session wants its record again: a pending delete must not remove it
+  dropOutboxForSession(sessionId: string): void {
+    this.db.runSync('delete from hc_pending_deletions where session_id = ?', [sessionId]);
   }
 
   removeOutbox(clientRecordId: string): void {

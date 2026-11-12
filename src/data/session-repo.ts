@@ -3,7 +3,7 @@
 // HealthKitSleepSyncManager.handleLocalDeletion (docs/health-connect.md 3.3, 3.4)
 // persistence swap: SwiftData -> expo-sqlite (spec decision)
 import { isDemoSession } from '../domain/health/ownership';
-import { nextSyncVersion } from '../domain/health/outbound';
+import { isEndedValid, nextSyncVersion } from '../domain/health/outbound';
 import type { SessionHealth, SleepSession } from '../domain/models';
 import { MINIMUM_SESSION_SECONDS } from '../domain/session-rules';
 import { inTransaction, type SqlDatabase } from './db';
@@ -112,11 +112,18 @@ export class SessionRepo {
   // editor save. an import is adopted ("user edits win"): owned locally,
   // night key and links kept, never written to health connect (2.5). an owned
   // session always gets a new version and pending, and an explicit edit
-  // resumes export after a remote deletion or a rejected version (2.6, 3.3)
+  // resumes export after a remote deletion or a rejected version (2.6, 3.3).
+  // the edit ends a held remote deletion, and an owned night that is valid
+  // again cancels its pending remote delete (the record is wanted again)
   updateSession(id: string, input: SessionTimesInput): void {
+    inTransaction(this.db, () => this.applyUpdate(id, input));
+  }
+
+  private applyUpdate(id: string, input: SessionTimesInput): void {
     const now = input.nowMs ?? Date.now();
     const row = this.health.getSessionRow(id);
     if (!row) return;
+    this.health.releaseHeldRemoteDeletions([id]);
     const times = [input.startTime, input.endTime, input.startTimeZone, input.endTimeZone, now];
     const setTimes = 'start_time = ?, end_time = ?, start_tz = ?, end_tz = ?, updated_at = ?';
     if (row.is_health_imported === 1) {
@@ -133,6 +140,7 @@ export class SessionRepo {
             hc_remote_deleted = 0, hc_error_code = null, hc_error_version = null where id = ?`,
         [...times, nextSyncVersion(row.health_sync_version, now), id]
       );
+      if (isEndedValid({ startMs: input.startTime, endMs: input.endTime })) this.health.dropOutboxForSession(id);
     }
   }
 
@@ -158,6 +166,7 @@ export class SessionRepo {
         }
       }
       this.health.deleteLinks(id);
+      this.health.releaseHeldRemoteDeletions([id]);
       this.db.runSync('delete from sleep_sessions where id = ?', [id]);
     });
   }

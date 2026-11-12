@@ -95,7 +95,13 @@ export class ArchiveRepo {
       for (const t of plan.tombstones) this.health.upsertTombstone(t.nightKey, t.recordIds, t.deletedAt);
       const restored = [...plan.inserts, ...plan.updates].map((s) => s.id);
       this.health.removeFromLedger(restored);
-      for (const id of restored) this.db.runSync('delete from hc_pending_deletions where session_id = ?', [id]);
+      for (const id of restored) this.health.dropOutboxForSession(id);
+      // a restore that changes an owned night is an explicit edit (2.6 rule 5):
+      // it ends a held or kept remote deletion and the night exports again
+      for (const s of plan.updates) {
+        if (s.needsHealthSync) this.db.runSync('update sleep_sessions set hc_remote_deleted = 0 where id = ?', [s.id]);
+      }
+      this.health.releaseHeldRemoteDeletions(restored);
     });
   }
 

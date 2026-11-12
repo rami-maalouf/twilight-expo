@@ -311,6 +311,150 @@ describe.each([
     expect(t.hc.ownRecords()).toHaveLength(1);
     expect(t.repo.getSession(log.id)!.health!.needsSync).toBe(false);
   });
+
+  test('old night from two sources, the imported source record removed -> one local night, also after a pull', async () => {
+    const t = setup(options);
+    // 40 days before now: past the 30-day retention exception
+    t.foreign(-10, WATCH);
+    t.foreign(-10, OTHER, { startH: 0.5 });
+    await t.engine.sync('full');
+    expect(t.imports()).toHaveLength(1);
+    const imp = t.imports()[0];
+    const record = [...t.hc.records.values()].find((r) => r.dataOrigin === imp.health!.sourceId)!;
+    t.hc.removeRecord(record.recordId);
+    await t.engine.sync('full');
+    expect(t.sessions().map((s) => s.id)).toEqual([imp.id]);
+    expect(t.repo.health.getSessionRow(imp.id)!.health_import_detached).toBe(1);
+    await t.engine.sync('forceResync');
+    expect(t.sessions().map((s) => s.id)).toEqual([imp.id]);
+  });
+
+  test.each([
+    ['the delete lands, then the call fails', true],
+    ['the delete is confirmed, then the feed replays upsert and delete', false],
+  ])('shrunk under 5 min -> twilight deletes its record (%s) -> no held card, export resumes after an edit', async (_n, failAfterDelete) => {
+    const t = setup(options);
+    const log = t.logNight(28);
+    await t.engine.sync('full');
+    expect(t.hc.ownRecord(log.id)).toBeDefined();
+    t.repo.updateSession(log.id, { startTime: t.at(28), endTime: t.at(28) + 2 * 60_000, startTimeZone: 'Europe/Paris', endTimeZone: 'Europe/Paris', nowMs: t.clock.now });
+    if (failAfterDelete) {
+      const del = t.hc.deleteSleepByClientRecordIds.bind(t.hc);
+      jest.spyOn(t.hc, 'deleteSleepByClientRecordIds').mockImplementationOnce(async (ids) => {
+        await del(ids);
+        throw new HealthConnectError('E_HC_IO', 'binder died');
+      });
+    }
+    await t.engine.sync('push');
+    expect(t.hc.ownRecords()).toHaveLength(0);
+    // a foreground run: inbound (the feed holds twilight's own delete) before outbound
+    await t.engine.sync('full');
+    await t.engine.sync('full');
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([]);
+    expect(t.engine.snapshot().lastError).toBeNull();
+    expect(t.repo.health.getSessionRow(log.id)).toMatchObject({ hc_remote_deleted: 0, hc_written: 0, hc_record_id: null });
+    expect(t.repo.health.listOutbox()).toEqual([]);
+    t.editNight(log.id, 28, 8);
+    await t.engine.sync('push');
+    expect(t.hc.ownRecord(log.id)).toMatchObject({ endMs: t.at(28, 8) });
+    await t.engine.sync('full');
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([]);
+    expect(t.repo.getSession(log.id)!.health).toMatchObject({ needsSync: false, hcRecordId: t.hc.ownRecord(log.id)!.recordId });
+  });
+
+  test('shrunk, deleted, extended and written again before the next read -> the replayed old record never comes back as a remote delete', async () => {
+    const t = setup(options);
+    const log = t.logNight(28);
+    await t.engine.sync('full');
+    const first = t.hc.ownRecord(log.id)!.recordId;
+    t.repo.updateSession(log.id, { startTime: t.at(28), endTime: t.at(28) + 2 * 60_000, startTimeZone: 'Europe/Paris', endTimeZone: 'Europe/Paris', nowMs: t.clock.now });
+    await t.engine.sync('push');
+    t.clock.now += H;
+    t.editNight(log.id, 28, 8);
+    await t.engine.sync('push');
+    const second = t.hc.ownRecord(log.id)!.recordId;
+    expect(second).not.toBe(first);
+    // page 1: upsert(first), delete(first); page 2: upsert(second)
+    t.hc.changesPageSize = 2;
+    await t.engine.sync('full');
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([]);
+    expect(t.repo.health.getSessionRow(log.id)).toMatchObject({ hc_remote_deleted: 0, hc_record_id: second, needs_health_sync: 0 });
+  });
+
+  test('held night edited and exported again -> "Remove from Twilight" leaves it alone', async () => {
+    const t = setup(options);
+    const log = t.logNight(28);
+    const other = t.logNight(27);
+    await t.engine.sync('full');
+    t.hc.removeRecord(t.hc.ownRecord(log.id)!.recordId);
+    t.hc.removeRecord(t.hc.ownRecord(other.id)!.recordId);
+    await t.engine.sync('full');
+    expect([...t.engine.snapshot().heldRemoteDeletions].sort()).toEqual([log.id, other.id].sort());
+    t.editNight(log.id, 28, 8);
+    await t.engine.sync('push');
+    expect(t.hc.ownRecord(log.id)).toBeDefined();
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([other.id]);
+    t.engine.removeHeldRemoteDeletions();
+    expect(t.repo.getSession(log.id)).not.toBeNull();
+    expect(t.repo.getSession(other.id)).toBeNull();
+    expect(t.repo.health.listOutbox()).toEqual([]);
+    await t.engine.sync('full');
+    expect(t.hc.ownRecord(log.id)).toMatchObject({ endMs: t.at(28, 8) });
+  });
+
+  test('held night deleted locally -> it leaves the held count', async () => {
+    const t = setup(options);
+    const log = t.logNight(28);
+    const other = t.logNight(27);
+    await t.engine.sync('full');
+    t.hc.removeRecord(t.hc.ownRecord(log.id)!.recordId);
+    t.hc.removeRecord(t.hc.ownRecord(other.id)!.recordId);
+    await t.engine.sync('full');
+    t.repo.deleteSession(log.id, t.clock.now);
+    await t.engine.sync('push');
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([other.id]);
+  });
+
+  test('pending delete fails while the record is still there, then the night is valid again -> the record stays and the night stays synced', async () => {
+    const t = setup(options);
+    const log = t.logNight(28);
+    await t.engine.sync('full');
+    t.repo.updateSession(log.id, { startTime: t.at(28), endTime: t.at(28) + 2 * 60_000, startTimeZone: 'Europe/Paris', endTimeZone: 'Europe/Paris', nowMs: t.clock.now });
+    const del = jest.spyOn(t.hc, 'deleteSleepByClientRecordIds').mockImplementation(async () => {
+      throw new HealthConnectError('E_HC_REMOTE', 'RemoteException');
+    });
+    await t.engine.sync('push');
+    expect(t.repo.health.listOutbox()).toHaveLength(1);
+    t.editNight(log.id, 28, 8);
+    await t.engine.sync('push');
+    del.mockRestore();
+    await t.engine.sync('push');
+    await t.engine.sync('full');
+    expect(t.repo.health.listOutbox()).toEqual([]);
+    expect(t.hc.ownRecord(log.id)).toMatchObject({ endMs: t.at(28, 8) });
+    expect(t.repo.getSession(log.id)!.health).toMatchObject({ needsSync: false, hcRecordId: t.hc.ownRecord(log.id)!.recordId });
+  });
+
+  test('an outbox row drains for a night that is exportable -> written again in the same run', async () => {
+    const t = setup(options);
+    const log = t.logNight(28);
+    await t.engine.sync('full');
+    t.repo.health.enqueueDeletion(t.repo.health.getSessionRow(log.id)!, t.clock.now);
+    await t.engine.sync('push');
+    expect(t.repo.health.listOutbox()).toEqual([]);
+    expect(t.hc.ownRecord(log.id)).toBeDefined();
+    expect(t.repo.getSession(log.id)!.health!.needsSync).toBe(false);
+  });
+
+  test('wake time ahead of now and a read bound that keeps only ended records -> no false remote delete', async () => {
+    const t = setup({ ...options, readEndContains: true });
+    const log = t.repo.createManualLog({ startTime: t.clock.now - 6 * H, endTime: t.clock.now + H, startTimeZone: 'Europe/Paris', endTimeZone: 'Europe/Paris', nowMs: t.clock.now });
+    await t.engine.sync('full');
+    expect(t.hc.ownRecord(log.id)).toBeDefined();
+    await t.engine.sync('forceResync');
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([]);
+    expect(t.repo.health.getSessionRow(log.id)!.hc_remote_deleted).toBe(0);
+  });
 });
 
 describe('sync engine', () => {

@@ -41,6 +41,7 @@ export type SyncKind = 'push' | 'full' | 'forceResync';
 
 const RANK: Record<SyncKind, number> = { push: 0, full: 1, forceResync: 2 };
 const DAY_MS = 24 * 60 * 60 * 1000;
+const FULL_READ_LOOKAHEAD_MS = 2 * DAY_MS;
 // adapter failures that end the run without per-record retries (2.5, 2.6)
 const STOP_CODES = new Set<HcErrorCode>(['E_HC_RATE_LIMIT', 'E_HC_PERMISSION', 'E_HC_IO', 'E_HC_UNAVAILABLE']);
 
@@ -426,7 +427,7 @@ export class HealthSyncEngine {
       if (isOwnRecord(record, ownPackage)) {
         // own upserts only teach ids and versions; never rehydrate (2.3)
         const sessionId = sessionIdFromClientRecordId(record.clientRecordId);
-        if (sessionId) this.store.learnOwnRecord(sessionId, record, nowMs);
+        if (sessionId) this.store.learnOwnRecord(sessionId, record, nowMs, { replay: true });
       } else {
         this.store.upsertMirror(record);
       }
@@ -434,7 +435,7 @@ export class HealthSyncEngine {
     for (const recordId of deletedRecordIds) {
       this.store.deleteMirror(recordId);
       const sessionId = this.store.sessionIdForRecordId(recordId);
-      if (sessionId) this.store.applyRemoteOwnDeletion(sessionId, nowMs);
+      if (sessionId) this.store.applyOwnDeletionChange(sessionId, nowMs);
     }
   }
 
@@ -449,10 +450,13 @@ export class HealthSyncEngine {
     return records;
   }
 
-  // token BEFORE the reads, so writes during pagination arrive as changes
+  // token BEFORE the reads, so writes during pagination arrive as changes.
+  // the range ends past now: a night whose wake time lies ahead must not
+  // read as missing if hc's open-start filter keeps only records ending
+  // before the bound (a false remote deletion otherwise)
   private async fullRead(kind: SyncKind, status: HcStatus): Promise<number> {
     const token = await this.adapter.getChangesToken();
-    const endMs = this.now();
+    const endMs = this.now() + FULL_READ_LOOKAHEAD_MS;
     const own = await this.readAll('own', null, endMs);
     this.checkpoint();
     const all = await this.readAll('all', null, endMs);
@@ -479,6 +483,7 @@ export class HealthSyncEngine {
         for (const row of this.store.listSessionRows()) {
           const out = toOutboundRow(row);
           if (!isOwnedForExport(out) || !out.hcWritten || out.needsSync || out.hcRemoteDeleted) continue;
+          if (this.store.isTwilightDeleting(row)) continue;
           if (!ownBySession.has(row.id)) this.store.applyRemoteOwnDeletion(row.id, nowMs);
         }
       }
@@ -585,8 +590,7 @@ export class HealthSyncEngine {
   }
 
   private confirmDeleted(row: OutboxRow): void {
-    this.store.removeOutbox(row.client_record_id);
-    if (this.store.getSessionRow(row.session_id)) this.store.clearWritten(row.session_id);
+    this.store.confirmOutboxDeletion(row, this.now());
   }
 
   private async drainOutbox(status: HcStatus): Promise<void> {
@@ -689,10 +693,11 @@ export class HealthSyncEngine {
     this.publish();
   }
 
+  // only nights still held: heldRemoteDeletions() drops edited, deleted and
+  // restored ids, so a night the user exported again is never removed here
   removeHeldRemoteDeletions(): void {
-    const ids = this.store.heldRemoteDeletions();
     this.store.tx(() => {
-      for (const id of ids) this.deps.repo.deleteSession(id, this.now());
+      for (const id of this.store.heldRemoteDeletions()) this.deps.repo.deleteSession(id, this.now());
       this.store.setHeldRemoteDeletions([]);
     });
     this.deps.onLocalDataChanged?.();

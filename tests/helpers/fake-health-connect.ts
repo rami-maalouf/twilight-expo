@@ -5,6 +5,7 @@
 // - insert and delete are all-or-nothing; deleting a missing id resolves
 //   (android 16) or throws E_HC_REMOTE (docs)
 // - a bad token returns tokenExpired (android 16) or throws E_HC_TOKEN
+// - reads use overlap semantics, or keep only records ending by the bound
 // - foreign reads trim silently to a window without history; own reads are
 //   unlimited (android 14+) or limited too (android 13)
 // - getChanges pages with hasMore and replays own changes
@@ -25,6 +26,9 @@ export interface FakeOptions {
   deleteMissingThrows?: boolean;
   badTokenThrows?: boolean;
   ownReadsLimited?: boolean;
+  // the read range keeps only records that end by its end bound (a possible
+  // reading of TimeRangeFilter.before for interval records); default: overlap
+  readEndContains?: boolean;
 }
 
 export class FakeHealthConnect implements HealthConnectAdapter {
@@ -231,6 +235,7 @@ export class FakeHealthConnect implements HealthConnectAdapter {
     const all = [...this.records.values()]
       .filter((r) => !own || r.dataOrigin === OWN_PACKAGE)
       .filter((r) => (query.startMs == null || r.endMs > query.startMs) && r.startMs < query.endMs)
+      .filter((r) => !this.options.readEndContains || r.endMs <= query.endMs)
       .filter((r) => this.visible(r))
       .sort((a, b) => a.startMs - b.startMs || a.recordId.localeCompare(b.recordId));
     const offset = query.pageToken ? Number(query.pageToken) : 0;
