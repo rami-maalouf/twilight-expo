@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
 import { SheetCloseButton } from '@/components/common/SheetCloseButton';
+import { SheetDragHandle, sheetToolbarTop } from '@/components/common/SheetDragHandle';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import { MetricsEmptyState } from '@/components/metrics/primitives';
 import { formatMonthDay } from '@/components/charts/date-scale';
@@ -88,8 +89,9 @@ export default function TimelineSheetScreen() {
   const dateStep = Math.max(1, Math.floor(records.length / dateTickCount));
 
   return (
-    <Screen starCount={20}>
-      <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
+    <Screen starCount={20} withStatusScrim={false}>
+      <SheetDragHandle />
+      <View style={[styles.toolbar, { paddingTop: sheetToolbarTop(insets.top) }]}>
         <View style={styles.toolbarSpacer} />
         <Text style={[styles.navTitle, { color: theme.textPrimary }]}>Sleep/Wake Trend</Text>
         <SheetCloseButton onPress={() => router.back()} iconColor={theme.textPrimary} doneColor={theme.actionPrimary} />

@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableFeedback } from '@/components/common/PressableFeedback';
 import { Screen } from '@/components/common/Screen';
 import { SheetCloseButton } from '@/components/common/SheetCloseButton';
+import { SheetDragHandle, sheetToolbarTop } from '@/components/common/SheetDragHandle';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const SRI_RESEARCH_URL = 'https://www.nature.com/articles/s41598-017-03171-4';
@@ -65,8 +66,9 @@ export default function MetricsExplanationScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <Screen starCount={20}>
-      <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
+    <Screen starCount={20} withStatusScrim={false}>
+      <SheetDragHandle />
+      <View style={[styles.toolbar, { paddingTop: sheetToolbarTop(insets.top) }]}>
         <View style={styles.toolbarSpacer} />
         <Text style={[styles.navTitle, { color: theme.textPrimary }]}>Analytics Guide</Text>
         <SheetCloseButton onPress={() => router.back()} iconColor={theme.textPrimary} doneColor={theme.actionPrimary} />
