@@ -202,11 +202,22 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
     progress style notification without the status bar chip. progress and
     "left" refresh about once a minute through a non-waking inexact alarm,
     like the widgets, so they can lag after doze.
+  - a swipe is respected: android 14+ lets users swipe even an ongoing
+    notification away (except on the lock screen), so the sleep
+    notification carries a delete intent and is keyed by its session
+    (`sleep:<start>`). a swiped one stays away for that session: it is not
+    reposted on foreground, on relaunch, on a goal or bedtime change or
+    after a reboot, and its minute refresh stops. the next session shows it
+    again, and so does turning Sleep Notification off and on. android 13
+    and older cannot swipe it. (ios recreates a dismissed live activity on
+    the next relaunch, as before.)
   - within 3 hours of bedtime (no session): "Winding down...", a countdown
     chronometer to bedtime, "Bedtime at <time> - dim the lights" and a Start
-    Sleep action; android removes it at bedtime by itself. unlike the
-    session it can be swiped away, and a dismissed countdown stays away
-    until the bedtime changes.
+    Sleep action; android removes it at bedtime by itself. it can be swiped
+    away, and a dismissed countdown stays away until the bedtime changes.
+    like the ios countdown it is posted only when the app comes to the
+    foreground inside the window; no alarm schedules it while the app is
+    closed.
   - standard notification templates instead of expo-widgets 58
     `createCustomNotification`: custom RemoteViews can never be promoted to
     a live update, have no chronometer (the elapsed time would only move

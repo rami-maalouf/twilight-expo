@@ -108,7 +108,11 @@ export async function endWindDownActivity(): Promise<void> {
 }
 
 // relaunch and settings reconciliation: active session -> exactly one sleep
-// notification with the current goal; no session -> no sleep notification
+// notification with the current goal; no session -> no sleep notification.
+// a sleep notification the user swiped away (android 14+) stays away for
+// that session: the native side answers 'dismissed' and nothing is shown.
+// it is never reposted on foreground; turning the setting off and on or the
+// next session shows it again
 export async function reconcileLiveActivity(activeSession: SleepSession | null): Promise<void> {
   if (!isEnabled()) {
     await endSleepActivity();

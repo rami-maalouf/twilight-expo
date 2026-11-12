@@ -83,16 +83,17 @@ object TwilightSessionNotification {
   }
 
   // "posted" | "disabled" (notifications or the channel are off) |
-  // "dismissed" (the user swiped this wind-down countdown away) | "expired"
+  // "dismissed" (the user swiped this notification away) | "expired".
+  // a swipe is respected for what the notification described: a sleep
+  // notification stays away for its session (key "sleep:<startMs>", android
+  // 14+ lets users swipe ongoing notifications), a countdown for its bedtime
   @Synchronized
   fun post(context: Context, spec: Spec, now: Long = System.currentTimeMillis()): String {
     val preferences = preferences(context)
-    if (spec.kind == KIND_WIND_DOWN) {
-      if (preferences.getString(KEY_DISMISSED, null) == spec.key) return "dismissed"
-      if (spec.bedtimeMs <= now) {
-        cancel(context, KIND_WIND_DOWN)
-        return "expired"
-      }
+    if (preferences.getString(KEY_DISMISSED, null) == spec.key) return "dismissed"
+    if (spec.kind == KIND_WIND_DOWN && spec.bedtimeMs <= now) {
+      cancel(context, KIND_WIND_DOWN)
+      return "expired"
     }
     ensureChannels(context)
     if (!canPost(context, channelFor(spec.kind))) return "disabled"
@@ -103,20 +104,23 @@ object TwilightSessionNotification {
       .putLong(KEY_START, spec.startMs)
       .putLong(KEY_GOAL, spec.goalSeconds)
       .putLong(KEY_BEDTIME, spec.bedtimeMs)
-      .commit()
+      .apply()
     setTicking(context, spec.kind == KIND_SLEEP)
     return "posted"
   }
 
-  // removes the notification when it shows `kind` (any kind when null)
+  // removes the notification when it shows `kind`. null removes any kind and
+  // also forgets a swipe: the app calls it when the session ends or the
+  // setting is turned off, so turning the setting back on shows it again
   @Synchronized
   fun cancel(context: Context, kind: String? = null) {
     val stored = storedSpec(context)
     if (kind != null && stored != null && stored.kind != kind) return
     NotificationManagerCompat.from(context).cancel(NOTIFICATION_TAG, NOTIFICATION_ID)
-    preferences(context).edit()
+    val editor = preferences(context).edit()
       .remove(KEY_KIND).remove(KEY_KEY).remove(KEY_START).remove(KEY_GOAL).remove(KEY_BEDTIME)
-      .commit()
+    if (kind == null) editor.remove(KEY_DISMISSED)
+    editor.apply()
     setTicking(context, false)
   }
 
@@ -141,14 +145,18 @@ object TwilightSessionNotification {
     return runCatching { manager.canPostPromotedNotifications() }.getOrDefault(false)
   }
 
+  // the user swiped the notification away (or a countdown timed out at
+  // bedtime): forget the spec so neither the tick nor restore() brings it back
+  @Synchronized
   fun markDismissed(context: Context, key: String?) {
     if (key == null) return
     val preferences = preferences(context)
     val editor = preferences.edit().putString(KEY_DISMISSED, key)
     if (preferences.getString(KEY_KEY, null) == key) {
       editor.remove(KEY_KIND).remove(KEY_KEY).remove(KEY_START).remove(KEY_GOAL).remove(KEY_BEDTIME)
+      setTicking(context, false)
     }
-    editor.commit()
+    editor.apply()
   }
 
   // minute refresh while asleep: progress and "left" text cannot tick natively
@@ -198,6 +206,9 @@ object TwilightSessionNotification {
     setOngoing(true)
     setCategory(NotificationCompat.CATEGORY_STOPWATCH)
     setRequestPromotedOngoing(true)
+    // android 14+ lets users swipe ongoing notifications away (not on the
+    // lock screen); the swipe is remembered for this session
+    setDeleteIntent(dismissedIntent(context, spec.key))
     addAction(
       R.drawable.twilight_notification_sun,
       context.getString(R.string.twilight_session_wake_up),

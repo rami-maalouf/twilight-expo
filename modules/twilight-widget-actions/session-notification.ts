@@ -10,7 +10,7 @@ export type SessionNotificationSpec =
 export type SessionNotificationKind = SessionNotificationSpec['kind'];
 
 // 'disabled': notifications or the channel are off; 'dismissed': the user
-// swiped this wind-down countdown away; 'expired': bedtime already passed
+// swiped this notification (same key) away; 'expired': bedtime already passed
 export type SessionNotificationPostResult = 'posted' | 'disabled' | 'dismissed' | 'expired' | 'unavailable';
 
 export interface ActiveSessionNotification {

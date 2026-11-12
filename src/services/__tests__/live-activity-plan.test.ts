@@ -3,6 +3,7 @@ import type { SleepSession } from '../../domain/models';
 import {
   isWindDownActivityId,
   SLEEP_ACTIVITY_ID,
+  sleepNotificationKey,
   sleepNotificationSpec,
   windDownActivityId,
   windDownBedtime,
@@ -66,12 +67,24 @@ describe('session notification specs', () => {
   test('sleep: session start and the goal from the bedtime and wake targets', () => {
     expect(sleepNotificationSpec(session, BEDTIME_MINUTES, 7 * 60)).toEqual({
       kind: 'sleep',
-      key: SLEEP_ACTIVITY_ID,
+      key: `sleep:${BEDTIME_2300}`,
       startMs: BEDTIME_2300,
       goalSeconds: 8 * 3600,
     });
     // same-day targets (a nap schedule) still give a positive goal
     expect(sleepNotificationSpec(session, 13 * 60, 14 * 60 + 30)).toMatchObject({ goalSeconds: 90 * 60 });
+  });
+
+  test('sleep: keyed by session, so a swipe only hides that session and a goal change keeps the key', () => {
+    const next = { ...session, id: 's2', startTime: BEDTIME_2300 + 24 * HOUR };
+    expect(sleepNotificationKey(BEDTIME_2300)).toBe(`sleep:${BEDTIME_2300}`);
+    expect(sleepNotificationSpec(session, BEDTIME_MINUTES, 8 * 60).key).toBe(
+      sleepNotificationSpec(session, BEDTIME_MINUTES, 7 * 60).key
+    );
+    expect(sleepNotificationSpec(next, BEDTIME_MINUTES, 7 * 60).key).not.toBe(
+      sleepNotificationSpec(session, BEDTIME_MINUTES, 7 * 60).key
+    );
+    expect(isWindDownActivityId(sleepNotificationKey(BEDTIME_2300))).toBe(false);
   });
 
   test('wind-down: keyed by bedtime', () => {

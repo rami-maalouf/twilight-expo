@@ -22,6 +22,12 @@ export function isWindDownActivityId(id: string | null): boolean {
   return id?.startsWith('winddown') ?? false;
 }
 
+// the android sleep notification's key names its session: a swipe (android
+// 14+) is remembered for that session only, so the next one shows again
+export function sleepNotificationKey(startMs: number): string {
+  return `${SLEEP_ACTIVITY_ID}:${startMs}`;
+}
+
 // next bedtime instant; null when outside the 3-hour wind-down window
 export function windDownBedtime(
   optimalSleepMinutes: number,
@@ -46,7 +52,7 @@ export function sleepNotificationSpec(
 ): SessionNotificationSpec {
   return {
     kind: 'sleep',
-    key: SLEEP_ACTIVITY_ID,
+    key: sleepNotificationKey(session.startTime),
     startMs: session.startTime,
     goalSeconds: sleepGoalSeconds(optimalSleepMinutes, optimalWakeMinutes),
   };
