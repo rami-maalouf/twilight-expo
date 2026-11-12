@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -17,6 +17,9 @@ import { useSettings } from '@/state/settings-state';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 configureForegroundNotifications();
+
+// material 3 bottom sheets use 28dp top corners; ios keeps the system sheet
+const ANDROID_SHEET = Platform.OS === 'android' ? { sheetCornerRadius: 28 } : {};
 
 function ThemedStatusBar() {
   const theme = useTheme();
@@ -70,7 +73,7 @@ export default function RootLayout() {
                 presentation: 'formSheet',
                 sheetAllowedDetents: [0.82, 1.0],
                 sheetGrabberVisible: true,
-                sheetCornerRadius: 28,
+                ...ANDROID_SHEET,
               }}
             />
             <Stack.Screen
@@ -79,7 +82,7 @@ export default function RootLayout() {
                 presentation: 'formSheet',
                 sheetAllowedDetents: [0.6, 1.0],
                 sheetGrabberVisible: true,
-                sheetCornerRadius: 28,
+                ...ANDROID_SHEET,
               }}
             />
           </Stack>
