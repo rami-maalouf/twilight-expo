@@ -279,9 +279,12 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   included; widgets, tile and notification follow through the usual
   session-change path), plus a port-only
   "Show Scheduled Notifications" row.
-- onboarding steps show no back arrow (swift's NavigationStack shows one on
-  Schedule, Notifications and Demo data); system back works. the onboarding
-  routes belong to the health connect workstream and were not changed here.
+- onboarding steps after welcome (health connect, schedule, notifications,
+  demo data) show swift's inline navigation bar with only the back control:
+  the chevron in a 44pt bar on ios, the material 3 arrow_back icon button in
+  a 64dp small top app bar on android. it is disabled while health connect
+  connects or the demo data imports. the schedule step's sleep and wake
+  times follow the device 12/24-hour setting (swift `Text(style: .time)`).
 - settings "Go to settings to disable globally" (swift link at the end of
   Notifications, hidden while sleeping) opens the app's notification
   settings on android and the app's settings page on ios.

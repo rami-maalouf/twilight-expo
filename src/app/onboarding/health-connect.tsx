@@ -9,6 +9,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FadeInSlide } from '@/components/common/FadeInSlide';
 import { NativeSymbol } from '@/components/common/NativeSymbol';
 import { Screen } from '@/components/common/Screen';
+import { OnboardingNavBar } from '@/components/onboarding/OnboardingNavBar';
 import { HcButton, onToneColor, toneColor, withAlpha } from '@/components/health-connect/parts';
 import {
   CONNECTION_TONE,
@@ -78,6 +79,7 @@ export default function HealthConnectStep() {
 
   return (
     <Screen starCount={30}>
+      <OnboardingNavBar disabled={isConnecting} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: actionHeight + 24 }]}
         showsVerticalScrollIndicator={false}>
@@ -164,7 +166,7 @@ export default function HealthConnectStep() {
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 70, gap: 18 },
+  content: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 8, gap: 18 },
   spacer: { flexGrow: 1 },
   hero: {
     width: 96,

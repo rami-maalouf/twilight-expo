@@ -5,10 +5,11 @@ import { router } from 'expo-router';
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { FadeInSlide } from '@/components/common/FadeInSlide';
 import { GlowingMoonView } from '@/components/common/GlowingMoonView';
+import { ON_FILL_RIPPLE, PressableFeedback } from '@/components/common/PressableFeedback';
 import { Screen } from '@/components/common/Screen';
 import { isConnectionVisible } from '@/domain/health/connection-state';
 import { showsHealthConnectOnboarding } from '@/services/health-connect/app-health-sync';
@@ -72,14 +73,16 @@ export default function WelcomeStep() {
         </FadeInSlide>
         <View style={styles.spacer} />
         <FadeInSlide delay={1.1}>
-          <Pressable
+          <PressableFeedback
             testID="get-started"
+            accessibilityRole="button"
+            rippleColor={ON_FILL_RIPPLE}
             onPress={async () =>
               router.push((await showsHealthConnectOnboarding()) ? '/onboarding/health-connect' : '/onboarding/schedule')
             }
             style={[styles.primaryButton, { backgroundColor: theme.actionPrimary }]}>
             <Text style={styles.primaryLabel}>Get Started</Text>
-          </Pressable>
+          </PressableFeedback>
         </FadeInSlide>
       </View>
     </Screen>

@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { showAlert } from '@/components/common/app-alert';
 import { DemoDataStepContent } from '@/components/demo/DemoDataStepContent';
 import { Screen } from '@/components/common/Screen';
+import { OnboardingNavBar } from '@/components/onboarding/OnboardingNavBar';
 
 export default function DemoDataStep() {
   const refreshSettings = useSettings((state) => state.refresh);
@@ -54,6 +55,7 @@ export default function DemoDataStep() {
 
   return (
     <Screen starCount={35}>
+      <OnboardingNavBar disabled={isImporting || isFinishing} />
       <DemoDataStepContent
         isImporting={isImporting}
         isFinishing={isFinishing}
