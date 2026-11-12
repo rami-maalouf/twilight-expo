@@ -4,7 +4,7 @@
 import { clusterNights } from './clusterer';
 import { intervalsOverlap, reconcileNights, type ReconcileAction } from './reconciler';
 import { AGED_OUT_MS, type LocalSessionSnapshot, type MirrorRecord, type SleepNight, type Tombstone } from './types';
-import { zoneForOffset } from './zones';
+import { offsetSecondsAt, zoneForOffset } from './zones';
 
 export interface InboundInput {
   // foreign records only (own records never reach the mirror)
@@ -36,6 +36,15 @@ export interface InboundPlan {
   counts: { recordCount: number; nightCount: number; inserted: number; updated: number };
 }
 
+// a zone counts as moved only when its offset at the instant differs: after
+// travel the same offset maps to another iana id (Etc/GMT-2 for Europe/Paris),
+// which must not rewrite every matched import on every pass
+function zoneMoved(stored: string | null, planned: string, instantMs: number): boolean {
+  if (stored === planned) return false;
+  const before = stored == null ? null : offsetSecondsAt(stored, instantMs);
+  return before == null || before !== offsetSecondsAt(planned, instantMs);
+}
+
 function plannedNight(night: SleepNight, deviceZone: string): PlannedNight {
   return {
     night,
@@ -58,7 +67,10 @@ export function planInbound(input: InboundInput): InboundPlan {
   const locals = input.locals.filter((s) => !s.isDemo);
   const hcImports = locals.filter((s) => s.imported && !s.adopted && s.provider === 'health_connect');
 
-  // vanished candidates: linked here, none of the links left in health
+  // vanished candidates: linked here, none of the links left in health.
+  // only imports that will really be deleted leave the overlap checks; an
+  // aged-out import is detached before the reconcile, so it keeps blocking
+  // overlapping foreign nights in this pass too (2.6 retention exception)
   const vanishing = new Set<string>();
   const detaches = new Set<string>();
   for (const s of hcImports) {
@@ -69,11 +81,13 @@ export function planInbound(input: InboundInput): InboundPlan {
       input.mode === 'changes' ||
       input.historyGranted ||
       input.mirror.some((r) => r.startMs <= s.startMs);
-    if (evidence) {
+    // retention exception: auto-delete must not erase old imported history
+    const agedOut = s.endMs != null && input.nowMs - s.endMs > AGED_OUT_MS;
+    if (evidence && !agedOut) {
       vanishing.add(s.id);
     } else {
-      // absent without proof it was readable: keep the night, drop the stale
-      // links so a later changes pass cannot treat it as vanished
+      // aged out, or absent without proof it was readable: keep the night,
+      // drop the stale links so a later changes pass cannot treat it as vanished
       detaches.add(s.id);
     }
   }
@@ -105,21 +119,14 @@ export function planInbound(input: InboundInput): InboundPlan {
         local.startMs !== night.startMs ||
         local.endMs !== night.endMs ||
         local.nightKey !== night.nightKey ||
-        (local.startZone !== undefined && local.startZone !== planned.startZone) ||
-        (local.endZone !== undefined && local.endZone !== planned.endZone);
+        (local.startZone !== undefined && zoneMoved(local.startZone, planned.startZone, night.startMs)) ||
+        (local.endZone !== undefined && zoneMoved(local.endZone, planned.endZone, night.endMs));
       updates.push({ ...planned, sessionId: action.sessionId, changed });
     }
   }
 
   for (const id of vanishing) {
-    if (matched.has(id)) continue;
-    const session = hcImports.find((s) => s.id === id)!;
-    // retention exception: auto-delete must not erase old imported history (2.6)
-    if (session.endMs != null && input.nowMs - session.endMs > AGED_OUT_MS) {
-      detaches.add(id);
-    } else {
-      deletes.push({ sessionId: id, reason: 'vanished' });
-    }
+    if (!matched.has(id)) deletes.push({ sessionId: id, reason: 'vanished' });
   }
   for (const id of matched) detaches.delete(id);
 

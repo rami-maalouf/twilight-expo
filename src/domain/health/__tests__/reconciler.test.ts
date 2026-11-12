@@ -362,6 +362,41 @@ describe('planInbound', () => {
     expect([plan.inserts[0].startZone, plan.inserts[0].endZone]).toEqual(['Asia/Kolkata', 'Asia/Kolkata']);
   });
 
+  test('aged-out vanished import is detached and still blocks the same night from another source', () => {
+    const now = BASE + 40 * DAY;
+    const watch = mirrorRecord(BASE, BASE + 7 * H, { recordId: 'w' });
+    const planned = planInbound(input({ mirror: [watch], nowMs: now })).inserts[0];
+    const other = mirrorRecord(BASE + H / 2, BASE + 7 * H, { recordId: 'o', dataOrigin: AUTOSLEEP });
+    const plan = planInbound(input({ mirror: [other], locals: [importFor('imp', planned)], nowMs: now }));
+    expect(plan.detaches).toEqual(['imp']);
+    expect(plan.deletes).toEqual([]);
+    expect(plan.inserts).toEqual([]);
+    expect(plan.actions).toEqual([expect.objectContaining({ type: 'skipOverlapsImported', existingSessionId: 'imp' })]);
+  });
+
+  test('a recent vanished import is deleted and does not block the same night from another source', () => {
+    const watch = mirrorRecord(BASE, BASE + 7 * H, { recordId: 'w' });
+    const planned = planInbound(input({ mirror: [watch] })).inserts[0];
+    const other = mirrorRecord(BASE + H / 2, BASE + 7 * H, { recordId: 'o', dataOrigin: AUTOSLEEP });
+    const plan = planInbound(input({ mirror: [other], locals: [importFor('imp', planned)] }));
+    expect(plan.deletes).toEqual([{ sessionId: 'imp', reason: 'vanished' }]);
+    expect(plan.inserts).toHaveLength(1);
+  });
+
+  test('after travel the same offset maps to another zone id -> a matched import is not rewritten', () => {
+    const mirror = [mirrorRecord(BASE, BASE + 7 * H, { recordId: 'a', startOffsetSec: 7200, endOffsetSec: 7200 })];
+    // imported while the device was in paris (cest, +02:00)
+    const planned = planInbound(input({ mirror, deviceZone: 'Europe/Paris' })).inserts[0];
+    expect(planned.startZone).toBe('Europe/Paris');
+    // the device is now in utc: +02:00 resolves to Etc/GMT-2
+    const plan = planInbound(input({ mirror, locals: [importFor('imp', planned)], deviceZone: 'UTC' }));
+    expect(plan.updates).toEqual([expect.objectContaining({ sessionId: 'imp', changed: false })]);
+    expect(plan.counts.updated).toBe(0);
+    // a real offset change still counts
+    const moved = planInbound(input({ mirror, locals: [importFor('imp', planned, { startZone: 'Asia/Tokyo' })], deviceZone: 'UTC' }));
+    expect(moved.updates[0].changed).toBe(true);
+  });
+
   test('counts: changed updates only', () => {
     const mirror = [mirrorRecord(BASE, BASE + 8 * H, { recordId: 'a' })];
     const planned = planInbound(input({ mirror: [mirrorRecord(BASE, BASE + 7 * H, { recordId: 'a' })] })).inserts[0];
