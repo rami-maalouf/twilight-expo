@@ -72,6 +72,12 @@ export function SegmentedPicker<T extends string>({
                       ? String(colors.activeContentColor)
                       : String(colors.inactiveContentColor)
                   }
+                  // one line at any width: material keeps the check icon on the
+                  // selected segment, so a narrow row ellipsizes instead of
+                  // breaking a label mid-word
+                  maxLines={1}
+                  softWrap={false}
+                  overflow="ellipsis"
                   style={{ typography: 'labelMedium', fontWeight: '600' }}>
                   {option}
                 </Text>

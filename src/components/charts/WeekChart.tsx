@@ -7,6 +7,7 @@ import { Canvas, Circle, DashPathEffect, Line, Path, RoundedRect, vec } from '@s
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import { SCRUB_ACTIVE_OFFSET_X, SCRUB_FAIL_OFFSET_Y } from './scrub-gesture';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 
 import {
@@ -129,9 +130,8 @@ export function WeekChart({
     return Math.min(days.length - 1, Math.max(0, i));
   };
   const scrubGesture = usePanGesture({
-    minDistance: 0,
-    activeOffsetX: [-8, 8],
-    failOffsetY: [-8, 8],
+    activeOffsetX: SCRUB_ACTIVE_OFFSET_X,
+    failOffsetY: SCRUB_FAIL_OFFSET_Y,
     runOnJS: true,
     onBegin: (e) => setSelectedIndex(indexAtX(e.x)),
     onUpdate: (e) => setSelectedIndex(indexAtX(e.x)),

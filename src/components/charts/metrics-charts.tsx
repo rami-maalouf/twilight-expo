@@ -5,6 +5,7 @@ import { Canvas, Circle, DashPathEffect, Line, Path, RoundedRect, Skia, vec } fr
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture, type PanGesture } from 'react-native-gesture-handler';
+import { SCRUB_ACTIVE_OFFSET_X, SCRUB_FAIL_OFFSET_Y } from './scrub-gesture';
 
 import type {
   ConsistencyPoint,
@@ -55,9 +56,8 @@ function useScrub(count: number, xAt: (i: number) => number) {
     return best;
   };
   const gesture = usePanGesture({
-    minDistance: 0,
-    activeOffsetX: [-8, 8],
-    failOffsetY: [-8, 8],
+    activeOffsetX: SCRUB_ACTIVE_OFFSET_X,
+    failOffsetY: SCRUB_FAIL_OFFSET_Y,
     runOnJS: true,
     onBegin: (e) => setSelected(nearest(e.x)),
     onUpdate: (e) => setSelected(nearest(e.x)),

@@ -15,6 +15,7 @@ import {
 import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import { SCRUB_ACTIVE_OFFSET_X, SCRUB_FAIL_OFFSET_Y } from './scrub-gesture';
 
 import { Card } from '@/components/common/Card';
 import { HistoryRangeChip, type DashboardHistoryRange } from '@/components/dashboard/HistoryRangeChip';
@@ -347,9 +348,8 @@ export function TimingCard({
   };
 
   const scrub = usePanGesture({
-    minDistance: 0,
-    activeOffsetX: [-8, 8],
-    failOffsetY: [-8, 8],
+    activeOffsetX: SCRUB_ACTIVE_OFFSET_X,
+    failOffsetY: SCRUB_FAIL_OFFSET_Y,
     runOnJS: true,
     onBegin: (e) => setSelectedIndex(nearestIndex(e.x)),
     onUpdate: (e) => setSelectedIndex(nearestIndex(e.x)),

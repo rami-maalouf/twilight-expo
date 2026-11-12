@@ -6,6 +6,7 @@ import { Canvas, Circle, DashPathEffect, Line, Path, Skia, vec } from '@shopify/
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import { SCRUB_ACTIVE_OFFSET_X, SCRUB_FAIL_OFFSET_Y } from './scrub-gesture';
 
 import { Card } from '@/components/common/Card';
 import { HistoryRangeChip, type DashboardHistoryRange } from '@/components/dashboard/HistoryRangeChip';
@@ -216,9 +217,8 @@ export function MovingAverageCard({
   };
 
   const scrub = usePanGesture({
-    minDistance: 0,
-    activeOffsetX: [-8, 8],
-    failOffsetY: [-8, 8],
+    activeOffsetX: SCRUB_ACTIVE_OFFSET_X,
+    failOffsetY: SCRUB_FAIL_OFFSET_Y,
     runOnJS: true,
     onBegin: (e) => setSelectedIndex(nearestIndex(e.x)),
     onUpdate: (e) => setSelectedIndex(nearestIndex(e.x)),
@@ -379,8 +379,9 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     width: '100%',
   },
-  windowPicker: { maxWidth: 188, flex: 1, minWidth: 0, flexShrink: 1 },
-  headerSpacer: { flexGrow: 1, minWidth: 8 },
+  // swift caps the window picker at 188 and lets it shrink on narrow cards
+  windowPicker: { width: 188, flexShrink: 1, minWidth: 0 },
+  headerSpacer: { flexGrow: 1, flexShrink: 0, minWidth: 8 },
   chartFrame: { alignSelf: 'stretch', width: '100%', height: CHART_HEIGHT },
   headline: { fontSize: 17, fontWeight: '600' },
   emptyText: { fontSize: 15, paddingVertical: 24 },
