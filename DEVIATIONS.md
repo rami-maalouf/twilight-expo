@@ -59,8 +59,9 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   expired/out-of-window countdown is cleared on foreground (the original's
   ActivityKit flow has no equivalent state to leak).
 - turning the Live Activity toggle off now removes a running activity (and
-  turning it on restores it), and a changed goal or bedtime resyncs it; the
-  original only reads the toggle when a session starts.
+  turning it on restores it), and a changed goal or bedtime updates the
+  running activity in place (goal, progress, time left); the original only
+  reads the toggle when a session starts.
 - android (original is ios-only): the live activity becomes an ongoing
   session notification (see below); home-screen widgets are android-only.
   native tabs, status bar, and system chrome follow the in-app display mode
