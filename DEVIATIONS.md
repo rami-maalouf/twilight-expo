@@ -309,5 +309,9 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   (`twilight.rating.*`). port addition: the prompt is asked 2 s after the
   launch (a sleep link resolves asynchronously) and only while the app is
   in front, past onboarding and awake; otherwise it waits for the next
-  launch. the store's own quota decides whether the sheet actually
-  shows; without the play store nothing happens.
+  launch. an android app alert on screen (the "Pause..." dialog of a
+  cold-start widget press) postpones it until the alert is answered. the
+  version is claimed before asking, like swift, so a device without the
+  play store uses up the prompt for that version. the store's own quota
+  decides whether the sheet actually shows; without the play store nothing
+  happens.

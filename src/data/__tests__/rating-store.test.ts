@@ -40,6 +40,11 @@ describe('canPromptForReview', () => {
     expect(canPromptForReview({ ...ok, isSleeping: true })).toBe(false);
     expect(canPromptForReview({ ...ok, isActive: false })).toBe(false);
   });
+
+  test('never over an app alert', () => {
+    expect(canPromptForReview({ ...ok, isAlertShowing: true })).toBe(false);
+    expect(canPromptForReview({ ...ok, isAlertShowing: false })).toBe(true);
+  });
 });
 
 describe('recordAppLaunch / claimReviewPrompt', () => {
