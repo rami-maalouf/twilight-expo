@@ -453,11 +453,15 @@ export class HealthSyncEngine {
   // token BEFORE the reads, so writes during pagination arrive as changes.
   // the range ends past now: a night whose wake time lies ahead must not
   // read as missing if hc's open-start filter keeps only records ending
-  // before the bound (a false remote deletion otherwise)
+  // before the bound (a false remote deletion otherwise). the editor has no
+  // upper bound on the wake day, so the own read also reaches past the
+  // latest local wake time
   private async fullRead(kind: SyncKind, status: HcStatus): Promise<number> {
     const token = await this.adapter.getChangesToken();
     const endMs = this.now() + FULL_READ_LOOKAHEAD_MS;
-    const own = await this.readAll('own', null, endMs);
+    const latestLocalEnd = this.store.listSessionRows().reduce((max, r) => Math.max(max, r.end_time ?? 0), 0);
+    const ownEndMs = Math.max(endMs, latestLocalEnd + FULL_READ_LOOKAHEAD_MS);
+    const own = await this.readAll('own', null, ownEndMs);
     this.checkpoint();
     const all = await this.readAll('all', null, endMs);
     this.checkpoint();
@@ -484,6 +488,8 @@ export class HealthSyncEngine {
           const out = toOutboundRow(row);
           if (!isOwnedForExport(out) || !out.hcWritten || out.needsSync || out.hcRemoteDeleted) continue;
           if (this.store.isTwilightDeleting(row)) continue;
+          // absence proves a deletion only for a night inside the range read
+          if (out.endMs == null || out.endMs > ownEndMs) continue;
           if (!ownBySession.has(row.id)) this.store.applyRemoteOwnDeletion(row.id, nowMs);
         }
       }

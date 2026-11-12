@@ -455,6 +455,21 @@ describe.each([
     expect(t.engine.snapshot().heldRemoteDeletions).toEqual([]);
     expect(t.repo.health.getSessionRow(log.id)!.hc_remote_deleted).toBe(0);
   });
+
+  test('wake day weeks ahead (the editor has no upper bound) -> the own read reaches it, no false remote delete', async () => {
+    const t = setup({ ...options, readEndContains: true });
+    const ahead = t.clock.now + 30 * DAY;
+    const log = t.repo.createManualLog({ startTime: ahead - 7 * H, endTime: ahead, startTimeZone: 'Europe/Paris', endTimeZone: 'Europe/Paris', nowMs: t.clock.now });
+    await t.engine.sync('full');
+    const record = t.hc.ownRecord(log.id)!;
+    await t.engine.sync('forceResync');
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([]);
+    expect(t.repo.health.getSessionRow(log.id)).toMatchObject({ hc_remote_deleted: 0, hc_record_id: record.recordId });
+    // a real remote delete of that night still counts
+    t.hc.removeRecord(record.recordId);
+    await t.engine.sync('forceResync');
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([log.id]);
+  });
 });
 
 describe('sync engine', () => {
