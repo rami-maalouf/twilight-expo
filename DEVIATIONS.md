@@ -5,29 +5,35 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
 
 ## scope cuts (pre-agreed in test-3-spec.md)
 
-- app blocking (FamilyControls/ManagedSettings), healthkit sync, NFC/QR flows,
-  storekit tip jar, telemetrydeck, BGTaskScheduler, demo-data manager, data
-  export/archive, break-glass flow, session breaks: all out of scope per the
-  spec's decisions section. the ios home-screen widget, control-center
-  control and app intents / siri app shortcuts stay unported (ios keeps only
-  the live activity and the twilight://sleep links); android gets
-  home-screen widgets, a quick settings tile and launcher shortcuts instead
-  (see below). the profile intents (start/stop/check profile, check session
-  active) are blocking-profile features and out of scope on both platforms.
+- app blocking (FamilyControls/ManagedSettings), NFC/QR flows, storekit tip
+  jar, telemetrydeck, BGTaskScheduler, demo-data manager, break-glass flow,
+  session breaks: all out of scope per the spec's decisions section.
+  healthkit sync is not ported to ios; android gets the health connect
+  equivalent (below). the spec also cut data export/archive; it is now
+  ported on both platforms (see "data archive" below). the ios home-screen
+  widget, control-center control and app intents / siri app shortcuts stay
+  unported (ios keeps only the live activity and the twilight://sleep
+  links); android gets home-screen widgets, a quick settings tile and
+  launcher shortcuts instead (see below). the profile intents (start/stop/
+  check profile, check session active) are blocking-profile features and
+  out of scope on both platforms.
 - go-to-sleep caption omitted (swift's "Tap to start" / "or scan your NFC tag..."
   clause dropped; nfc out of scope and home UI matches current product direction).
 - settings: NFC & QR shortcuts section not ported (out of scope).
 - onboarding reduced from 6 steps to 4 (welcome -> schedule -> notifications ->
-  optional sample-data offer); apple-health and nfc steps dropped per scope.
+  optional sample-data offer); the nfc step is dropped per scope. on android
+  with health connect available, a health connect step follows welcome (5
+  steps, swift order); ios and android devices without health connect keep 4.
   welcome trust card says "On-device only" instead of "Apple Health sync".
   production is the default; demo seed requires EXPO_PUBLIC_DEMO_MODE=1 or
   Settings -> Sample Data (a port addition, since Development is dev-only
   here). while sample history is active, Settings shows the swift "Demo Data"
   section with "Exit Demo and Continue in App"; the floating home exit
   control stays hidden like swift.
-- swift 0.10 apple health import (onboarding pull, "Pull from Apple Health"
-  empty state, tombstones, reconciler) is not ported: healthkit sync stays
-  out of scope, and android would need health connect instead.
+- swift 0.10 apple health import: ported to health connect on android with
+  its ui (onboarding step, settings section and screen, "Pull from Health
+  Connect" empty state, sync on foreground); see the health connect section
+  below. ios has no health sync and shows none of these surfaces.
 
 ## implementation deviations
 
@@ -87,8 +93,10 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
     switch toggles, like swift's Toggle row). appearance rows open an m3
     selectable dropdown menu anchored under the value; long values
     truncate before the chevron.
-  - app alerts ("Pause...", Remove Demo Data, delete log, errors) are jetpack
-    compose m3 dialogs tinted from the palette; ios keeps UIAlertController.
+  - app alerts ("Pause...", Remove Demo Data, delete log, health connect and
+    data import/export dialogs including the Save to Device / Share chooser,
+    errors) are jetpack compose m3 dialogs tinted from the palette; ios keeps
+    UIAlertController.
     a single-button alert cannot be dismissed with back or the scrim, like
     android's own `Alert.alert` default. without a mounted host (the
     headless notification task) android falls back to `Alert.alert`.
@@ -132,6 +140,12 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   default `.swipeActions` and the row tracks the finger 1:1. on a full
   swipe the row snaps back to the delete button before it is removed,
   where swift slides it off (visual only).
+- android `minSdkVersion` is 26, not the rn 0.88 default 24 (`expo-build-properties`
+  in app.json): the health connect module uses the stable
+  `androidx.health.connect:connect-client:1.1.0`, which requires api 26. the
+  1.2.0 line that supports api 24 is alpha. health connect itself needs android
+  9, so api 24/25 devices lose nothing they could use
+  (docs/health-connect.md 2.9).
 - charts use @shopify/react-native-skia instead of Swift Charts. Aug 11
   dashboard features (Trend 7/30 window, Time Sleep/Wake/Both chart, duration-
   tinted averages, in-card history chip, Dev settings demo onboarding) match
@@ -140,8 +154,9 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   the 7D/14D/28D window, faint day-to-day bars, and gap-split rolling line.
   noon-to-noon days use the device iana zone through Intl (swift:
   Calendar.current); every swift SRI unit test is ported, including the
-  minute-oracle and both dst transitions. the guide's SRI copy drops "including
-  imported Apple Health sleep envelopes" because there is no health import.
+  minute-oracle and both dst transitions. the guide's SRI copy says "including
+  imported Health Connect sleep" on android and drops the clause on ios,
+  which has no health import.
   metrics "Regularity Score" is renamed "Timing Consistency" like swift.
 - android home-screen widgets (expo-widgets 58 + glance, `widgets/*.android.tsx`,
   `plugins/android-widgets`, `modules/twilight-widget-actions`). ios gets no
@@ -320,3 +335,139 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   play store uses up the prompt for that version. the store's own quota
   decides whether the sheet actually shows; without the play store nothing
   happens.
+- circular time picker: minutes and the centre duration are rounded from the
+  knob angle. swift truncates with `Int()`, and ieee754 puts 14 of the 288
+  snapped 5-minute angles just below the integer, so dragging to 7:40 saved
+  7:39, and about 8% of start/end pairs showed a duration one minute short
+  (23:10 -> 06:50 read 7h 39m). the 18:00 hour marker reads "6 PM" (swift:
+  "18 PM", next to "6 AM").
+
+## health connect sync (android) vs swift healthkit sync
+
+design and every decision: docs/health-connect.md (2.10, 11). in short:
+
+- health connect replaces healthkit on android; ios has no health sync (no
+  healthkit in this port) and never calls the module.
+- one `SleepSessionRecord` per twilight night with one sleeping stage, client
+  record id `twilight.sleep-session.<id>` (swift sync identifier), per-end
+  zone offsets instead of one zone id, recording method manual entry for
+  "Manual Log" and actively recorded for tracked nights.
+- ownership is by data origin package only; a twilight-prefixed record from
+  another package is foreign (swift also trusted the prefix).
+- reads use a changes token and a local mirror of foreign records instead of
+  re-reading all history every sync; one reconcile per pass over the mirror.
+- versions are clock based and bumped on every edit, and "mark synced" is a
+  compare-and-set, so an edit during a write is never lost (swift defect 1).
+- local deletions go to a persistent outbox and a deletion ledger, also while
+  sync is off, so deleted nights never come back (swift defect 2).
+- night keys use the wake day from the record's end offset, and updates match
+  by record ids first, so source edits and travel no longer re-key nights
+  (swift defect 3). informational pull results are not errors (defect 4);
+  an update-only pull says "Updated N night(s)" (defect 5).
+- deleting an import also tombstones other apps' copies of that night
+  (defect 6); a moved adopted night is not imported again (defect 7);
+  imports without links (restored) are never deleted by absence (defect 8);
+  a manual log over an import replaces it (defect 9).
+- edited imports stay local and are never written to health connect (hc
+  write-back guidance); swift exports them.
+- deletions of twilight records in health connect never delete the local
+  night silently: recent ones are held for a decision, nights older than 30
+  days only stop exporting. swift ignores such deletions.
+- imports whose records disappear after 30 days (hc auto-delete) are kept as
+  detached imports; swift deletes vanished imports.
+- a night that starts in the future (the editor allows any wake day) waits,
+  pending and without an error, until it starts: health connect rejects a
+  record whose start lies ahead, and that rejection would poison the night.
+  healthkit accepts future samples.
+- reads run only in the foreground; a background request is outbound only.
+- force resync repairs differences instead of rewriting every record.
+- android auto backup restores are detected with a no-backup install id and
+  reset device-bound sync state once.
+- the swift 800 ms empty-import retry is not ported: on the emulator the
+  first read right after a fresh grant returned every record, including the
+  45-day-old one (docs/health-connect.md 2.10 item 10, 13).
+
+ui (docs/health-connect.md 5 and 12):
+
+- the AppleHealthSettingsView states map to health connect states: plus
+  `updateRequired` (provider update), `hidden` (sdk unavailable and sync off:
+  no row, no screen, no onboarding step) and partial grants. "Open Settings"
+  becomes "Open Health Connect"; on android 14+ it lands on health connect's
+  "Data and access" because the per-app page is closed to third-party apps.
+- write-only access is a connected state whose primary action is "Sync now"
+  (outbound) instead of "Pull from Health Connect"; the hero, row and tips
+  name the missing direction. swift has no partial states (healthkit hides
+  read status).
+- denied always routes to Open Health Connect, never re-requests: on the
+  emulator, health connect stopped showing its dialog after one denial that
+  followed a revoke.
+- a held-deletion card ("Health Connect removed N Twilight night(s)", Keep
+  in Twilight / Remove from Twilight) is new; swift ignores remote deletions.
+- the last pull result is an informational line in the status card, never in
+  the error card (swift defect 4).
+- if health connect itself is disabled, "Open Health Connect" shows an
+  alert saying where to find it instead of doing nothing.
+- the screen keeps swift's card order and copy with "Apple Health" replaced;
+  the action area sits below the scroll view like swift's safe-area inset.
+
+## data archive (both platforms) vs swift DataArchiveManager / DataExporter
+
+design: docs/health-connect.md 6 and 13.
+
+- own archive type `twilight-expo-backup` schema 1, because swift backups
+  embed app-blocking profiles this port cannot produce; a port file must never
+  half-import into swift. the port reads swift `twilight-full-backup` schema
+  1-2 one way (the sleep profile's sessions, sleep settings, appearance,
+  tombstones; profiles, scheduler state and breaks are skipped) and never
+  writes swift archives. healthkit imports and edited healthkit nights from a
+  swift backup stay local and are never exported to health connect.
+- field names say `health` instead of `healthKit`; new fields:
+  `isHealthAdopted`, `healthProvider`, `metadata.platform`, tombstone
+  `recordIds`. missing optional keys decode to defaults (swift parity for
+  tombstones).
+- `healthSyncEnabled` is exported but never restored: it is device and
+  permission state (swift restores it).
+- restored owned nights become pending with a fresh clock version above the
+  file's and the local one; swift copies the file's sync flags, which on
+  health connect would let an older record silently win.
+- device-bound health connect state (record ids, written flags, mirror,
+  links, token, outbox, deletion ledger) is never exported and never taken
+  from a file. restored imports arrive detached and re-link when a health
+  connect night matches their key, so the absence rule never deletes them
+  (swift defect 8). restoring a deleted night clears its deletion ledger row
+  and its pending remote delete.
+- the preview counts a session as updated only when its content changed;
+  sync bookkeeping alone is not an update (swift compares the whole record).
+- if the device already has an active session, the backup's active session
+  is skipped (swift imports it and keeps "the most recent" authoritative,
+  which can leave two active sessions).
+- stricter validation with clear copy: end after start, at most one active
+  session, valid time zones, minutes 0-1439, theme and provider values
+  ("This backup contains an invalid sleep session (id).", "This backup
+  contains more than one active sleep session.", "This backup contains
+  invalid settings (field)."). "This file is not a Twilight backup." drops
+  swift's "full".
+- pre-import safety backups go to `<documents>/DataBackups` (swift:
+  application support) and only the newest 10 are kept (swift keeps all).
+- demo isolation: the Data section is hidden while sample data is active
+  (swift parity), the screen redirects to Settings during demo, and demo
+  sessions are never exported or imported.
+- markdown export: "-" instead of the em dash, "In Progress" / "Completed"
+  instead of emoji, one profile named "Sleep", "Each session represents a
+  single sleep period."; the break rows and csv break columns stay empty for
+  format parity. the session export button is always enabled (swift disables
+  it without profiles; the port always has its one profile).
+- android "Save to Device": every export (backup, csv, markdown) first asks
+  "Save to Device" or "Share" in a material dialog. save opens the system
+  create-document picker (storage access framework; Downloads or any folder,
+  editable file name) through the local kotlin module
+  `modules/twilight-document-save`, and a toast confirms "Saved <file>". the
+  android share sheet offers no local save target (only Quick Share, Drive,
+  Gmail), and a folder-tree picker cannot choose Downloads. swift and ios rely
+  on the share sheet's "Save to Files". the import picker on android also
+  accepts files labeled text/plain or octet-stream, because some providers
+  mislabel .json files.
+- the settings row icon is `externaldrive`: swift's
+  `externaldrive.badge.arrow.up.and.down` is not an SF Symbols 7 name. no
+  analytics events (telemetrydeck is out of scope).
+

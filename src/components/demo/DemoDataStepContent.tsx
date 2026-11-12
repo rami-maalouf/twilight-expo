@@ -15,14 +15,18 @@ const DETAILS: { icon: SymbolViewProps['name']; text: string }[] = [
 
 export function DemoDataStepContent({
   isImporting,
+  isFinishing = false,
   onExplore,
   onSkip,
 }: {
   isImporting: boolean;
+  // onboarding waits for the health connect import before it finishes
+  isFinishing?: boolean;
   onExplore: () => void;
   onSkip: () => void;
 }) {
   const theme = useTheme();
+  const busy = isImporting || isFinishing;
 
   return (
     <View style={styles.root}>
@@ -66,11 +70,11 @@ export function DemoDataStepContent({
           testID="explore-demo-data"
           accessibilityRole="button"
           rippleColor={ON_FILL_RIPPLE}
-          disabled={isImporting}
+          disabled={busy}
           onPress={onExplore}
           style={[
             styles.primaryButton,
-            { backgroundColor: theme.actionPrimary, opacity: isImporting ? 0.7 : 1 },
+            { backgroundColor: theme.actionPrimary, opacity: busy ? 0.7 : 1 },
           ]}>
           {isImporting ? (
             <ActivityIndicator color="#ffffff" />
@@ -84,11 +88,14 @@ export function DemoDataStepContent({
         <PressableFeedback
           testID="skip-demo-data"
           accessibilityRole="button"
-          disabled={isImporting}
+          disabled={busy}
           onPress={onSkip}
           hitSlop={8}
-          style={styles.skipButton}>
-          <Text style={[styles.skipLabel, { color: theme.textSecondary }]}>Skip for now</Text>
+          style={[styles.skipButton, styles.skipRow]}>
+          {isFinishing ? <ActivityIndicator size="small" color={theme.textSecondary} /> : null}
+          <Text style={[styles.skipLabel, { color: theme.textSecondary }]}>
+            {isFinishing ? 'Importing sleep...' : 'Skip for now'}
+          </Text>
         </PressableFeedback>
       </FadeInSlide>
     </View>
@@ -136,5 +143,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   primaryLabel: { color: '#ffffff', fontSize: 17, fontWeight: '600' },
+  skipRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   skipLabel: { fontSize: 15, fontWeight: '600' },
 });

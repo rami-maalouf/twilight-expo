@@ -64,7 +64,7 @@ export interface SettingsRowProps {
   accessibilityRole?: 'button' | 'link' | 'switch';
   accessibilityLabel?: string;
   accessibilityHint?: string;
-  accessibilityState?: { checked?: boolean; disabled?: boolean };
+  accessibilityState?: { checked?: boolean; disabled?: boolean; busy?: boolean };
 }
 
 export function SettingsRow({

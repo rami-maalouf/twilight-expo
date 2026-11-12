@@ -4,15 +4,21 @@ import path from 'path';
 import { androidSymbolFor, SF_TO_ANDROID } from '@/components/common/native-symbol-map';
 
 const USED_SF_NAMES = [
+  'archivebox.fill',
+  'arrow.clockwise',
   'arrow.down',
   'arrow.down.circle.fill',
   'arrow.down.right',
   'arrow.right',
+  'arrow.triangle.2.circlepath',
+  'arrow.triangle.2.circlepath.circle.fill',
   'arrow.up',
   'arrow.up.circle.fill',
+  'arrow.up.forward.app',
   'arrow.up.right',
   'bed.double.fill',
   'bell.fill',
+  'bolt.fill',
   'bubble.left.and.bubble.right.fill',
   'calendar',
   'calendar.badge.clock',
@@ -23,39 +29,56 @@ const USED_SF_NAMES = [
   'chart.line.uptrend.xyaxis.circle.fill',
   'chart.xyaxis.line',
   'checkmark.circle.fill',
+  'checkmark.seal.fill',
+  'chevron.left',
   'chevron.right',
   'chevron.up.chevron.down',
   'clock',
+  'clock.arrow.circlepath',
   'clock.fill',
   'crown.fill',
   'dollarsign',
   'exclamationmark.circle.fill',
+  'externaldrive',
   'exclamationmark.triangle.fill',
   'flame.fill',
+  'gearshape.fill',
+  'hand.raised.fill',
   'heart.fill',
   'info.circle',
+  'info.circle.fill',
   'iphone.slash',
   'link',
+  'lock.shield.fill',
   'mic.slash.fill',
   'minus',
   'moon.fill',
   'moon.stars',
   'moon.stars.fill',
+  'pause.circle.fill',
+  'pencil.and.scribble',
+  'person.crop.circle.badge.questionmark',
   'plus',
   'scale.3d',
   'scope',
   'sparkles',
+  'sparkles.rectangle.stack.fill',
+  'square.and.arrow.down.fill',
+  'square.and.arrow.up',
   'sun.max.fill',
   'sunrise.fill',
   'target',
+  'trash.fill',
   'waveform.path.ecg',
+  'waveform.path.ecg.text.page.fill',
   'xmark.circle.fill',
 ] as const;
 
 // every sf name written as a literal in app source (.ts and .tsx under src/
 // and widgets/), in single, double or back quotes: symbol element name
 // props, `icon:` entries, dotted `name:` / `systemImage:` values, the first
-// argument of row / icon / symbol helpers, and `cond ? 'a.b' : 'c.d'` pairs
+// argument of row / icon / symbol helpers, `cond ? 'a.b' : 'c.d'` chains,
+// icon / symbol string props and SymbolViewProps['name'] lookup tables
 function sfNamesInSource(): Set<string> {
   const names = new Set<string>();
   const anyName = String.raw`[a-z][a-z0-9]*(?:\.[a-z0-9]+)*`;
@@ -67,12 +90,23 @@ function sfNamesInSource(): Set<string> {
     new RegExp(String.raw`\b(?:name|systemImage)\s*[:=]\s*\{?${q}(${dotted})${q}`, 'g'),
     new RegExp(String.raw`\b\w*(?:Row|Icon|Symbol)\(\s*${q}(${anyName})${q}`, 'g'),
     new RegExp(String.raw`\?\s*${q}(${dotted})${q}\s*:\s*${q}(${dotted})${q}`, 'g'),
+    // nested ternaries: every `? 'a.b'` branch and a final `: 'a.b'` before the closing brace
+    new RegExp(String.raw`\?\s*${q}(${dotted})${q}`, 'g'),
+    new RegExp(String.raw`:\s*${q}(${dotted})${q}(?=\s*\})`, 'g'),
+    // string props of icon components: icon="a.b" / symbol={'a.b'}
+    new RegExp(String.raw`\b(?:icon|symbol)=(?:"(${anyName})"|\{${q}(${anyName})${q}\})`, 'g'),
   ];
+  // values of Record<..., SymbolViewProps['name']> lookup tables
+  const symbolTable = /SymbolViewProps\['name'\]>\s*=\s*\{([^}]*)\}/g;
+  const tableValue = new RegExp(String.raw`:\s*${q}(${anyName})${q}`, 'g');
+  const root = path.join(__dirname, '..', '..', '..', '..');
   const walk = (dir: string) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name !== '__tests__') walk(full);
+        // src/domain is platform-neutral: its `icon:` values are abstract ids
+        // (health connect TipIcon) that the ui maps to sf names
+        if (entry.name !== '__tests__' && full !== path.join(root, 'src', 'domain')) walk(full);
       } else if (/\.tsx?$/.test(entry.name)) {
         const source = fs.readFileSync(full, 'utf8');
         for (const pattern of patterns) {
@@ -80,10 +114,12 @@ function sfNamesInSource(): Set<string> {
             for (const group of match.slice(1)) if (group) names.add(group);
           }
         }
+        for (const table of source.matchAll(symbolTable)) {
+          for (const match of table[1].matchAll(tableValue)) names.add(match[1]);
+        }
       }
     }
   };
-  const root = path.join(__dirname, '..', '..', '..', '..');
   walk(path.join(root, 'src'));
   walk(path.join(root, 'widgets'));
   return names;

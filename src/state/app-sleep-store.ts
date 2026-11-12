@@ -7,7 +7,17 @@ import { sessionRepo } from '../data/app-db';
 import { mirrorSleepControls } from '../services/sleep-controls';
 import { createSleepStore, type SleepState } from './sleep-store';
 
-export const appSleepStore = createSleepStore(sessionRepo);
+const sessionChangeListeners = new Set<() => void>();
+
+// health sync subscribes here without the sleep store importing the engine
+export function onLocalSessionsChanged(listener: () => void): () => void {
+  sessionChangeListeners.add(listener);
+  return () => sessionChangeListeners.delete(listener);
+}
+
+export const appSleepStore = createSleepStore(sessionRepo, undefined, () => {
+  sessionChangeListeners.forEach((listener) => listener());
+});
 
 // the android quick settings tile and launcher shortcuts follow every
 // session change, with or without ui (the headless task uses this store too)

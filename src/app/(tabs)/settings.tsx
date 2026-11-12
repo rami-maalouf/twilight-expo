@@ -2,12 +2,14 @@
 // sections only): support row, the active-session lock banner, sleep goal
 // with native time pickers + goal pill, app appearance (display mode + theme
 // color), notifications (wind-down toggle, routine link, live activity
-// toggle), community links, demo data and development.
-// NFC & QR / apple health / data sections are out of scope per the spec.
+// toggle), health connect (android), community links, data import/export,
+// demo data and development. the NFC & QR section is out of scope per the spec.
 import { InlineDateTimePicker } from '@/components/common/InlineDateTimePicker';
 import { NativeSymbol } from '@/components/common/NativeSymbol';
 import { showAlert } from '@/components/common/app-alert';
 import { DemoDataStepContent } from '@/components/demo/DemoDataStepContent';
+import { DataSection } from '@/components/settings/DataSection';
+import { HealthConnectSection } from '@/components/settings/HealthConnectSection';
 import { LiveActivitySettingRows } from '@/components/settings/LiveActivitySettingRows';
 import { MenuPicker } from '@/components/settings/MenuPicker';
 import { SessionLockBanner } from '@/components/settings/SessionLockBanner';
@@ -241,11 +243,15 @@ export default function SettingsScreen() {
           <LiveActivitySettingRows />
         </SettingsSection>
 
+        <HealthConnectSection />
+
         <SettingsSection title="Community" footer="Would love to hear your feedback & suggestions!">
           {linkRow('bubble.left.and.bubble.right.fill', 'Join our Discord', 'https://discord.gg/9tj7J5MESv', false)}
           {linkRow('link', 'Follow us on LinkedIn', 'https://www.linkedin.com/company/orbitlabsdotstudio', false)}
           {linkRow('camera.fill', 'Follow us on Instagram', 'https://www.instagram.com/orbitlabs.studio', true)}
         </SettingsSection>
+
+        <DataSection />
 
         {/* ports the swift "Demo Data" section, shown only while the sample is active */}
         {isDemoDataActive ? (

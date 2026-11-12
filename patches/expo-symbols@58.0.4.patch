@@ -1,0 +1,26 @@
+diff --git a/build/SymbolView.js b/build/SymbolView.js
+index b0d4a93cb93514ca1dee77175d96182f0da86193..be3990753d0de4bedcbbe55b335dabfe9f4f843c 100644
+--- a/build/SymbolView.js
++++ b/build/SymbolView.js
+@@ -46,6 +46,8 @@ export function SymbolView({ name: nameProp, fallback, type, scale, weight, colo
+         style: style,
+         children: /*#__PURE__*/ _jsx(Text, {
+             "aria-hidden": true,
++            // the glyph box is a fixed size, so a scaled font clips the glyph
++            allowFontScaling: false,
+             style: {
+                 fontFamily: font.name,
+                 color: tintColor ?? DEFAULT_SYMBOL_COLOR,
+diff --git a/src/SymbolView.tsx b/src/SymbolView.tsx
+index 0b8535e67cee33e7e46fb8d70cb8dde6ad685a89..5442d7a4fead59e4ae137232404a92844df7e964 100644
+--- a/src/SymbolView.tsx
++++ b/src/SymbolView.tsx
+@@ -51,6 +51,8 @@ export function SymbolView({
+     <View collapsable={false} {...viewProps} style={style}>
+       <Text
+         aria-hidden
++        // the glyph box is a fixed size, so a scaled font clips the glyph
++        allowFontScaling={false}
+         style={{
+           fontFamily: font.name,
+           color: tintColor ?? DEFAULT_SYMBOL_COLOR,

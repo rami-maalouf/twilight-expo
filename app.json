@@ -104,7 +104,16 @@
       "expo-image",
       "expo-status-bar",
       "expo-web-browser",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
+      "./modules/twilight-health-connect/app.plugin.js"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -28,9 +28,11 @@ export function IconButton({
   edge,
   testID,
   style,
+  disabled,
 }: {
   accessibilityLabel: string;
   onPress: () => void;
+  disabled?: boolean;
   children: ReactNode;
   iconSize: number;
   edge?: IconButtonEdge;
@@ -43,6 +45,8 @@ export function IconButton({
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
       onPress={onPress}
       hitSlop={IS_ANDROID ? undefined : 8}
       style={[IS_ANDROID && [styles.target, iconButtonInsets(iconSize, edge)], style]}>

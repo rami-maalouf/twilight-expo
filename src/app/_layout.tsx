@@ -8,6 +8,7 @@ import { settingsStore } from '@/data/app-db';
 import { AppAlertHost } from '@/components/common/AppAlertHost';
 import { DemoExitControl } from '@/components/demo/DemoExitControl';
 import { HomeWidgetSync } from '@/components/widgets/HomeWidgetSync';
+import { useHealthConnectSync } from '@/services/health-connect/use-health-connect-sync';
 import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
 import { useForegroundRefresh } from '@/services/use-foreground-refresh';
 import { useLiveActivitySync } from '@/services/use-live-activity-sync';
@@ -43,6 +44,8 @@ export default function RootLayout() {
   useExternalSleepActions();
   // reread sessions and settings on every return to the foreground
   useForegroundRefresh();
+  // health connect two-way sleep sync triggers (android only)
+  useHealthConnectSync();
   // review prompt from the third launch, once per version
   useRatingPrompt();
 

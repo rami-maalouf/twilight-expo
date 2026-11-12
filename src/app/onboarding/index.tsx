@@ -1,5 +1,6 @@
-// ports: Views/Onboarding/WelcomeStepView.swift (step 1 of the 4-step flow;
-// apple-health and nfc steps are out of scope per the spec)
+// ports: Views/Onboarding/WelcomeStepView.swift (step 1; android adds the
+// health connect step as step 2 when health connect is available, the nfc
+// step is out of scope per the spec)
 import { router } from 'expo-router';
 import { type SymbolViewProps } from 'expo-symbols';
 
@@ -9,6 +10,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FadeInSlide } from '@/components/common/FadeInSlide';
 import { GlowingMoonView } from '@/components/common/GlowingMoonView';
 import { Screen } from '@/components/common/Screen';
+import { isConnectionVisible } from '@/domain/health/connection-state';
+import { showsHealthConnectOnboarding } from '@/services/health-connect/app-health-sync';
+import { useHealthConnection } from '@/services/health-connect/use-health-connection';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
 const TRUST_CARDS: { icon: SymbolViewProps['name']; title: string; color: string }[] = [
@@ -18,9 +22,21 @@ const TRUST_CARDS: { icon: SymbolViewProps['name']; title: string; color: string
   { icon: 'lock.fill', title: 'On-device only', color: '#ff5a5f' },
 ];
 
+// swift's fourth card, where health connect can sync
+const HEALTH_CONNECT_CARD: (typeof TRUST_CARDS)[number] = {
+  icon: 'heart.text.square.fill',
+  title: 'Health Connect sync',
+  color: '#ff5a5f',
+};
+
 export default function WelcomeStep() {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const { state: healthState } = useHealthConnection();
+  const cards =
+    isConnectionVisible(healthState) && healthState !== 'demo'
+      ? [...TRUST_CARDS.slice(0, 3), HEALTH_CONNECT_CARD]
+      : TRUST_CARDS;
 
   return (
     <Screen starCount={45}>
@@ -44,12 +60,12 @@ export default function WelcomeStep() {
         </FadeInSlide>
         <FadeInSlide delay={0.7} style={styles.cards}>
           <View style={styles.cardRow}>
-            {TRUST_CARDS.slice(0, 2).map((card) => (
+            {cards.slice(0, 2).map((card) => (
               <TrustCard key={card.title} card={card} theme={theme} fixed={fixed} />
             ))}
           </View>
           <View style={styles.cardRow}>
-            {TRUST_CARDS.slice(2).map((card) => (
+            {cards.slice(2).map((card) => (
               <TrustCard key={card.title} card={card} theme={theme} fixed={fixed} />
             ))}
           </View>
@@ -58,7 +74,9 @@ export default function WelcomeStep() {
         <FadeInSlide delay={1.1}>
           <Pressable
             testID="get-started"
-            onPress={() => router.push('/onboarding/schedule')}
+            onPress={async () =>
+              router.push((await showsHealthConnectOnboarding()) ? '/onboarding/health-connect' : '/onboarding/schedule')
+            }
             style={[styles.primaryButton, { backgroundColor: theme.actionPrimary }]}>
             <Text style={styles.primaryLabel}>Get Started</Text>
           </Pressable>

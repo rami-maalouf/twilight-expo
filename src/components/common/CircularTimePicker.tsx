@@ -267,7 +267,7 @@ export function CircularTimePicker({
                     opacity: isMainHour ? 1 : 0.7,
                   },
                 ]}>
-                {hour === 0 ? '12' : String(hour)}
+                {hour % 12 === 0 ? '12' : String(hour % 12)}
               </Text>
               <Text style={[styles.ampm, { color: theme.textSecondary }]}>
                 {hour < 12 ? 'AM' : 'PM'}

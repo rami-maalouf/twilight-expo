@@ -8,7 +8,6 @@ import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { formatDashboardDate } from '@/utils/locale-format';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { Canvas, LinearGradient, RoundedRect, vec } from '@shopify/react-native-skia';
 
 import { Card } from '@/components/common/Card';
 import { IconButton } from '@/components/common/IconButton';
@@ -17,6 +16,7 @@ import { Screen } from '@/components/common/Screen';
 import { InsightPills } from '@/components/dashboard/InsightPills';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import { StatusCard } from '@/components/dashboard/StatusCard';
+import { WeekEmptyState } from '@/components/dashboard/WeekEmptyState';
 import { useForegroundRefresh } from '@/services/use-foreground-refresh';
 import { AlignmentCard } from '@/components/charts/AlignmentCard';
 import {
@@ -68,24 +68,6 @@ function nowMinutesAndToday(): { minutes: number; today: CalendarDay } {
     minutes: p.hour * 60 + p.minute,
     today: { year: p.year, month: p.month, day: p.day },
   };
-}
-
-function EmptyWeekChartIcon({ color }: { color: string }) {
-  return (
-    <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-      <Canvas style={{ width: 44, height: 44 }}>
-        <RoundedRect x={2} y={18} width={10} height={24} r={3}>
-          <LinearGradient start={vec(0, 0)} end={vec(0, 44)} colors={['rgba(255,255,255,0.6)', color]} />
-        </RoundedRect>
-        <RoundedRect x={17} y={2} width={10} height={40} r={3}>
-          <LinearGradient start={vec(0, 0)} end={vec(0, 44)} colors={['rgba(255,255,255,0.6)', color]} />
-        </RoundedRect>
-        <RoundedRect x={32} y={12} width={10} height={30} r={3}>
-          <LinearGradient start={vec(0, 0)} end={vec(0, 44)} colors={['rgba(255,255,255,0.6)', color]} />
-        </RoundedRect>
-      </Canvas>
-    </View>
-  );
 }
 
 export default function DashboardScreen() {
@@ -336,17 +318,7 @@ export default function DashboardScreen() {
                   />
                 </Card>
               ) : (
-                <Card>
-                  <View style={styles.emptyChart}>
-                    <EmptyWeekChartIcon color={theme.accent} />
-                    <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-                      Your sleep story starts tonight
-                    </Text>
-                    <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-                      Log your first night to see your patterns here
-                    </Text>
-                  </View>
-                </Card>
+                <WeekEmptyState />
               ))}
             {viewMode === 'Trend' && (
               <MovingAverageCard
@@ -425,7 +397,4 @@ const styles = StyleSheet.create({
   date: { fontSize: 15 },
   analytics: { gap: 16, alignSelf: 'stretch' },
   chartSpacer: { height: 12 },
-  emptyChart: { alignItems: 'center', justifyContent: 'center', height: 300, gap: 10, paddingVertical: 20 },
-  emptyTitle: { fontSize: 17, fontWeight: '600' },
-  emptySubtitle: { fontSize: 15, textAlign: 'center' },
 });
