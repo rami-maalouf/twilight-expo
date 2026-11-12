@@ -148,6 +148,35 @@ describe('archive manager', () => {
     expect(prepared.preview).toMatchObject({ sessionCount: 1, newSessions: 0 });
   });
 
+  test('demo active -> runImport refuses and writes nothing (4.4)', async () => {
+    const { a } = setup();
+    a.logNight(1);
+    const json = a.manager.exportArchiveJson();
+    const prepared = a.manager.prepareImport(json);
+    a.repo.deleteSession(a.repo.listValidSessions()[0].id);
+    a.settings.set('isDemoDataActive', true);
+    await expect(a.manager.runImport(prepared.archive)).rejects.toMatchObject({ code: 'demoActive' });
+    expect(a.repo.listValidSessions()).toHaveLength(0);
+    expect(a.backups.files.size).toBe(0);
+  });
+
+  test('restoring a changed owned night that health connect removed ends the hold and exports it again', async () => {
+    const { hc, a } = setup();
+    a.settings.set('healthSyncEnabled', true);
+    const night = a.logNight(28);
+    await a.engine.sync('full');
+    const edited = JSON.parse(a.manager.exportArchiveJson());
+    edited.sessions[0].endTime = new Date(a.at(28, 8)).toISOString();
+    hc.removeRecord(hc.ownRecord(night.id)!.recordId);
+    await a.engine.sync('full');
+    expect(a.engine.snapshot().heldRemoteDeletions).toEqual([night.id]);
+    await a.manager.runImport(a.manager.prepareImport(JSON.stringify(edited)).archive);
+    await a.engine.idle();
+    expect(a.engine.snapshot().heldRemoteDeletions).toEqual([]);
+    expect(a.repo.health.getSessionRow(night.id)!.hc_remote_deleted).toBe(0);
+    expect(hc.ownRecord(night.id)).toMatchObject({ endMs: a.at(28, 8) });
+  });
+
   test('keeps the newest pre-import backups only', async () => {
     const { clock, a } = setup();
     const json = a.manager.exportArchiveJson();

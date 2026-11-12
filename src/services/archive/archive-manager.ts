@@ -2,6 +2,7 @@
 // importArchive / createAutomaticBackup (docs/health-connect.md 6.4).
 // no expo imports: file io is injected, so jest drives the whole flow.
 import {
+  ArchiveError,
   buildArchivePayload,
   decodeArchive,
   encodeArchive,
@@ -101,6 +102,8 @@ export class ArchiveManager {
   // changed it since the preview), saves the safety backup, then writes
   async runImport(archive: DecodedArchive): Promise<ImportResult> {
     return this.deps.runExclusive(() => {
+      // the ui hides the importer during demo; this guards every other caller (4.4)
+      if (this.deps.settings.get('isDemoDataActive')) throw ArchiveError.demoActive();
       const plan: ImportPlan = planImport(archive, this.localState(), this.now());
       const backupName = this.writePreImportBackup();
       this.deps.repo.applyImport(plan);

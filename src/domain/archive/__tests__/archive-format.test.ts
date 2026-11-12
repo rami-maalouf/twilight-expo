@@ -9,6 +9,7 @@ import {
   type ArchivedSession,
   type ArchivePayload,
 } from '../archive-format';
+import { MAX_HEALTH_SYNC_VERSION } from '../../health/types';
 
 const T0 = Date.UTC(2026, 10, 1, 22, 0);
 const H = 3600_000;
@@ -281,6 +282,11 @@ describe('archive validation', () => {
     expectError(() => decodeWith((json) => (json.sessions[0].startTime = 'yesterday')), 'This backup contains an invalid sleep session (a).');
     expectError(() => decodeWith((json) => delete json.sessions[0].tag), 'This backup contains an invalid sleep session (a).');
     expectError(() => decodeWith((json) => (json.sessions = [42])), 'This backup contains an invalid sleep session (#1).');
+    // sync versions above the safe bound would stop "+1" from increasing (and overflow kotlin's Long)
+    expectError(() => decodeWith((json) => (json.sessions[0].healthSyncVersion = 1e300)), 'This backup contains an invalid sleep session (a).');
+    expectError(() => decodeWith((json) => (json.sessions[0].healthSyncVersion = Number.MAX_SAFE_INTEGER)), 'This backup contains an invalid sleep session (a).');
+    expectError(() => decodeWith((json) => (json.sessions[0].healthSyncVersion = -1)), 'This backup contains an invalid sleep session (a).');
+    expect(decodeWith((json) => (json.sessions[0].healthSyncVersion = MAX_HEALTH_SYNC_VERSION)).sessions[0].healthSyncVersion).toBe(MAX_HEALTH_SYNC_VERSION);
   });
 
   test('at most one active session', () => {

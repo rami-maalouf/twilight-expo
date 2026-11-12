@@ -1,7 +1,7 @@
 // ports: Utils/DataArchiveManager.swift (payload, validation, error copy)
 // with the port's own archive type (docs/health-connect.md 6.1-6.3).
 // pure ts: decode and validate a backup, encode one with sorted keys.
-import type { HealthProvider, Tombstone } from '../health/types';
+import { MAX_HEALTH_SYNC_VERSION, type HealthProvider, type Tombstone } from '../health/types';
 import { isValidTimeZone } from '../health/zones';
 import type { ThemeMode, ThemePalette } from '../models';
 
@@ -108,7 +108,8 @@ export type ArchiveErrorCode =
   | 'invalidSession'
   | 'multipleActiveSessions'
   | 'invalidSettings'
-  | 'unreadableFile';
+  | 'unreadableFile'
+  | 'demoActive';
 
 // swift DataArchiveError copy, adapted (6.2); the message is user-facing
 export class ArchiveError extends Error {
@@ -143,6 +144,9 @@ export class ArchiveError extends Error {
   }
   static unreadableFile() {
     return new ArchiveError('unreadableFile', 'The selected file could not be read.');
+  }
+  static demoActive() {
+    return new ArchiveError('demoActive', 'Turn off demo data before you import a backup.');
   }
 }
 
@@ -297,8 +301,9 @@ function checkSession(s: ArchivedSession): ArchivedSession {
     (s.endTimeZone == null || isValidTimeZone(s.endTimeZone)) &&
     !(s.imported && s.adopted) &&
     (!(s.imported || s.adopted) || s.provider != null) &&
-    Number.isFinite(s.healthSyncVersion) &&
-    s.healthSyncVersion >= 0;
+    Number.isInteger(s.healthSyncVersion) &&
+    s.healthSyncVersion >= 0 &&
+    s.healthSyncVersion <= MAX_HEALTH_SYNC_VERSION;
   if (!valid) throw ArchiveError.invalidSession(s.id);
   return s;
 }

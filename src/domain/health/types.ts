@@ -5,6 +5,9 @@
 export const HEALTH_CLIENT_RECORD_PREFIX = 'twilight.sleep-session.';
 // swift minimumHealthKitSyncVersion; the floor below the clock rule (3.3)
 export const HEALTH_PAYLOAD_MIN_VERSION = 2;
+// highest version accepted from a file: far above any clock version (ms),
+// far below 2^53, so "+1" always increases and kotlin's Long holds it
+export const MAX_HEALTH_SYNC_VERSION = 2 ** 50;
 // bump when the exported record shape changes (swift prepareForCurrentHealthKitPayload)
 export const HEALTH_PAYLOAD_REVISION = 1;
 export const HEALTH_CONNECT_IMPORT_TAG = 'Health Connect';

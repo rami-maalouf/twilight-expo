@@ -3,6 +3,7 @@
 // pure: decides what an import writes; src/data/archive-repo.ts applies it.
 import { isDemoSession } from '../health/ownership';
 import { nextSyncVersion } from '../health/outbound';
+import { intervalsOverlap } from '../health/reconciler';
 import type { Tombstone } from '../health/types';
 import type { ThemeMode, ThemePalette } from '../models';
 import type { ArchivedSession, DecodedArchive } from './archive-format';
@@ -65,6 +66,22 @@ export function sameSessionContent(a: ArchivedSession, b: ArchivedSession): bool
   );
 }
 
+// an import (not adopted) from the same source that overlaps a local import
+// is the same night recorded under another id on another device: inserting it
+// would count that night twice, and the restored copy has no links that the
+// reconcile could match (port rule; swift merges by id only)
+function duplicatesLocalImport(s: ArchivedSession, locals: readonly ArchivedSession[]): boolean {
+  if (!s.imported || s.adopted || s.provider == null || s.sourceId == null) return false;
+  return locals.some(
+    (l) =>
+      l.imported &&
+      !l.adopted &&
+      l.provider === s.provider &&
+      l.sourceId === s.sourceId &&
+      intervalsOverlap(s.startTime, s.endTime, l.startTime, l.endTime)
+  );
+}
+
 function countSettingsChanges(local: LocalArchiveState, archive: DecodedArchive): number {
   const keys = ['isOnboarded', 'optimalSleepMinutes', 'optimalWakeMinutes', 'windDownReminderEnabled'] as const;
   return keys.filter((key) => local.settings[key] !== archive.settings[key]).length;
@@ -78,7 +95,8 @@ function countAppearanceChanges(local: LocalArchiveState, archive: DecodedArchiv
   );
 }
 
-// merge by id: the archive record overwrites, local-only sessions stay.
+// merge by id: the archive record overwrites, local-only sessions stay; a new
+// import that duplicates a local import of the same source is skipped.
 // owned nights that are new or changed become pending with a clock version
 // above both the file's and the local one (3.3; swift copies the file's sync
 // flags, which on health connect would let an older record silently win)
@@ -97,6 +115,7 @@ export function planImport(archive: DecodedArchive, local: LocalArchiveState, no
       continue;
     }
     if (current && sameSessionContent(current, s)) continue;
+    if (!current && duplicatesLocalImport(s, local.sessions)) continue;
     const owned = isOwnedSession(s);
     const floor = Math.max(current?.healthSyncVersion ?? 0, s.healthSyncVersion);
     const restored: ArchivedSession = {

@@ -51,6 +51,23 @@ function local(sessions: ArchivedSession[], overrides: Partial<LocalArchiveState
 }
 
 describe('planImport', () => {
+  test('a new import of the same source overlapping a local import is skipped; other imports still insert', () => {
+    const imp = (id: string, start: number, overrides: Partial<ArchivedSession> = {}) =>
+      session(id, { tag: 'Health Connect', startTime: start, endTime: start + 7 * H, imported: true, provider: 'health_connect', nightKey: `k-${id}`, sourceId: 'com.watch', ...overrides });
+    const plan = planImport(
+      archive([
+        imp('other-device-copy', T0 + H / 2),
+        imp('other-source', T0 + H / 2, { sourceId: 'com.ring' }),
+        imp('later-night', T0 + 24 * H),
+        session('adopted-copy', { startTime: T0 + H, endTime: T0 + 8 * H, adopted: true, provider: 'health_connect', nightKey: 'k-a', sourceId: 'com.watch' }),
+      ]),
+      local([imp('local-import', T0)]),
+      NOW
+    );
+    expect(plan.inserts.map((s) => s.id).sort()).toEqual(['adopted-copy', 'later-night', 'other-source']);
+    expect(plan.preview).toMatchObject({ sessionCount: 4, newSessions: 3 });
+  });
+
   test('counts new and updated sessions; sync bookkeeping alone is not an update', () => {
     const plan = planImport(
       archive([session('same'), session('synced', { needsHealthSync: true, healthSyncVersion: 1 }), session('edited', { endTime: T0 + 9 * H }), session('new')]),
