@@ -102,3 +102,13 @@ describe('NativeSymbol mapping', () => {
     expect(androidSymbolFor('not.a.real.symbol' as never)).toBe('help');
   });
 });
+
+describe('filled symbols', () => {
+  it('has a solid glyph for every .fill mapping (rerun scripts/generate-filled-symbols.py)', () => {
+    const filled = require('../filled-symbols.json') as Record<string, number>;
+    const missing = Object.entries(SF_TO_ANDROID)
+      .filter(([sf, android]) => sf.endsWith('.fill') && filled[android] == null)
+      .map(([sf]) => sf);
+    expect(missing).toEqual([]);
+  });
+});
