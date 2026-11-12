@@ -222,7 +222,9 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
     like the ios countdown it is posted only when the app comes to the
     foreground inside the window; no alarm schedules it while the app is
     closed. a time zone or clock change removes a posted countdown (its
-    bedtime may no longer be right); the next foreground reposts it.
+    bedtime may no longer be right); the next foreground reposts it in the
+    new zone (hermes' Intl follows the zone change without a restart,
+    checked on the android 16 emulator).
   - standard notification templates instead of expo-widgets 58
     `createCustomNotification`: custom RemoteViews can never be promoted to
     a live update, have no chronometer (the elapsed time would only move
