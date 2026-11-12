@@ -5,6 +5,7 @@ export const SF_TO_ANDROID: Record<string, AndroidSymbol> = {
   'arrow.down': 'arrow_downward',
   'arrow.down.circle.fill': 'arrow_circle_down',
   'arrow.down.right': 'south_east',
+  'arrow.left': 'arrow_back',
   'arrow.right': 'arrow_forward',
   'arrow.up': 'arrow_upward',
   'arrow.up.circle.fill': 'arrow_circle_up',
@@ -52,6 +53,7 @@ export const SF_TO_ANDROID: Record<string, AndroidSymbol> = {
   'sunrise.fill': 'wb_twilight',
   'target': 'target',
   'waveform.path.ecg': 'ecg',
+  'xmark': 'close',
   'xmark.circle.fill': 'cancel',
 };
 
