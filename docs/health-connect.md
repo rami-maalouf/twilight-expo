@@ -443,6 +443,15 @@ record ids.
   edit local (deviation, listed in 2.10). only nights that twilight tracked
   or the user logged in twilight are exported.
 - delete: see 2.6.
+- a night whose start lies ahead of now is not written. hc rejects it
+  ("Record start time must not be in the future", 2.11), and because
+  `insertRecords` is one transaction, one such record fails the whole batch.
+  the editor allows any wake day (swift parity), so the planner skips such a
+  night: it stays pending with no error and no `hc_written`, and the first
+  sync after its start exports it. a night that has started but ends ahead
+  is accepted and written normally. without this rule the night got
+  `hc_error_code = 'invalid'` for its version and never exported, even
+  after it had happened.
 - an owned session that was exported and later becomes invalid (shorter than
   5 min) is deleted remotely through the outbox (swift leaves the stale
   sample).
@@ -565,8 +574,13 @@ record id (a record twilight deleted and then wrote again) does not take
 the id back. an edit that makes an owned night valid again drops its
 pending outbox row (the record is wanted again), and an outbox row that
 drains for a night that is exportable makes the night pending, so it is
-written again in the same run. the full read ends two days after now, so a
-night whose wake time lies ahead is never missing from the own read.
+written again in the same run. the full read ends two days after now, and
+the own read also reaches two days past the latest local wake time (the
+editor has no upper bound on the wake day). a missing own record counts as
+a remote deletion only for a night that ends inside the range that was read.
+on the android 16 emulator `TimeRangeFilter.before(now)` returns a record
+that started before now and ends after it (overlap semantics, 2.11), so
+these bounds are defense in depth for providers that filter by end time.
 
 retention exception for imports: a foreign `DeletionChange` (or vanished
 import) for a night that ended more than 30 days before it was observed does
@@ -765,6 +779,8 @@ connect-client 1.1.0, calls made through the module from the js runtime:
 | `openProviderInstall` without play store | the market intent does not resolve, the web listing opens in the browser |
 | rationale | hc app -> App permissions -> Twilight -> "Read privacy policy" starts `ViewPermissionUsageActivity` (the alias) from hc's uid; `Done` returns to hc. light, dark and font scale 1.3 render without clipping. `adb am start` of the alias is refused (`START_VIEW_PERMISSION_USAGE`), so only hc can open it |
 | `pm grant` for hc permissions | works for the seeder (`adb shell pm grant <pkg> android.permission.health.READ_SLEEP`) |
+| write with a start ahead of now (verify slice, 14) | `insertRecords` throws `IllegalArgumentException: Record start time must not be in the future`, mapped to `E_HC_INVALID` for every write in that call (2.5) |
+| started before now, ends after now | accepted; `readSleep(own)` with `before(now)`, `before(now + 2 days)` and `between(now - 1 day, now)` all return it (overlap semantics for interval records) |
 
 ---
 
@@ -2122,6 +2138,58 @@ seeder builds) and 3 twilight records left by an uninstalled install:
 not run here: 13 crash mid-pull, 23 device restore, 24 background
 notification end, and an invalid file through the real picker (decode and
 copy are covered by unit tests).
+
+---
+
+## 14. review fixes and final e2e (verify slice)
+
+the independent review of `feat/android-parity...HEAD` found 0 critical, 3
+required, 4 optional and 3 nit findings. each one is fixed and has a test:
+
+| finding | fix | test |
+|---|---|---|
+| R1 aged-out import plus a second source -> duplicate nights | aged out decided before the reconcile; only real deletes leave the overlap checks (2.6) | `reconciler.test.ts` aged-out vanished import; engine "old night from two sources" |
+| R2 twilight's own delete held as a remote delete | `isTwilightDeleting` (outbox row or owned night under 5 min) confirms the outbox and never reaches the policy; replayed old upserts never take an id back | engine "shrunk under 5 min" (both injections), "shrunk, deleted, extended" |
+| R3 held list never pruned | edit, local delete and restore release held ids; the list is read through a filter | engine "held night edited", "held night deleted locally" |
+| O1 outbox and edit-back race | an edit that makes a night valid drops its outbox row; a drained row for an exportable night makes it pending | engine "pending delete fails ... valid again", "outbox row drains for a night that is exportable" |
+| O2 archive duplicates of another device's import | a new import of the same source that overlaps a local import is skipped | `archive-merge.test.ts` |
+| O3 unbounded archive sync version | integer in `0..MAX_HEALTH_SYNC_VERSION` | `archive-format.test.ts` |
+| O4 restore ignored `hc_remote_deleted` | a restore that changes an owned night counts as the explicit edit (rule 5) | `archive-manager.test.ts` "restoring a changed owned night" |
+| N1 zone id churn after travel | a zone counts as moved only when its offset differs | `reconciler.test.ts` "after travel" |
+| N2 demo guard only in the ui | `ArchiveManager.runImport` refuses during demo | `archive-manager.test.ts` "demo active" |
+| N3 future wake time as a false remote delete | own read reaches past the latest local wake time; absence counts only inside the read range. the emulator showed overlap semantics (2.11), and a different, real defect: hc rejects a start ahead of now, which poisoned such a night. the planner now holds it until it starts (2.5) | engine "wake time ahead", "a night weeks ahead"; `outbound.test.ts` "starts ahead of now" |
+
+found during the e2e and fixed: the circular picker truncated
+`(angle / 360) * 1440` like swift's `Int()`, so 14 of the 288 snap positions
+saved a minute early (7:40 -> 7:39) and about 8% of start/end pairs showed a
+duration one minute short (23:10 -> 06:50 read 7h 39m). it rounds now. the
+18:00 marker read "18 PM"; it reads "6 PM" (DEVIATIONS.md).
+
+e2e on `Twilight_Pixel_9_B` (android 16), clean install after deleting
+twilight's records in hc ("App data" -> select all -> delete), 5 foreign
+records from both seeder flavors (one 45 days old, one night from both):
+
+| scenario | observed |
+|---|---|
+| onboarding deny | "Don't allow" -> "Health Connect needs permission", Open Health Connect, Continue without Health Connect |
+| onboarding grant | after `pm clear`: sheet (read + write), past-data screen, allow -> "Health Connect connected"; 5 records -> 4 imports (two-app night = 1, 45-day night via history) |
+| export | a new log -> 1 own record, cid `twilight.sleep-session.<id>`, 13-digit clock version, manual entry, offsets; the hc data ui lists "10:00 PM - 7:00 AM • Twilight, 9h sleeping" |
+| edit | wake 7:00 -> 7:55: same record id, higher version, end moved; still 1 own record |
+| delete in twilight | record gone from hc, ledger row, outbox drained |
+| foreign night via changes | both seeders wrote one new night -> 1 import |
+| edit an import | adopted (`is_health_imported = 0`, `health_adopted = 1`), nothing written; the source's later update does not bring a second copy |
+| hc ui delete | held card "Health Connect removed 1 Twilight night"; Keep -> no card, Pull does not re-export, an edit exports it again; Remove -> confirm -> session gone, ledger row, no outbox, no error |
+| uninstall + reinstall + reconnect | the own night rehydrated under its session id and record id, foreign nights imported once (6 sessions, 1 own record); an edit replaced the same record with a higher version |
+| revoke | `pm revoke` -> "Health Connect needs permission", "Permission denied", Open Health Connect opens "Data and access"; re-grant -> connected, no error; no crash |
+| force resync | several runs during the pass: `lastError` null, no held ids, pull message "Found 7 ... already has matching nights" |
+| empty state | fresh data and nothing readable in hc -> "No Health Connect sleep yet" + Pull -> forced resync -> alert with the empty-read guidance; nights written later by a seeder import on the next foreground |
+| demo | 100 demo rows, 0 written, own records unchanged after a forced resync, "Demo data stays local" card; exit demo -> 7 real sessions back, no outbox rows, no error |
+| archive | Save to Device -> Downloads (7 sessions, wind-down off) -> `pm clear` -> onboard with hc denied -> preview "7 total, 7 new, 0 updated. Sleep settings changes: 1" -> import: sessions identical (ids, times, flags), wind-down off restored -> grant + turn on -> still 7 sessions and 1 own record (same record id); force resync + pull: unchanged |
+| N3 future night | wake day 8 days ahead: pending, no error, not written; force resync: not remote-deleted, no held ids |
+
+open: the wind-down reminder asks for notification permission on every
+cold start while enabled (swift `WindDownNotificationManager` parity), also
+right after "Maybe later" in onboarding.
 
 ---
 

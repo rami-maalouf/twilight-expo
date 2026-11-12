@@ -93,6 +93,12 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   imported Health Connect sleep" on android and drops the clause on ios,
   which has no health import.
   metrics "Regularity Score" is renamed "Timing Consistency" like swift.
+- circular time picker: minutes and the centre duration are rounded from the
+  knob angle. swift truncates with `Int()`, and ieee754 puts 14 of the 288
+  snapped 5-minute angles just below the integer, so dragging to 7:40 saved
+  7:39, and about 8% of start/end pairs showed a duration one minute short
+  (23:10 -> 06:50 read 7h 39m). the 18:00 hour marker reads "6 PM" (swift:
+  "18 PM", next to "6 AM").
 
 ## health connect sync (android) vs swift healthkit sync
 
@@ -127,6 +133,10 @@ design and every decision: docs/health-connect.md (2.10, 11). in short:
   days only stop exporting. swift ignores such deletions.
 - imports whose records disappear after 30 days (hc auto-delete) are kept as
   detached imports; swift deletes vanished imports.
+- a night that starts in the future (the editor allows any wake day) waits,
+  pending and without an error, until it starts: health connect rejects a
+  record whose start lies ahead, and that rejection would poison the night.
+  healthkit accepts future samples.
 - reads run only in the foreground; a background request is outbound only.
 - force resync repairs differences instead of rewriting every record.
 - android auto backup restores are detected with a no-backup install id and
