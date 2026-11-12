@@ -82,7 +82,9 @@ Both buttons work with the app swiped away or the phone locked: the press
 is recorded natively with its time and a headless JS task
 (`src/services/session-action-task.ts`, registered in `index.ts`) applies
 it. On Android 16 the sleep notification is promoted to a Live Update
-(status bar chip). Native code: `modules/twilight-widget-actions`
+(status bar chip). On Android 14+ it can be swiped away; a swiped one stays
+away for that session (the next session, or turning the setting off and on,
+shows it again). Native code: `modules/twilight-widget-actions`
 (`TwilightSessionNotification.kt`); JS lifecycle shared with iOS:
 `src/services/use-live-activity-sync.ts` and `live-activity.android.ts`.
 
@@ -136,8 +138,8 @@ The symbol map test fails when a name used in `src/` has no mapping or a
 
 From the third launch, once per app version, Twilight asks for a review
 through `expo-store-review` (Swift `RatingManager` rule). It asks 2 s after
-launch and only while the app is in front, past onboarding and awake;
-otherwise it waits for the next launch. Launch count and the prompted version
+launch and only while the app is in front, past onboarding and awake, and
+never over an open alert; otherwise it waits for the next launch. Launch count and the prompted version
 live in the kv store under `twilight.rating.*`.
 
 ## Sleep links
