@@ -142,14 +142,17 @@ export function LogRow({
       )}>
       <Pressable
         onPress={onPress}
-        onLongPress={() => {
-          if (Platform.OS === 'android') {
-            showAlert('Delete Sleep Log', 'Are you sure you want to delete this sleep log?', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Delete', style: 'destructive', onPress: onDelete },
-            ]);
-          }
-        }}
+        // android only: with an onLongPress set, Pressable swallows the
+        // onPress of a hold, and on ios a long hold must still open the editor
+        onLongPress={
+          Platform.OS === 'android'
+            ? () =>
+                showAlert('Delete Sleep Log', 'Are you sure you want to delete this sleep log?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: onDelete },
+                ])
+            : undefined
+        }
         accessibilityRole="button"
         accessibilityLabel={`${formatDayLabel(session)}, ${formatClockTime(session.startTime, session.startTimeZone)} to ${session.endTime != null ? formatClockTime(session.endTime, resolveEndTimeZone(session)) : ''}, ${formatDurationBadge(sessionDurationSeconds(session))}`}
         accessibilityActions={[{ name: 'delete', label: 'Delete' }]}

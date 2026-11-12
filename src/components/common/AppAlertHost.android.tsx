@@ -27,9 +27,9 @@ export function AppAlertHost() {
     button.style === 'destructive' ? (isLight ? ERROR_LIGHT : ERROR_DARK) : theme.accent;
   const renderButtons = (buttons: AppAlertButton[]) => (
     <Row>
-      {buttons.map((button) => (
+      {buttons.map((button, index) => (
         <TextButton
-          key={button.text}
+          key={index}
           colors={{ contentColor: buttonColor(button) }}
           onClick={() => resolveAlert(current.id, button)}>
           <Text style={{ typography: 'labelLarge' }}>{button.text}</Text>
