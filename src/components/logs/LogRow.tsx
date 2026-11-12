@@ -1,13 +1,14 @@
 // ports: Views/Logs/SleepLogsView.swift - one list row
 // day headline, "start -> end" subheadline, duration badge (accent text like
 // the original's button-tinted label), swipe to delete
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 import type { SleepSession } from '@/domain/models';
 import { resolveEndTimeZone, sessionDurationSeconds, wakeDay } from '@/domain/session-rules';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatDayDate, formatTime } from '@/utils/locale-format';
+import { showAlert } from '@/components/common/app-alert';
 
 // "Wed, Jul 15" like DateFormatters.formatDay's EEE d MMM template rendered
 // by ios ("Wed, Jul 15" per the reference screenshot)
@@ -92,7 +93,7 @@ export function LogRow({
         onPress={onPress}
         onLongPress={() => {
           if (Platform.OS === 'android') {
-            Alert.alert('Delete Sleep Log', 'Are you sure you want to delete this sleep log?', [
+            showAlert('Delete Sleep Log', 'Are you sure you want to delete this sleep log?', [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Delete', style: 'destructive', onPress: onDelete },
             ]);

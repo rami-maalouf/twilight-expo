@@ -3,7 +3,7 @@
 // session start/end, relaunch restore, settings changes (the toggle, goal and
 // bedtime), lock-screen buttons and the wind-down window
 import { useEffect, useRef } from 'react';
-import { Alert, AppState, Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { addUserInteractionListener } from 'expo-widgets';
 
 import { appSleepStore, useSleepStore } from '../state/app-sleep-store';
@@ -11,6 +11,7 @@ import { useSettings } from '../state/settings-state';
 import { endSleepActivity, startSleepActivity } from './live-activity';
 import { START_SLEEP_TARGET, WAKE_UP_TARGET } from './live-activity-targets';
 import { refreshWindDown, syncLiveActivityNow } from './live-activity-sync';
+import { showAlert } from '../components/common/app-alert';
 
 function warn(error: unknown) {
   if (__DEV__) console.warn('[live activity]', error);
@@ -35,7 +36,7 @@ export function useLiveActivitySync() {
         const result = state.toggleSleep();
         endSleepActivity().catch(warn);
         if (result.joke && AppState.currentState === 'active') {
-          Alert.alert('Pause...', result.joke);
+          showAlert('Pause...', result.joke);
         }
       } else if (event.target === START_SLEEP_TARGET && !state.activeSession) {
         const result = state.toggleSleep();

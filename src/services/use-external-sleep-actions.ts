@@ -4,7 +4,7 @@
 // pending action an android home-widget press leaves behind, and a session
 // notification press the headless task missed
 import { useEffect } from 'react';
-import { Alert, AppState, Linking, Platform } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 
 import { consumePendingWidgetAction } from '../../modules/twilight-widget-actions';
 import { appSleepStore } from '../state/app-sleep-store';
@@ -18,12 +18,13 @@ import {
   subscribeSleepLinkActions,
   takeSleepLinkAction,
 } from './sleep-links';
+import { showAlert } from '../components/common/app-alert';
 
 function runPending() {
   const action = takeSleepLinkAction();
   if (action == null) return;
   const { message } = performSleepLinkAction(action, useSettings.getState().isOnboarded, appSleepStore);
-  if (message) Alert.alert('Pause...', message);
+  if (message) showAlert('Pause...', message);
 }
 
 function queueWidgetAction() {

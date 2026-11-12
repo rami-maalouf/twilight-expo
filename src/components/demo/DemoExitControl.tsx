@@ -4,7 +4,8 @@ import { useSettings } from '@/state/settings-state';
 import { useTheme } from '@/theme/ThemeProvider';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { showAlert } from '@/components/common/app-alert';
 
 // swift HomeView.showsDemoExitControl is hard-coded false; exit lives in settings
 const SHOW_DEMO_EXIT_CONTROL = false;
@@ -26,7 +27,7 @@ export function DemoExitControl() {
       refreshSettings();
       appSleepStore.getState().refresh();
     } catch {
-      Alert.alert("Couldn't Exit Demo", 'An unknown error occurred. Please try again.');
+      showAlert("Couldn't Exit Demo", 'An unknown error occurred. Please try again.');
     } finally {
       setIsExiting(false);
     }
@@ -38,7 +39,7 @@ export function DemoExitControl() {
         accessibilityLabel="Exit demo"
         disabled={isExiting}
         onPress={() =>
-          Alert.alert(
+          showAlert(
             'Exit Demo?',
             'This removes the sample history and restores the data and sleep profile you were using before demo mode.',
             [

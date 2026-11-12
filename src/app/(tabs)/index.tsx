@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { formatDashboardDate } from '@/utils/locale-format';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Canvas, LinearGradient, RoundedRect, vec } from '@shopify/react-native-skia';
 
 import { Card } from '@/components/common/Card';
@@ -48,6 +48,7 @@ import { addDays, dayKey, zonedParts } from '@/domain/session-rules';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
+import { showAlert } from '@/components/common/app-alert';
 
 const VIEW_MODES = ['Week', 'Trend', 'Time', 'SRI', 'Score'] as const;
 type ViewMode = (typeof VIEW_MODES)[number];
@@ -276,7 +277,7 @@ export default function DashboardScreen() {
       );
     }
     if (result.joke) {
-      Alert.alert('Pause...', result.joke);
+      showAlert('Pause...', result.joke);
     }
   };
 

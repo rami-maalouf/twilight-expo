@@ -2,7 +2,7 @@
 // the native receiver recorded with their press time. runs in the headless
 // task right after the press (app swiped away or screen locked) and, as a
 // fallback, when the app next opens or returns to the foreground.
-import { Alert, AppState } from 'react-native';
+import { AppState } from 'react-native';
 
 import {
   consumePendingWidgetAction,
@@ -15,6 +15,7 @@ import { buildHomeWidgetSnapshot } from './home-widget-snapshot';
 import { HOME_WIDGETS_SUPPORTED, publishHomeWidgets } from './home-widgets';
 import { syncLiveActivityNow } from './live-activity-sync';
 import { freshWidgetAction, planNotificationAction, queueSleepLinkAction } from './sleep-links';
+import { showAlert } from '../components/common/app-alert';
 
 function warn(error: unknown) {
   if (__DEV__) console.warn('[notification action]', error);
@@ -59,7 +60,7 @@ export async function applyNotificationAction(
   if (result) publishWidgetsNow();
   // like the ios live activity button: the short-sleep joke only shows when
   // the app is on screen
-  if (result?.joke && AppState.currentState === 'active') Alert.alert('Pause...', result.joke);
+  if (result?.joke && AppState.currentState === 'active') showAlert('Pause...', result.joke);
   return result != null;
 }
 

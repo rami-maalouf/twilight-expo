@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { settingsStore } from '@/data/app-db';
+import { AppAlertHost } from '@/components/common/AppAlertHost';
 import { DemoExitControl } from '@/components/demo/DemoExitControl';
 import { HomeWidgetSync } from '@/components/widgets/HomeWidgetSync';
 import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
@@ -87,6 +88,7 @@ export default function RootLayout() {
             />
           </Stack>
           <DemoExitControl />
+          <AppAlertHost />
         </View>
       </GestureHandlerRootView>
     </ThemeProvider>
