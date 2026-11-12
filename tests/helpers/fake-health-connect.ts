@@ -2,6 +2,7 @@
 // on (docs/health-connect.md 2.3-2.6, 2.11, 7.1):
 // - upsert by clientRecordId; a lower version is ignored silently and returns
 //   the existing id; an equal version replaces (android 16) or is ignored (docs)
+// - a record whose start lies ahead of now fails the whole insert
 // - insert and delete are all-or-nothing; deleting a missing id resolves
 //   (android 16) or throws E_HC_REMOTE (docs)
 // - a bad token returns tokenExpired (android 16) or throws E_HC_TOKEN
@@ -252,6 +253,12 @@ export class FakeHealthConnect implements HealthConnectAdapter {
         ? { ok: false, code: 'E_HC_INVALID', message: 'rejected by the module' }
         : null
     );
+    // hc validates the whole transaction: one record that starts ahead of
+    // now fails every write in it (android 16, 2.11)
+    if (writes.some((w, i) => !results[i] && w.startMs > this.clock())) {
+      const message = 'IllegalArgumentException: Record start time must not be in the future';
+      return results.map((r) => r ?? { ok: false, code: 'E_HC_INVALID', message });
+    }
     // one hc transaction for the valid writes
     for (let i = 0; i < writes.length; i += 1) {
       if (results[i]) continue;

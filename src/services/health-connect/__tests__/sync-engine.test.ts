@@ -456,19 +456,33 @@ describe.each([
     expect(t.repo.health.getSessionRow(log.id)!.hc_remote_deleted).toBe(0);
   });
 
-  test('wake day weeks ahead (the editor has no upper bound) -> the own read reaches it, no false remote delete', async () => {
+  test('a night weeks ahead (the editor has no upper bound) waits without an error, exports once it starts, and is never a false remote delete', async () => {
     const t = setup({ ...options, readEndContains: true });
-    const ahead = t.clock.now + 30 * DAY;
-    const log = t.repo.createManualLog({ startTime: ahead - 7 * H, endTime: ahead, startTimeZone: 'Europe/Paris', endTimeZone: 'Europe/Paris', nowMs: t.clock.now });
+    const start = t.clock.now + 30 * DAY;
+    const ahead = t.repo.createManualLog({ startTime: start, endTime: start + 9 * H, startTimeZone: 'Europe/Paris', endTimeZone: 'Europe/Paris', nowMs: t.clock.now });
+    const past = t.logNight(28);
     await t.engine.sync('full');
-    const record = t.hc.ownRecord(log.id)!;
+    // hc rejects a start ahead of now: the night is not sent, so it neither
+    // poisons its own version nor fails the batch for the past night
+    expect(t.hc.ownRecord(ahead.id)).toBeUndefined();
+    expect(t.hc.ownRecord(past.id)).toBeDefined();
+    expect(t.engine.snapshot().lastError).toBeNull();
+    expect(t.repo.health.getSessionRow(ahead.id)).toMatchObject({ needs_health_sync: 1, hc_written: 0, hc_error_code: null, hc_remote_deleted: 0 });
     await t.engine.sync('forceResync');
     expect(t.engine.snapshot().heldRemoteDeletions).toEqual([]);
-    expect(t.repo.health.getSessionRow(log.id)).toMatchObject({ hc_remote_deleted: 0, hc_record_id: record.recordId });
+
+    // the night has started, the wake time still lies ahead
+    t.clock.now = start + H;
+    await t.engine.sync('full');
+    const record = t.hc.ownRecord(ahead.id)!;
+    expect(record).toMatchObject({ startMs: start, endMs: start + 9 * H });
+    await t.engine.sync('forceResync');
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([]);
+    expect(t.repo.health.getSessionRow(ahead.id)).toMatchObject({ hc_remote_deleted: 0, hc_record_id: record.recordId, needs_health_sync: 0 });
     // a real remote delete of that night still counts
     t.hc.removeRecord(record.recordId);
     await t.engine.sync('forceResync');
-    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([log.id]);
+    expect(t.engine.snapshot().heldRemoteDeletions).toEqual([ahead.id]);
   });
 });
 

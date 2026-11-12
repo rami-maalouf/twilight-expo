@@ -521,7 +521,7 @@ export class HealthSyncEngine {
 
   private async outbound(status: HcStatus, foreground: boolean): Promise<void> {
     const nowMs = this.now();
-    const first = planOutbound(this.store.listSessionRows().map(toOutboundRow));
+    const first = planOutbound(this.store.listSessionRows().map(toOutboundRow), nowMs);
     this.store.tx(() => {
       for (const id of first.invalidWritten) {
         const row = this.store.getSessionRow(id);
@@ -532,7 +532,7 @@ export class HealthSyncEngine {
     this.checkpoint();
 
     // re-plan: local edits may have landed while the outbox drained
-    const plan = planOutbound(this.store.listSessionRows().map(toOutboundRow));
+    const plan = planOutbound(this.store.listSessionRows().map(toOutboundRow), this.now());
     if (plan.zoneErrors.length > 0) this.noteError('missingZone', { sessionId: plan.zoneErrors[0] });
     let batches = chunk(plan.writes, WRITE_BATCH_SIZE);
     // background: at most one batch, the rest waits for the foreground (4.3)

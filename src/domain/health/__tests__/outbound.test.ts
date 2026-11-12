@@ -14,6 +14,7 @@ import { offsetSecondsAt, wakeDayKey, zoneForOffset } from '../zones';
 const H = 3600_000;
 const DAY = 24 * H;
 const T0 = Date.UTC(2026, 10, 1, 23, 0);
+const NOW = T0 + 30 * DAY;
 
 function row(id: string, opts: Partial<OutboundSessionRow> = {}): OutboundSessionRow {
   return {
@@ -38,7 +39,7 @@ function row(id: string, opts: Partial<OutboundSessionRow> = {}): OutboundSessio
 
 describe('planOutbound', () => {
   test('exports pending owned nights with the swift client record id and recording method', () => {
-    const plan = planOutbound([row('a'), row('b', { tag: 'Sleep Mode', startMs: T0 + DAY, endMs: T0 + DAY + 7 * H })]);
+    const plan = planOutbound([row('a'), row('b', { tag: 'Sleep Mode', startMs: T0 + DAY, endMs: T0 + DAY + 7 * H })], NOW);
     expect(plan.writes.map((w) => w.write)).toEqual([
       {
         clientRecordId: 'twilight.sleep-session.a',
@@ -64,29 +65,36 @@ describe('planOutbound', () => {
     ['demo tag', { tag: 'Demo Log' }],
     ['not pending', { needsSync: false }],
   ])('skips %s', (_name, over) => {
-    expect(planOutbound([row('x', over)]).writes).toHaveLength(0);
+    expect(planOutbound([row('x', over)], NOW).writes).toHaveLength(0);
+  });
+
+  test('a night that starts ahead of now waits, pending and without an error, then exports', () => {
+    const ahead = row('x', { startMs: NOW + 8 * DAY, endMs: NOW + 8 * DAY + 9 * H });
+    expect(planOutbound([ahead], NOW)).toEqual({ writes: [], zoneErrors: [], invalidWritten: [] });
+    // started, wake still ahead: hc accepts it
+    expect(planOutbound([ahead], NOW + 8 * DAY + H).writes).toHaveLength(1);
   });
 
   test('skips the demo id prefix', () => {
-    expect(planOutbound([row('rami-demo-session-1')]).writes).toHaveLength(0);
+    expect(planOutbound([row('rami-demo-session-1')], NOW).writes).toHaveLength(0);
   });
 
   test('a poison marker from an older version does not block the new version', () => {
-    expect(planOutbound([row('x', { hcErrorCode: 'invalid', hcErrorVersion: 999 })]).writes).toHaveLength(1);
+    expect(planOutbound([row('x', { hcErrorCode: 'invalid', hcErrorVersion: 999 })], NOW).writes).toHaveLength(1);
   });
 
   test('an invalid zone is an error, not a write', () => {
-    const plan = planOutbound([row('x', { startZone: 'Mars/Olympus' })]);
+    const plan = planOutbound([row('x', { startZone: 'Mars/Olympus' })], NOW);
     expect(plan.writes).toHaveLength(0);
     expect(plan.zoneErrors).toEqual(['x']);
   });
 
   test('a missing end zone falls back to the start zone (swift endTimeZone)', () => {
-    expect(planOutbound([row('x', { endZone: null })]).writes[0].write.endZoneId).toBe('Europe/Paris');
+    expect(planOutbound([row('x', { endZone: null })], NOW).writes[0].write.endZoneId).toBe('Europe/Paris');
   });
 
   test('a written session that became invalid goes to the outbox', () => {
-    const plan = planOutbound([row('x', { endMs: T0 + 60_000, hcWritten: true }), row('y', { endMs: T0 + 60_000 })]);
+    const plan = planOutbound([row('x', { endMs: T0 + 60_000, hcWritten: true }), row('y', { endMs: T0 + 60_000 })], NOW);
     expect(plan.invalidWritten).toEqual(['x']);
   });
 });

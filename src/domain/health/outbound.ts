@@ -60,7 +60,11 @@ export interface OutboundPlan {
   invalidWritten: string[];
 }
 
-export function planOutbound(rows: readonly OutboundSessionRow[]): OutboundPlan {
+// health connect rejects a record whose start lies ahead ("start time must not
+// be in the future", 2.11). the editor allows any wake day, so such a night
+// waits, still pending and without an error, until its start has passed;
+// writing it would mark the version invalid and it would never export
+export function planOutbound(rows: readonly OutboundSessionRow[], nowMs: number): OutboundPlan {
   const plan: OutboundPlan = { writes: [], zoneErrors: [], invalidWritten: [] };
   for (const row of rows) {
     if (!isOwnedForExport(row) || row.endMs == null) continue;
@@ -68,7 +72,7 @@ export function planOutbound(rows: readonly OutboundSessionRow[]): OutboundPlan 
       if (row.hcWritten) plan.invalidWritten.push(row.id);
       continue;
     }
-    if (!row.needsSync || row.hcRemoteDeleted) continue;
+    if (!row.needsSync || row.hcRemoteDeleted || row.startMs > nowMs) continue;
     if (row.hcErrorCode != null && row.hcErrorVersion === row.syncVersion) continue;
     const endZone = row.endZone ?? row.startZone;
     if (!isValidTimeZone(row.startZone) || !isValidTimeZone(endZone)) {
