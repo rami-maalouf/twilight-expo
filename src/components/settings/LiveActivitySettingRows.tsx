@@ -6,7 +6,7 @@
 // notifications are off for the app.
 import * as Notifications from 'expo-notifications';
 import { useEffect, useState } from 'react';
-import { Alert, AppState, Linking, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { AppState, Linking, Platform, StyleSheet, Text } from 'react-native';
 
 import {
   canPostSessionNotification,
@@ -16,6 +16,9 @@ import { syncLiveActivityNow } from '@/services/live-activity-sync';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
 import { useTheme } from '@/theme/ThemeProvider';
+import { showAlert } from '@/components/common/app-alert';
+import { SettingsRow } from './SettingsList';
+import { SettingsSwitchRow } from './SettingsSwitchRow';
 
 const IS_ANDROID = Platform.OS === 'android';
 
@@ -36,7 +39,7 @@ function openSystemSettings() {
   if (!openNotificationSettings()) Linking.openSettings().catch(() => {});
 }
 
-export function LiveActivitySettingRows({ rowBg }: { rowBg: string }) {
+export function LiveActivitySettingRows() {
   const theme = useTheme();
   const enabled = useSettings((s) => s.liveActivityEnabled);
   const setSetting = useSettings((s) => s.setSetting);
@@ -62,7 +65,7 @@ export function LiveActivitySettingRows({ rowBg }: { rowBg: string }) {
       await syncLiveActivityNow();
       return;
     }
-    Alert.alert(
+    showAlert(
       'Notifications Are Off',
       'Turn on notifications for Twilight to see your sleep timer and Wake Up button on the lock screen.',
       [
@@ -76,52 +79,27 @@ export function LiveActivitySettingRows({ rowBg }: { rowBg: string }) {
 
   return (
     <>
-      <View
-        style={[styles.row, styles.toggleRow, { backgroundColor: rowBg }, !isSleeping && styles.rowWithSeparator]}>
-        <View style={styles.toggleTexts}>
-          <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>{COPY.title}</Text>
-          <Text style={styles.rowDescription}>{blocked ? BLOCKED_DESCRIPTION : COPY.description}</Text>
-        </View>
-        <Switch
-          testID="live-activity-toggle"
-          accessibilityLabel={COPY.title}
-          value={enabled}
-          onValueChange={(value) => {
-            onToggle(value).catch(() => {});
-          }}
-          trackColor={{ true: theme.actionPrimary }}
-        />
-      </View>
+      <SettingsSwitchRow
+        testID="live-activity-toggle"
+        title={COPY.title}
+        description={blocked ? BLOCKED_DESCRIPTION : COPY.description}
+        value={enabled}
+        // swift CustomToggle isDisabled: isBlocking
+        disabled={isSleeping}
+        separator={!isSleeping}
+        onValueChange={(value) => {
+          onToggle(value).catch(() => {});
+        }}
+      />
       {!isSleeping && (
-        <Pressable testID="system-notification-settings" accessibilityRole="link" onPress={openSystemSettings}>
-          <View style={[styles.row, { backgroundColor: rowBg }]}>
-            <Text style={[styles.caption, { color: theme.accent }]}>Go to settings to disable globally</Text>
-          </View>
-        </Pressable>
+        <SettingsRow testID="system-notification-settings" accessibilityRole="link" onPress={openSystemSettings}>
+          <Text style={[styles.caption, { color: theme.accent }]}>Go to settings to disable globally</Text>
+        </SettingsRow>
       )}
     </>
   );
 }
 
-// matches the settings screen's row styles
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  rowWithSeparator: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(84, 84, 88, 0.6)',
-  },
-  toggleRow: { alignItems: 'center' },
-  toggleTexts: { flex: 1 },
-  rowLabel: { fontSize: 17 },
-  rowDescription: { fontSize: 12, color: '#98989f', marginTop: 2 },
   caption: { fontSize: 12 },
 });
