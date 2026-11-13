@@ -2,9 +2,10 @@
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { FadeInSlide } from '@/components/common/FadeInSlide';
+import { ON_FILL_RIPPLE, PressableFeedback } from '@/components/common/PressableFeedback';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const DETAILS: { icon: SymbolViewProps['name']; text: string }[] = [
@@ -14,14 +15,18 @@ const DETAILS: { icon: SymbolViewProps['name']; text: string }[] = [
 
 export function DemoDataStepContent({
   isImporting,
+  isFinishing = false,
   onExplore,
   onSkip,
 }: {
   isImporting: boolean;
+  // onboarding waits for the health connect import before it finishes
+  isFinishing?: boolean;
   onExplore: () => void;
   onSkip: () => void;
 }) {
   const theme = useTheme();
+  const busy = isImporting || isFinishing;
 
   return (
     <View style={styles.root}>
@@ -61,13 +66,15 @@ export function DemoDataStepContent({
       </View>
 
       <FadeInSlide delay={0.34} slideOffset={18} style={styles.actionArea}>
-        <Pressable
+        <PressableFeedback
           testID="explore-demo-data"
-          disabled={isImporting}
+          accessibilityRole="button"
+          rippleColor={ON_FILL_RIPPLE}
+          disabled={busy}
           onPress={onExplore}
           style={[
             styles.primaryButton,
-            { backgroundColor: theme.actionPrimary, opacity: isImporting ? 0.7 : 1 },
+            { backgroundColor: theme.actionPrimary, opacity: busy ? 0.7 : 1 },
           ]}>
           {isImporting ? (
             <ActivityIndicator color="#ffffff" />
@@ -77,10 +84,19 @@ export function DemoDataStepContent({
           <Text style={styles.primaryLabel}>
             {isImporting ? 'Loading your future data...' : 'Explore my data'}
           </Text>
-        </Pressable>
-        <Pressable testID="skip-demo-data" disabled={isImporting} onPress={onSkip} hitSlop={8}>
-          <Text style={[styles.skipLabel, { color: theme.textSecondary }]}>Skip for now</Text>
-        </Pressable>
+        </PressableFeedback>
+        <PressableFeedback
+          testID="skip-demo-data"
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={onSkip}
+          hitSlop={8}
+          style={[styles.skipButton, styles.skipRow]}>
+          {isFinishing ? <ActivityIndicator size="small" color={theme.textSecondary} /> : null}
+          <Text style={[styles.skipLabel, { color: theme.textSecondary }]}>
+            {isFinishing ? 'Importing sleep...' : 'Skip for now'}
+          </Text>
+        </PressableFeedback>
       </FadeInSlide>
     </View>
   );
@@ -90,6 +106,9 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 28 },
   spacer: { flex: 1 },
+  // a text button: the ripple needs a rounded box around the label (the
+  // negative margin keeps the label where it was)
+  skipButton: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, marginVertical: -6 },
   content: { alignItems: 'stretch', gap: 20 },
   hero: {
     width: 96,
@@ -124,5 +143,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   primaryLabel: { color: '#ffffff', fontSize: 17, fontWeight: '600' },
+  skipRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   skipLabel: { fontSize: 15, fontWeight: '600' },
 });

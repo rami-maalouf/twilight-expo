@@ -4,16 +4,21 @@ import { router } from 'expo-router';
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressableFeedback } from '@/components/common/PressableFeedback';
 import { Screen } from '@/components/common/Screen';
+import { SheetCloseButton } from '@/components/common/SheetCloseButton';
+import { SheetDragHandle, sheetToolbarTop } from '@/components/common/SheetDragHandle';
+import { isHealthConnectSupported } from '@/services/health-connect/native-adapter';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const SRI_RESEARCH_URL = 'https://www.nature.com/articles/s41598-017-03171-4';
 
-// the sri copy drops swift's "including imported Apple Health sleep envelopes"
-// clause: this port has no health import.
+// the sri copy adapts swift's "including imported Apple Health sleep envelopes"
+// clause to health connect on android; ios has no health import, so it drops it.
+const SRI_IMPORT_CLAUSE = isHealthConnectSupported ? ', including imported Health Connect sleep' : '';
 const ITEMS: {
   icon: SymbolViewProps['name'];
   title: string;
@@ -27,7 +32,7 @@ const ITEMS: {
     definition:
       'How often your sleep or wake state matches 24 hours later. 100 means identical timing; 0 means half the compared time matches. Negative scores are possible. This measures timing, not whether you get enough sleep.',
     calculation:
-      'SRI = 200 × matching fraction − 100.\n\nThe line shows SRI for the selected 7, 14, or 28 completed days ending on each date. It combines 6, 13, or 27 comparisons, respectively, of sleep/wake states exactly 24 hours apart. The faint bars show those individual day-to-day comparisons.\n\nDays run noon to noon in your current time zone. A rolling point needs every adjacent-day comparison in its selected window. Missing logs and daylight-saving transition days leave gaps. Changing 90D to All changes the visible history, not the calculation window.\n\nTwilight treats logged sessions, including naps, as sleep and the rest of a recorded day as awake. It cannot detect unlogged naps or awakenings within a session. Days without logs are unknown. Sessions over 24 hours are excluded. This is a log-based estimate; the selected duration is a display window, not a clinical threshold.',
+      `SRI = 200 × matching fraction − 100.\n\nThe line shows SRI for the selected 7, 14, or 28 completed days ending on each date. It combines 6, 13, or 27 comparisons, respectively, of sleep/wake states exactly 24 hours apart. The faint bars show those individual day-to-day comparisons.\n\nDays run noon to noon in your current time zone. A rolling point needs every adjacent-day comparison in its selected window. Missing logs and daylight-saving transition days leave gaps. Changing 90D to All changes the visible history, not the calculation window.\n\nTwilight treats logged sessions, including naps, as sleep and the rest of a recorded day as awake. It cannot detect unlogged naps or awakenings within a session${SRI_IMPORT_CLAUSE}. Days without logs are unknown. Sessions over 24 hours are excluded. This is a log-based estimate; the selected duration is a display window, not a clinical threshold.`,
     link: { label: 'Read the original SRI research', url: SRI_RESEARCH_URL },
   },
   {
@@ -63,13 +68,12 @@ export default function MetricsExplanationScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <Screen starCount={20}>
-      <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
+    <Screen starCount={20} withStatusScrim={false}>
+      <SheetDragHandle />
+      <View style={[styles.toolbar, { paddingTop: sheetToolbarTop(insets.top) }]}>
         <View style={styles.toolbarSpacer} />
         <Text style={[styles.navTitle, { color: theme.textPrimary }]}>Analytics Guide</Text>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.doneButton}>
-          <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
-        </Pressable>
+        <SheetCloseButton onPress={() => router.back()} iconColor={theme.textPrimary} doneColor={theme.actionPrimary} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -107,13 +111,13 @@ export default function MetricsExplanationScreen() {
           </View>,
           ...(item.link
             ? [
-                <Pressable
+                <PressableFeedback
                   key={`${item.title}-link`}
                   testID="metrics.sri.research-link"
                   accessibilityRole="link"
                   onPress={() => Linking.openURL(item.link!.url)}>
                   <Text style={[styles.link, { color: theme.accent }]}>{item.link.label}</Text>
-                </Pressable>,
+                </PressableFeedback>,
               ]
             : []),
         ])}
@@ -132,8 +136,6 @@ const styles = StyleSheet.create({
   },
   toolbarSpacer: { width: 48 },
   navTitle: { fontSize: 17, fontWeight: '600' },
-  doneButton: { minWidth: 48, alignItems: 'flex-end' },
-  done: { fontSize: 17, fontWeight: '600' },
   content: { paddingHorizontal: 16, paddingTop: 12, gap: 24 },
   title: { fontSize: 22, fontWeight: '700' },
   intro: { fontSize: 17 },

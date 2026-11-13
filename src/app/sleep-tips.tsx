@@ -1,11 +1,12 @@
 // ports: Views/SleepHygieneTipsView.swift - the wind-down routine timeline
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Screen } from '@/components/common/Screen';
+import { SheetCloseButton } from '@/components/common/SheetCloseButton';
 import { useSettings } from '@/state/settings-state';
-import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
+import { useAsleepEmojiStyle, useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
 const TIMELINE = [
   {
@@ -54,6 +55,7 @@ function clockString(minutes: number): string {
 export default function SleepTipsScreen() {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const emojiGray = useAsleepEmojiStyle();
   const insets = useSafeAreaInsets();
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
 
@@ -62,9 +64,7 @@ export default function SleepTipsScreen() {
       <View style={[styles.toolbar, { paddingTop: insets.top + 14 }]}>
         <View style={styles.toolbarSpacer} />
         <View style={styles.toolbarSpacer} />
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.doneButton}>
-          <Text style={[styles.done, { color: theme.actionPrimary }]}>Done</Text>
-        </Pressable>
+        <SheetCloseButton onPress={() => router.back()} iconColor={theme.textPrimary} doneColor={theme.actionPrimary} />
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -89,8 +89,8 @@ export default function SleepTipsScreen() {
             return (
               <View key={step.hoursBefore} style={styles.timelineRow}>
                 <View style={styles.timelineRail}>
-                  <View style={[styles.timelineDot, { backgroundColor: fixed(step.color) }]}>
-                    <Text style={styles.timelineEmoji}>{step.emoji}</Text>
+                  <View style={[styles.timelineDot, { backgroundColor: `${fixed(step.color)}33` }]}>
+                    <Text style={[styles.timelineEmoji, emojiGray]}>{step.emoji}</Text>
                   </View>
                   {!isLast && <View style={styles.timelineLine} />}
                 </View>
@@ -129,8 +129,6 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   toolbarSpacer: { flex: 1 },
-  doneButton: { minWidth: 48, alignItems: 'flex-end' },
-  done: { fontSize: 17, fontWeight: '600' },
   content: { paddingHorizontal: 16, paddingTop: 12, gap: 24 },
   header: { gap: 8 },
   title: { fontSize: 28, fontWeight: '700' },

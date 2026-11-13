@@ -6,10 +6,12 @@ import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { FadeInSlide } from '@/components/common/FadeInSlide';
+import { ON_FILL_RIPPLE, PressableFeedback } from '@/components/common/PressableFeedback';
 import { Screen } from '@/components/common/Screen';
+import { OnboardingNavBar } from '@/components/onboarding/OnboardingNavBar';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const FEATURES: { icon: SymbolViewProps['name']; title: string; subtitle: string }[] = [
@@ -49,6 +51,7 @@ export default function NotificationsStep() {
 
   return (
     <Screen starCount={35}>
+      <OnboardingNavBar />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <FadeInSlide delay={0} slideOffset={22}>
           <View style={[styles.previewCard, { backgroundColor: theme.cardBackground }]}>
@@ -106,24 +109,33 @@ export default function NotificationsStep() {
 
       <FadeInSlide delay={0.34} slideOffset={18} style={styles.actionArea}>
         {authorized ? (
-          <Pressable
+          <PressableFeedback
             testID="notifications-continue"
+            accessibilityRole="button"
+            rippleColor={ON_FILL_RIPPLE}
             onPress={finish}
             style={[styles.primaryButton, { backgroundColor: theme.success }]}>
             <SymbolView name="checkmark.circle.fill" size={17} tintColor="#000000" />
             <Text style={[styles.primaryLabel, styles.darkLabel]}>Notifications Enabled</Text>
-          </Pressable>
+          </PressableFeedback>
         ) : (
           <>
-            <Pressable
+            <PressableFeedback
               testID="turn-on-notifications"
+              accessibilityRole="button"
+              rippleColor={ON_FILL_RIPPLE}
               onPress={requestPermission}
               style={[styles.primaryButton, { backgroundColor: theme.actionPrimary }]}>
               <Text style={styles.primaryLabel}>Turn on Notifications</Text>
-            </Pressable>
-            <Pressable testID="maybe-later" onPress={finish} hitSlop={8}>
+            </PressableFeedback>
+            <PressableFeedback
+              testID="maybe-later"
+              accessibilityRole="button"
+              onPress={finish}
+              hitSlop={8}
+              style={styles.textButton}>
               <Text style={[styles.maybeLater, { color: theme.textSecondary }]}>Maybe later</Text>
-            </Pressable>
+            </PressableFeedback>
           </>
         )}
       </FadeInSlide>
@@ -132,7 +144,10 @@ export default function NotificationsStep() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 70, paddingBottom: 160, gap: 24 },
+  content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 160, gap: 24 },
+  // a text button: the ripple needs a rounded box around the label (the
+  // negative margin keeps the label where it was)
+  textButton: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, marginVertical: -6 },
   previewCard: {
     borderRadius: 20,
     borderWidth: 1,

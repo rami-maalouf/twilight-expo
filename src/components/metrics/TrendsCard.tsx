@@ -3,13 +3,14 @@
 import { BlurView } from 'expo-blur';
 import { Canvas, Path } from '@shopify/react-native-skia';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import type { TrendPeriod } from '@/domain/metrics/analyzer';
 import type { CalendarDay } from '@/domain/models';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 import { catmullRomPath } from '@/components/charts/path-utils';
 import { formatAbbrevDate } from '@/components/charts/date-scale';
+import { DIVIDER_WIDTH } from '@/theme/divider';
 
 const SPARK_W = 80;
 const SPARK_H = 24;
@@ -77,7 +78,7 @@ export function TrendsCard({
 
   return (
     <View style={styles.card}>
-      <BlurView intensity={70} tint={tint} style={StyleSheet.absoluteFill} />
+      <BlurView intensity={70} tint={tint} style={[StyleSheet.absoluteFill, Platform.OS === 'android' && { backgroundColor: theme.cardBackground }]} />
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.textPrimary }]}>Trends Analysis</Text>
         {insight && <Text style={[styles.insight, { color: theme.textSecondary }]}>{insight}</Text>}
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingBottom: 8 },
   headerCell: { fontSize: 12 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(84, 84, 88, 0.6)' },
+  divider: { height: DIVIDER_WIDTH, backgroundColor: 'rgba(84, 84, 88, 0.6)' },
   periodCol: { width: 50 },
   avgCol: { width: 76 },
   changeCol: { width: 70 },

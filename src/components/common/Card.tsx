@@ -25,7 +25,7 @@ export function Card({
         end={{ x: 1, y: 1 }}
         style={styles.strokeRing}>
         <View style={styles.clip}>
-          <BlurView intensity={100} tint={tint} style={StyleSheet.absoluteFill} />
+          <BlurView intensity={100} tint={tint} style={[StyleSheet.absoluteFill, Platform.OS === 'android' && { backgroundColor: theme.cardBackground }]} />
           <View style={[styles.content, contentStyle]}>{children}</View>
         </View>
       </LinearGradient>

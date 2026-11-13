@@ -1,0 +1,178 @@
+// ports TwilightApp.swift handleSleepModeLink, handlePendingExternalAction and
+// start/stopSleepModeFromExternalTrigger. two entry points feed one queue:
+// twilight://sleep/start|stop links (parsed in +native-intent) and android
+// home-widget presses (a pending action stored natively by
+// modules/twilight-widget-actions). the root layout runs them once mounted
+// (swift: consumed on appear / scene activation). no react or react-native imports.
+import type { StoreApi } from 'zustand/vanilla';
+
+import type { SleepState, ToggleResult } from '../state/sleep-store';
+
+export type SleepLinkAction = 'start' | 'stop';
+
+export const SLEEP_START_URL = 'twilight://sleep/start';
+export const SLEEP_STOP_URL = 'twilight://sleep/stop';
+
+// a widget press older than this is dropped: the app should have opened
+// right away, so a late one (the launch failed, the app was force-stopped)
+// must not start or end a session by surprise the next time it opens
+export const WIDGET_ACTION_MAX_AGE_MS = 2 * 60_000;
+// tolerated clock skew between the press and the js clock (an ntp
+// correction between a press and its consume), for every origin
+const CLOCK_SKEW_MS = 5_000;
+
+export function freshWidgetAction(
+  pending: { action: string; at: number; origin?: string } | null,
+  nowMs: number = Date.now()
+): SleepLinkAction | null {
+  // notification presses keep their press time (planNotificationAction)
+  if (pending == null || pending.origin === 'notification') return null;
+  if (pending.action !== 'start' && pending.action !== 'stop') return null;
+  const age = nowMs - pending.at;
+  return age >= -CLOCK_SKEW_MS && age <= WIDGET_ACTION_MAX_AGE_MS ? pending.action : null;
+}
+
+// a session notification press runs in the background and keeps its press
+// time: wake up ends the session when it was pressed, start sleep starts it
+// then, even if js only gets to it when the app next opens. older than this
+// it no longer describes the current night and is dropped.
+export const NOTIFICATION_ACTION_MAX_AGE_MS = 12 * 3600_000;
+
+export interface PendingPress {
+  action: string;
+  at: number;
+  origin?: string;
+}
+
+// the native store keeps one press per origin and hands out the oldest
+// first (TwilightWidgetActions.kt consume), so a notification press and a
+// later widget, tile or shortcut press both run, in press order:
+// notification presses through `applyNotification` (at their press time),
+// fresh widget presses through `queueWidget` (the "Pause..." toggle path)
+export async function drainPendingPresses(
+  consume: () => PendingPress | null,
+  handlers: {
+    applyNotification: (pending: PendingPress) => Promise<unknown>;
+    queueWidget: (action: SleepLinkAction) => void;
+  },
+  now: () => number = Date.now
+): Promise<void> {
+  // two slots; the bound only guards against a store that never empties
+  for (let i = 0; i < 4; i++) {
+    const pending = consume();
+    if (pending == null) return;
+    if (pending.origin === 'notification') {
+      await handlers.applyNotification(pending);
+      continue;
+    }
+    const action = freshWidgetAction(pending, now());
+    if (action) handlers.queueWidget(action);
+  }
+}
+
+export interface PlannedNotificationAction {
+  action: SleepLinkAction;
+  // when the session ends or starts
+  atMs: number;
+}
+
+// decides whether a pending notification press still applies to the
+// current state. stop needs the session it was meant for (started before
+// the press); start needs no session at or after the press.
+export function planNotificationAction(
+  pending: { action: string; at: number; origin?: string } | null,
+  state: Pick<SleepState, 'activeSession' | 'sessions'>,
+  nowMs: number = Date.now()
+): PlannedNotificationAction | null {
+  if (pending == null || pending.origin !== 'notification') return null;
+  if (pending.action !== 'start' && pending.action !== 'stop') return null;
+  const age = nowMs - pending.at;
+  if (age < -CLOCK_SKEW_MS || age > NOTIFICATION_ACTION_MAX_AGE_MS) return null;
+  const atMs = Math.min(pending.at, nowMs);
+  const active = state.activeSession;
+  if (pending.action === 'stop') {
+    return active && active.startTime <= atMs ? { action: 'stop', atMs } : null;
+  }
+  if (active) return null;
+  const lastEnd = state.sessions[0]?.endTime ?? null;
+  return lastEnd == null || lastEnd <= atMs ? { action: 'start', atMs } : null;
+}
+
+// accepts full urls (any scheme, so dev-client prefixes work) and bare paths
+export function parseSleepLink(url: string): SleepLinkAction | null {
+  const withoutScheme = url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
+  const path = withoutScheme.split(/[?#]/)[0];
+  const parts = path.split('/').filter((part) => part.length > 0);
+  if (parts.length < 2 || parts[0].toLowerCase() !== 'sleep') return null;
+  const action = parts[1].toLowerCase();
+  return action === 'start' || action === 'stop' ? action : null;
+}
+
+// swift errorMessage copy, shown in the "Pause..." alert
+export const SLEEP_LINK_MESSAGES = {
+  notOnboarded: 'Set up your sleep profile before using Sleep Mode controls.',
+  alreadyActive: 'Sleep mode is already active.',
+  notActive: 'Sleep mode is not active.',
+} as const;
+
+export interface SleepLinkOutcome {
+  // alert body for the "Pause..." alert; null when nothing needs saying
+  message: string | null;
+  result: ToggleResult | null;
+}
+
+// runs one action through the same store path as the dashboard button;
+// idempotent: start while sleeping and stop while awake only explain
+export function performSleepLinkAction(
+  action: SleepLinkAction,
+  isOnboarded: boolean,
+  store: StoreApi<SleepState>,
+  nowMs: number = Date.now()
+): SleepLinkOutcome {
+  if (!isOnboarded) return { message: SLEEP_LINK_MESSAGES.notOnboarded, result: null };
+  // swift reloads the active session before deciding (another surface may
+  // have changed it while the app was in the background)
+  store.getState().refresh();
+  const sleeping = store.getState().activeSession != null;
+  if (action === 'start' && sleeping) return { message: SLEEP_LINK_MESSAGES.alreadyActive, result: null };
+  if (action === 'stop' && !sleeping) return { message: SLEEP_LINK_MESSAGES.notActive, result: null };
+  const result = store.getState().toggleSleep(nowMs);
+  return { message: result.joke, result };
+}
+
+// one-slot pending action, like SharedData.pendingExternalAction: a newer
+// link replaces an older one that was never consumed
+let pending: SleepLinkAction | null = null;
+let launchLinkQueued = false;
+const listeners = new Set<() => void>();
+
+export function queueSleepLinkAction(action: SleepLinkAction): void {
+  pending = action;
+  for (const listener of listeners) listener();
+}
+
+// the link that launched the process can reach js twice: through
+// expo-router's initial url (which gives up after 150ms on android and falls
+// back to "/") and through the app's own Linking.getInitialURL() fallback.
+// it runs once per process.
+export function queueLaunchSleepLink(url: string | null | undefined): boolean {
+  if (launchLinkQueued || url == null) return false;
+  const action = parseSleepLink(url);
+  if (action == null) return false;
+  launchLinkQueued = true;
+  queueSleepLinkAction(action);
+  return true;
+}
+
+export function takeSleepLinkAction(): SleepLinkAction | null {
+  const action = pending;
+  pending = null;
+  return action;
+}
+
+export function subscribeSleepLinkActions(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}

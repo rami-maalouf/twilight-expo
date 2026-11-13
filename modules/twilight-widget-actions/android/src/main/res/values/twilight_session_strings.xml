@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- swift TwilightWidgetLiveActivity copy -->
+  <string name="twilight_session_sleep_title">Rejuvenating...</string>
+  <string name="twilight_session_sleep_left">%1$s left</string>
+  <string name="twilight_session_sleep_goal_reached">Goal reached</string>
+  <string name="twilight_session_wake_up">Wake Up</string>
+  <!-- the port's wind-down countdown (widgets/sleep-activity.tsx on ios) -->
+  <string name="twilight_session_wind_down_title">Winding down...</string>
+  <string name="twilight_session_wind_down_text">Bedtime at %1$s - dim the lights</string>
+  <string name="twilight_session_start_sleep">Start Sleep</string>
+  <string name="twilight_session_channel_sleep">Sleep session</string>
+  <string name="twilight_session_channel_sleep_description">Your sleep timer and a Wake Up button while you sleep</string>
+  <string name="twilight_session_channel_wind_down">Bedtime countdown</string>
+  <string name="twilight_session_channel_wind_down_description">Counts down to bedtime while you wind down, with a Start Sleep button</string>
+</resources>

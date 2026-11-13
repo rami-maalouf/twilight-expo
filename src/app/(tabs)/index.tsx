@@ -2,17 +2,22 @@
 // greeting (tap to shuffle) + info button, date line, view-mode segmented
 // picker, per-mode analytics cards (Week | Trend | Time | SRI | Score),
 // status card with streak, fadeInSlide entrances
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useScrollToTop } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { formatDashboardDate } from '@/utils/locale-format';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { Card } from '@/components/common/Card';
+import { IconButton } from '@/components/common/IconButton';
 import { FadeInSlide } from '@/components/common/FadeInSlide';
 import { Screen } from '@/components/common/Screen';
 import { InsightPills } from '@/components/dashboard/InsightPills';
 import { SegmentedPicker } from '@/components/dashboard/SegmentedPicker';
 import { StatusCard } from '@/components/dashboard/StatusCard';
+import { WeekEmptyState } from '@/components/dashboard/WeekEmptyState';
+import { useForegroundRefresh } from '@/services/use-foreground-refresh';
 import { AlignmentCard } from '@/components/charts/AlignmentCard';
 import {
   MovingAverageCard,
@@ -43,7 +48,8 @@ import type { CalendarDay } from '@/domain/models';
 import { addDays, dayKey, zonedParts } from '@/domain/session-rules';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useSettings } from '@/state/settings-state';
-import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
+import { useAsleepEmojiStyle, useFixedColor, useTheme } from '@/theme/ThemeProvider';
+import { showAlert } from '@/components/common/app-alert';
 
 const VIEW_MODES = ['Week', 'Trend', 'Time', 'SRI', 'Score'] as const;
 type ViewMode = (typeof VIEW_MODES)[number];
@@ -67,6 +73,7 @@ function nowMinutesAndToday(): { minutes: number; today: CalendarDay } {
 export default function DashboardScreen() {
   const theme = useTheme();
   const fixed = useFixedColor();
+  const emojiGray = useAsleepEmojiStyle();
   const { width } = useWindowDimensions();
 
   const activeSession = useSleepStore((s) => s.activeSession);
@@ -93,6 +100,16 @@ export default function DashboardScreen() {
     const { minutes } = nowMinutesAndToday();
     setGreeting(getGreeting(minutes, optimalSleepMinutes, optimalWakeMinutes, isSleeping));
   }, [optimalSleepMinutes, optimalWakeMinutes, isSleeping]);
+
+  // swift recomputes the greeting on scene activation and whenever the
+  // session or the schedule changes, from any surface (dashboard, widget link)
+  const greetingFor = useRef(updateGreeting);
+  useEffect(() => {
+    if (greetingFor.current === updateGreeting) return;
+    greetingFor.current = updateGreeting;
+    updateGreeting();
+  }, [updateGreeting]);
+  useForegroundRefresh(updateGreeting);
 
   useFocusEffect(
     useCallback(() => {
@@ -244,36 +261,36 @@ export default function DashboardScreen() {
       );
     }
     if (result.joke) {
-      Alert.alert('Pause...', result.joke);
+      showAlert('Pause...', result.joke);
     }
-    updateGreeting();
   };
 
-  const dateLine = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const dateLine = formatDashboardDate(new Date());
 
   const chartWidth = width - 16 * 2 - 16 * 2;
   const hasWeekData = trackedDataPoints(weekData).length > 0;
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<any>(null);
+  useScrollToTop(scrollRef);
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingTop: insets.top + (Platform.OS === 'android' ? 16 : 12) }]} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.greetingRow}>
-            <Pressable onPress={shuffleGreeting} hitSlop={6}>
-              <Text style={[styles.greeting, { color: theme.textPrimary }]}>
+            <Pressable onPress={shuffleGreeting} hitSlop={6} style={styles.greetingButton}>
+              <Text style={[styles.greeting, { color: theme.textPrimary }, emojiGray]} numberOfLines={1}>
                 {greeting || (isSleeping ? 'Good Night 🌙' : 'Good Morning ☀️')}
               </Text>
             </Pressable>
-            <Pressable
-              hitSlop={8}
+            <IconButton
+              iconSize={16}
+              edge="end"
               onPress={() => router.push('/metrics-explanation')}
+              accessibilityLabel="Metrics info"
               testID="metrics-info">
               <SymbolView name="info.circle" size={16} tintColor={theme.textSecondary} />
-            </Pressable>
+            </IconButton>
           </View>
           <Text style={[styles.date, { color: theme.textSecondary }]}>{dateLine}</Text>
         </View>
@@ -301,17 +318,7 @@ export default function DashboardScreen() {
                   />
                 </Card>
               ) : (
-                <Card>
-                  <View style={styles.emptyChart}>
-                    <SymbolView name="chart.bar.fill" size={50} tintColor={theme.accent} />
-                    <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-                      Your sleep story starts tonight
-                    </Text>
-                    <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-                      Log your first night to see your patterns here
-                    </Text>
-                  </View>
-                </Card>
+                <WeekEmptyState />
               ))}
             {viewMode === 'Trend' && (
               <MovingAverageCard
@@ -384,12 +391,10 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   header: { gap: 2 },
-  greetingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  greetingButton: { flexShrink: 1 },
   greeting: { fontSize: 34, fontWeight: '700' },
   date: { fontSize: 15 },
   analytics: { gap: 16, alignSelf: 'stretch' },
   chartSpacer: { height: 12 },
-  emptyChart: { alignItems: 'center', gap: 8, paddingVertical: 40 },
-  emptyTitle: { fontSize: 17, fontWeight: '600' },
-  emptySubtitle: { fontSize: 15, textAlign: 'center' },
 });

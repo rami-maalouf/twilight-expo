@@ -1,0 +1,55 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- android 16 live updates for the sleep session notification -->
+  <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <application>
+    <receiver
+      android:name="expo.modules.twilightwidgetactions.TwilightWidgetTickReceiver"
+      android:exported="false" />
+    <receiver
+      android:name="expo.modules.twilightwidgetactions.TwilightSessionActionReceiver"
+      android:exported="false" />
+    <receiver
+      android:name="expo.modules.twilightwidgetactions.TwilightSessionTickReceiver"
+      android:exported="false" />
+    <receiver
+      android:name="expo.modules.twilightwidgetactions.TwilightSessionRestoreReceiver"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        <!-- exempt from the implicit broadcast limits -->
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.intent.action.TIME_SET" />
+      </intent-filter>
+    </receiver>
+    <service
+      android:name="expo.modules.twilightwidgetactions.TwilightSessionTaskService"
+      android:exported="false" />
+    <!-- quick settings tile (swift SleepModeControlWidget) -->
+    <service
+      android:name="expo.modules.twilightwidgetactions.TwilightSleepTileService"
+      android:exported="true"
+      android:icon="@drawable/twilight_notification_moon"
+      android:label="@string/twilight_tile_name"
+      android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+      <intent-filter>
+        <action android:name="android.service.quicksettings.action.QS_TILE" />
+      </intent-filter>
+      <!-- the app pushes every session change (requestListeningState), so the
+           shade shows the current state at once, even with the app not running -->
+      <meta-data
+        android:name="android.service.quicksettings.ACTIVE_TILE"
+        android:value="true" />
+    </service>
+    <!-- launcher shortcut trampoline: records the press and opens the app -->
+    <activity
+      android:name="expo.modules.twilightwidgetactions.TwilightSleepShortcutActivity"
+      android:excludeFromRecents="true"
+      android:exported="false"
+      android:noHistory="true"
+      android:taskAffinity=""
+      android:theme="@android:style/Theme.NoDisplay" />
+  </application>
+</manifest>

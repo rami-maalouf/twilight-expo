@@ -1,0 +1,9 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": [
+      "expo.modules.twilightwidgetactions.TwilightWidgetActionsModule",
+      "expo.modules.twilightwidgetactions.TwilightSessionNotificationModule"
+    ]
+  }
+}

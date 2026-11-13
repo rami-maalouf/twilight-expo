@@ -27,6 +27,8 @@ describe('SessionRepo', () => {
       endTime: T0 + 8 * HOURS,
       endTimeZone: 'America/Los_Angeles',
       updatedAt: T0 + 8 * HOURS,
+      // ending bumps the health payload version (docs/health-connect.md 3.3)
+      health: { ...started.health, needsSync: true, syncVersion: T0 + 8 * HOURS },
     });
   });
 
