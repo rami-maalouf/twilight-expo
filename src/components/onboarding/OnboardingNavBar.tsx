@@ -16,7 +16,9 @@ export function OnboardingNavBar({ disabled }: { disabled?: boolean }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.bar, { paddingTop: insets.top, height: insets.top + ONBOARDING_BAR_HEIGHT }]}>
+    <View
+      testID="onboarding-nav-bar"
+      style={[styles.bar, { paddingTop: insets.top, height: insets.top + ONBOARDING_BAR_HEIGHT }]}>
       <BackButton
         testID="onboarding-back"
         color={theme.textPrimary}
@@ -30,5 +32,7 @@ export function OnboardingNavBar({ disabled }: { disabled?: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  bar: { justifyContent: 'center', paddingHorizontal: IS_ANDROID ? 4 : 8 },
+  // flex-start: the ios icon button has no fixed size and would otherwise
+  // stretch across the bar, making the whole bar a back button
+  bar: { justifyContent: 'center', alignItems: 'flex-start', paddingHorizontal: IS_ANDROID ? 4 : 8 },
 });

@@ -1,6 +1,7 @@
 // the back control of the onboarding steps after welcome (swift's inline
 // navigation bar back button)
 import { cleanup, fireEvent, render } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { OnboardingNavBar } from '@/components/onboarding/OnboardingNavBar';
@@ -59,5 +60,12 @@ describe('onboarding nav bar', () => {
     expect(back.props.accessibilityState).toEqual({ disabled: true });
     await fireEvent.press(back);
     expect(mockRouter.back).not.toHaveBeenCalled();
+  });
+
+  test('the back control keeps its own size instead of filling the bar', async () => {
+    const { getByTestId } = await renderBar();
+    const style = StyleSheet.flatten(getByTestId('onboarding-nav-bar').props.style);
+    expect(style.alignItems).toBe('flex-start');
+    expect(style.height).toBe(47 + 44);
   });
 });
