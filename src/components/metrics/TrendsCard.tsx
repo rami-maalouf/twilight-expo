@@ -10,6 +10,7 @@ import type { CalendarDay } from '@/domain/models';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 import { catmullRomPath } from '@/components/charts/path-utils';
 import { formatAbbrevDate } from '@/components/charts/date-scale';
+import { DIVIDER_WIDTH } from '@/theme/divider';
 
 const SPARK_W = 80;
 const SPARK_H = 24;
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingBottom: 8 },
   headerCell: { fontSize: 12 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(84, 84, 88, 0.6)' },
+  divider: { height: DIVIDER_WIDTH, backgroundColor: 'rgba(84, 84, 88, 0.6)' },
   periodCol: { width: 50 },
   avgCol: { width: 76 },
   changeCol: { width: 70 },

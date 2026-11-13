@@ -14,6 +14,7 @@ import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 import { DELETE_ACTION_WIDTH, isFullSwipe } from './log-swipe';
 import { formatDayDate, formatTime } from '@/utils/locale-format';
 import { showAlert } from '@/components/common/app-alert';
+import { DIVIDER_WIDTH } from '@/theme/divider';
 
 // "Wed, Jul 15" like DateFormatters.formatDay's EEE d MMM template rendered
 // by ios ("Wed, Jul 15" per the reference screenshot)
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 17, fontVariant: ['tabular-nums'] },
   separator: {
-    height: StyleSheet.hairlineWidth,
+    height: DIVIDER_WIDTH,
     backgroundColor: 'rgba(84, 84, 88, 0.6)',
     marginLeft: 16,
   },

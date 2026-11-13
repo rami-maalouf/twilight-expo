@@ -48,6 +48,7 @@ import { useHealthSyncState } from '@/services/health-connect/health-connect-sta
 import { useHealthConnection } from '@/services/health-connect/use-health-connection';
 import { useSleepStore } from '@/state/app-sleep-store';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
+import { DIVIDER_WIDTH } from '@/theme/divider';
 
 const RED = '#ff3b30';
 const ORANGE = '#ff9500';
@@ -444,7 +445,7 @@ const styles = StyleSheet.create({
   facts: { gap: 14 },
   statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   statusLabel: { fontSize: 15, fontWeight: '600' },
-  meta: { gap: 8, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  meta: { gap: 8, paddingTop: 12, borderTopWidth: DIVIDER_WIDTH },
   metaRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardTitle: { fontSize: 17, fontWeight: '600' },

@@ -8,6 +8,7 @@ import { Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from
 
 import { PressableFeedback } from '@/components/common/PressableFeedback';
 import { useTheme } from '@/theme/ThemeProvider';
+import { DIVIDER_WIDTH } from '@/theme/divider';
 
 const IS_ANDROID = Platform.OS === 'android';
 // ios inset grouped lists use 10; material 3 list containers use a larger
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     minHeight: IS_ANDROID ? 56 : 44,
   },
   separator: {
-    height: StyleSheet.hairlineWidth,
+    height: DIVIDER_WIDTH,
     marginLeft: 16,
     backgroundColor: 'rgba(84, 84, 88, 0.6)',
   },

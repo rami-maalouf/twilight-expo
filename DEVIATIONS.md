@@ -88,7 +88,8 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
     android "use 24-hour format" switch through expo-localization, like
     swift's DateFormatter .short style.
   - settings: one rounded block per section (16dp corners, swift 10), 56dp
-    rows with a ripple, m3 switches tinted with the palette accent. the whole
+    rows with a ripple, 1dp material dividers (a one-pixel hairline
+    rounded to zero height in some rows), m3 switches tinted with the palette accent. the whole
     switch row toggles and reads as one switch to talkback (on ios only the
     switch toggles, like swift's Toggle row). appearance rows open an m3
     selectable dropdown menu anchored under the value; long values
