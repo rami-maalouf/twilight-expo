@@ -12,3 +12,21 @@ To keep vision-token cost low during mobile UI work:
 4. **Batch interactions:** Prefer `run-sequence` for multi-step device actions. Wait with `await-ui-element` / `await-screen-idle` - never poll with repeated screenshots.
 5. **Video is expensive and rarely needed:** Do not start `screen-recording-*` unless the question requires motion (animation, gesture path, timing/jank). Prefer a still + tree.
 6. **Auto-screenshots are disabled globally** (`disable-auto-screenshot`). Do not re-enable. Take an explicit `screenshot` only when you need an image in context.
+
+## Cloud simulator (Expo Simulators)
+
+`bun run ios:cloud` runs this app on an Expo Simulators cloud device in the same way as `bun run ios`:
+
+- It makes the same Debug build. While the native fingerprint does not change, it reuses the build.
+- It runs Metro on its own port (never 8081) behind Expo's tunnel and connects the dev client, so Fast Refresh works.
+- It opens the browser preview.
+
+Ctrl+C stops Metro and the cloud device.
+
+Agents:
+
+1. Run `bun run ios:cloud -- --detach`.
+2. Drive the device with `cloudsim exec bunx agent-device@latest snapshot -i` and `press @eN`. Take screenshots with `cloudsim shot <png>`.
+3. Always finish with `cloudsim stop`. Sessions are billed.
+
+`cloudsim doctor` checks the setup. See `~/Documents/code/cloudsim/README.md` and the `eas-simulator` skill.
