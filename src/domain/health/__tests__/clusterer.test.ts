@@ -4,9 +4,7 @@ import {
   clusterNights,
   nightKeyFor,
   orphanedOwnRecords,
-  recordToSamples,
   STAGE_TYPE,
-  stageKind,
   tagForRecordingMethod,
 } from '../clusterer';
 import type { HealthRecord, HealthStage } from '../types';
@@ -41,14 +39,6 @@ function rec(
 const cluster = (records: HealthRecord[]) => clusterNights(records, { deviceZone: 'UTC', ownPackage: APP });
 
 describe('clusterer (swift ports)', () => {
-  test('testCollapsesStageSamplesIntoOneNight', () => {
-    const s = date(2026, 8, 10, 23);
-    const nights = cluster([rec(s, s + 2 * H), rec(s + 2 * H, s + 4 * H), rec(s + 4 * H, s + 7 * H)]);
-    expect(nights).toHaveLength(1);
-    expect(nights[0].startMs).toBe(s);
-    expect(nights[0].endMs).toBe(s + 7 * H);
-  });
-
   test('testCollapsesStageSamplesIntoOneNight (stages inside one record)', () => {
     const s = date(2026, 8, 10, 23);
     const nights = cluster([
@@ -70,9 +60,9 @@ describe('clusterer (swift ports)', () => {
     expect(cluster([rec(a, a + 2 * H), rec(b, b + 2 * H)])).toHaveLength(2);
   });
 
-  test('a gap of exactly three hours does not split', () => {
+  test('a gap of three hours remains outside either session', () => {
     const a = date(2026, 8, 10, 1);
-    expect(cluster([rec(a, a + 2 * H), rec(a + 5 * H, a + 6 * H)])).toHaveLength(1);
+    expect(cluster([rec(a, a + 2 * H), rec(a + 5 * H, a + 6 * H)])).toHaveLength(2);
   });
 
   test('testIgnoresTwilightAuthoredSamples (own package)', () => {
@@ -92,14 +82,14 @@ describe('clusterer (swift ports)', () => {
     expect(nights[0].source).toBe(WATCH);
   });
 
-  test('testPrefersAsleepEnvelopeOverInBed', () => {
+  test('preserves provider boundaries when stages cover only part of the session', () => {
     const s = date(2026, 8, 10, 22);
     const asleep = s + H;
     const nights = cluster([
       rec(s, s + 9 * H, { stages: [{ startMs: asleep, endMs: asleep + 7 * H, type: STAGE_TYPE.SLEEPING }] }),
     ]);
     expect(nights).toHaveLength(1);
-    expect([nights[0].startMs, nights[0].endMs]).toEqual([asleep, asleep + 7 * H]);
+    expect([nights[0].startMs, nights[0].endMs]).toEqual([s, s + 9 * H]);
   });
 
   test('testRehydratesOrphanedTwilightSamples', () => {
@@ -149,66 +139,6 @@ describe('orphan rehydration rules', () => {
 describe('record-to-sample mapping (2.1)', () => {
   const s = date(2026, 8, 10, 23);
 
-  test.each([
-    [STAGE_TYPE.UNKNOWN, 'asleep'],
-    [STAGE_TYPE.AWAKE, 'awake'],
-    [STAGE_TYPE.SLEEPING, 'asleep'],
-    [STAGE_TYPE.OUT_OF_BED, 'awake'],
-    [STAGE_TYPE.LIGHT, 'asleep'],
-    [STAGE_TYPE.DEEP, 'asleep'],
-    [STAGE_TYPE.REM, 'asleep'],
-    [STAGE_TYPE.AWAKE_IN_BED, 'awake'],
-    [42, 'asleep'],
-  ])('stage %i maps to %s', (type, kind) => {
-    expect(stageKind(type)).toBe(kind);
-  });
-
-  test('staged record: one asleep sample per asleep stage plus in-bed over the session', () => {
-    const samples = recordToSamples(
-      rec(s, s + 8 * H, {
-        stages: [
-          { startMs: s, endMs: s + H, type: STAGE_TYPE.AWAKE_IN_BED },
-          { startMs: s + H, endMs: s + 4 * H, type: STAGE_TYPE.LIGHT },
-          { startMs: s + 4 * H, endMs: s + 5 * H, type: STAGE_TYPE.AWAKE },
-          { startMs: s + 5 * H, endMs: s + 8 * H, type: STAGE_TYPE.REM },
-        ],
-      })
-    );
-    expect(samples.map((x) => [x.kind, x.startMs - s, x.endMs - s])).toEqual([
-      ['asleep', H, 4 * H],
-      ['asleep', 5 * H, 8 * H],
-      ['inBed', 0, 8 * H],
-    ]);
-  });
-
-  test('no stages = asleep over the session interval', () => {
-    expect(recordToSamples(rec(s, s + 8 * H, { stages: [] })).map((x) => x.kind)).toEqual(['asleep']);
-  });
-
-  test('awake-only stages = in bed over the session interval', () => {
-    const samples = recordToSamples(rec(s, s + 8 * H, { stages: [{ startMs: s, endMs: s + 8 * H, type: STAGE_TYPE.AWAKE }] }));
-    expect(samples.map((x) => x.kind)).toEqual(['inBed']);
-  });
-
-  test('a no-stage record and a staged record of one source within 3 h form one night covering both', () => {
-    const nights = cluster([
-      rec(s, s + 3 * H, { stages: [] }),
-      rec(s + 4 * H, s + 8 * H, { stages: [{ startMs: s + 4 * H, endMs: s + 8 * H, type: STAGE_TYPE.DEEP }] }),
-    ]);
-    expect(nights).toHaveLength(1);
-    expect([nights[0].startMs, nights[0].endMs]).toEqual([s, s + 8 * H]);
-    expect(nights[0].recordIds).toHaveLength(2);
-  });
-
-  test('an awake-only record next to an asleep record of the same source does not widen the envelope', () => {
-    const nights = cluster([
-      rec(s - H, s + 9 * H, { stages: [{ startMs: s - H, endMs: s + 9 * H, type: STAGE_TYPE.AWAKE }] }),
-      rec(s, s + 8 * H),
-    ]);
-    expect(nights).toHaveLength(1);
-    expect([nights[0].startMs, nights[0].endMs]).toEqual([s, s + 8 * H]);
-  });
-
   test('nights shorter than 5 minutes are dropped', () => {
     expect(cluster([rec(s, s + 4 * 60_000)])).toHaveLength(0);
   });
@@ -224,7 +154,7 @@ describe('record-to-sample mapping (2.1)', () => {
     ]);
     // swift measured the gap from the previous sample (s+1h -> s+6h = 5 h)
     expect(nights).toHaveLength(1);
-    expect([nights[0].startMs, nights[0].endMs]).toEqual([s + H / 2, s + 10 * H]);
+    expect([nights[0].startMs, nights[0].endMs]).toEqual([s, s + 10 * H]);
   });
 
   test('sources cluster separately', () => {

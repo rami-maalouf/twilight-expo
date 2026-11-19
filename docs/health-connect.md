@@ -250,26 +250,9 @@ ui states (settings): `connected`, `readyToEnable`, `notDetermined`,
 | sample uuid | `metadata.id` (record id) | stored for deletion changes (hc docs: `DeletionChange` carries only the id) |
 | title, notes | `title = null`, `notes = null` | twilight writes nothing user-visible beyond the session |
 
-stage mapping on read (`SleepSessionRecord.STAGE_TYPE_*`, values verified
-against the reference): `SLEEPING 2`, `LIGHT 4`, `DEEP 5`, `REM 6`,
-`UNKNOWN 0`, and any unlisted future value -> asleep (swift: unknown counts as
-sleep); `AWAKE 1`, `OUT_OF_BED 3`, `AWAKE_IN_BED 7` -> awake.
+On Android each accepted foreign sleep session uses the start, end, and offsets of its Health Connect record. Separate records from the same source remain separate even when they touch. The log shows the session interval. The mirror retains individual stages. Existing linked imports reconcile against their original record IDs on the next pull, including splitting records previously grouped under one log.
 
-record-to-sample rule:
-
-- record with at least one asleep stage -> one asleep sample per asleep
-  stage, plus one `inBed` sample over the session interval.
-- record with NO stages -> one asleep sample over the session interval. a
-  stage list is optional in hc, and a session without stages is hc's
-  equivalent of `asleepUnspecified` (twilight itself writes one sleeping
-  stage, other manual-entry apps often write none). the first draft mapped
-  this to `inBed`, which dropped such a record from the envelope whenever a
-  staged record of the same source sat within 3 h.
-- record with only awake stages -> one `inBed` sample over the session
-  interval.
-
-the clusterer then keeps the swift "prefer asleep over in-bed" envelope
-rule unchanged.
+Twilight checks for external changes on launch, on returning to the foreground, and every 30 seconds while active with sleep read access.
 
 ### 2.2 ownership on health connect
 
@@ -1594,14 +1577,9 @@ every export first asks "Save to Device" / "Share" (13).
 
 ported from `HealthKitSleepSyncTests.swift` (same names, hc inputs):
 
-- clusterer (`testCollapsesStageSamplesIntoOneNight`,
-  `testGapOverThreeHoursSplitsNights`, `testIgnoresTwilightAuthoredSamples`,
-  `testPrefersAsleepEnvelopeOverInBed`, `testRehydratesOrphanedTwilightSamples`):
-  collapses stage records into one night; gap over three hours splits
-  nights; ignores own-package records; prefers asleep envelope over in-bed
-  (stages vs session bounds); rehydrates orphaned twilight records. hc
-  difference asserted explicitly: a foreign-package record with the twilight
-  prefix is NOT ignored (2.2).
+- imported sessions retain the record's endpoints even with partial stage
+  coverage. own-package records are excluded from foreign imports, while a
+  foreign package with the twilight prefix is handled as foreign (2.2).
 - reconciler (`testSkipsTombstonedNight`,
   `testSkipsOverlapWithTwilightOwnedSession`, `testUpdatesImportedNight`,
   `testInsertsWhenNoLocalMatch`, `testSkipsOverlapWithExistingImportedSession`,
@@ -1618,10 +1596,8 @@ missing tombstone key decodes as empty.
 
 new pure tests:
 
-- record-to-sample mapping for every stage type, unknown and future stage
-  values, no stages (asleep), awake-only stages (in bed); a no-stage record
-  and a staged record of one source within 3 h form one night whose envelope
-  covers both.
+- distinct source sessions remain separate across gaps. existing combined
+  logs split using their saved links on the next incremental pull.
 - night key: wake day from end offset, stable under device zone change;
   night spanning midnight; nap and night on the same wake day get distinct
   keys.
@@ -1789,9 +1765,8 @@ state checks with `adb shell uiautomator dump`; visuals with
 2. fresh install, onboarding: welcome -> health connect step (screenshot
    notDetermined) -> Continue -> hc dialog shows sleep read, write, past data
    -> allow all -> step shows connected. finish onboarding.
-   expect: imported nights (split night = 1 session; no-stage record
-   imported; awake-only record imported only if no asleep record of that
-   source is within 3 h; prefixed foreign record imported as a foreign
+   expect: imported nights (split night = 2 sessions with the original gap;
+   no-stage and awake-only sessions retain the source interval; prefixed foreign record imported as a foreign
    night; two-app night = 1 session; 45-day night present only with history
    permission). record whether the first read right after the grant
    returned the seeded data (2.10 item 10). screenshots: step, dashboard.

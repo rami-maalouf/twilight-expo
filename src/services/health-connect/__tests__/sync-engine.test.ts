@@ -73,6 +73,36 @@ describe.each([
     expect(t.hc.ownRecords()).toHaveLength(1);
   });
 
+  test('a watch nap and a later sleep log retain their exact source intervals with read-only access', async () => {
+    const t = setup(options);
+    t.hc.write = false;
+    t.foreign(2, WATCH, { cid: 'nap', endH: 1 });
+    t.foreign(2, WATCH, { cid: 'sleep', startH: 3, endH: 9 });
+    await t.engine.sync('full');
+    expect(t.imports().sort((a, b) => a.startTime - b.startTime).map(s => [s.startTime, s.endTime])).toEqual([
+      [t.at(2), t.at(2, 1)], [t.at(2, 3), t.at(2, 9)],
+    ]);
+    expect(t.hc.callCount('upsertSleep')).toBe(0);
+  });
+
+  test('the next incremental pull repairs an existing merged import using its saved source links', async () => {
+    const t = setup(options);
+    const nap = t.foreign(2, WATCH, { cid: 'nap', endH: 1 });
+    await t.engine.sync('full');
+    const originalId = t.imports()[0].id;
+    const sleep = t.foreign(2, WATCH, { cid: 'sleep', startH: 3, endH: 9 });
+    // reproduce the persisted interval and membership from the previous importer.
+    t.db.runSync('update sleep_sessions set end_time = ? where id = ?', [t.at(2, 9), originalId]);
+    t.repo.health.setLinks(originalId, [nap.recordId, sleep.recordId]);
+    await t.engine.sync('full');
+    expect(t.repo.getSession(originalId)?.endTime).toBe(t.at(2, 1));
+    expect(t.imports()).toHaveLength(2);
+    t.hc.removeRecord(sleep.recordId);
+    await t.engine.sync('full');
+    expect(t.imports().map(s => s.id)).toEqual([originalId]);
+    expect(t.hc.ownRecords()).toHaveLength(0);
+  });
+
   test('edit owned three times -> one hc record with the latest version and times', async () => {
     const t = setup(options);
     const log = t.logNight(3);

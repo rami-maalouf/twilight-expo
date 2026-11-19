@@ -11,8 +11,6 @@ export const MAX_HEALTH_SYNC_VERSION = 2 ** 50;
 // bump when the exported record shape changes (swift prepareForCurrentHealthKitPayload)
 export const HEALTH_PAYLOAD_REVISION = 1;
 export const HEALTH_CONNECT_IMPORT_TAG = 'Health Connect';
-// swift clusterer maxGapBetweenSamples
-export const MAX_GAP_BETWEEN_SAMPLES_MS = 3 * 60 * 60 * 1000;
 // swift BlockedProfileSession.minimumDuration
 export const MINIMUM_NIGHT_MS = 5 * 60 * 1000;
 // remote deletions and vanished imports older than this are "aged out" (2.6)
@@ -60,20 +58,6 @@ export interface HealthWrite {
   startZoneId: string;
   endZoneId: string;
   recordingMethod: 'manualEntry' | 'activelyRecorded';
-}
-
-export type SampleKind = 'asleep' | 'inBed' | 'awake' | 'other';
-
-// swift HealthKitSleepSampleSnapshot; one per stage (plus the session interval)
-export interface SleepSample {
-  recordId: string;
-  source: string;
-  startMs: number;
-  endMs: number;
-  kind: SampleKind;
-  // offsets of the record the sample came from
-  startOffsetSec: number | null;
-  endOffsetSec: number | null;
 }
 
 // swift HealthKitSleepNightCluster
