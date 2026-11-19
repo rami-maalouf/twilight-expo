@@ -16,7 +16,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.rami.twilight.port"
+      "bundleIdentifier": "com.rami.twilight.port",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.rami.twilight.port",
