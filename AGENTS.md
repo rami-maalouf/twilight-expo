@@ -24,3 +24,34 @@ To keep vision-token cost low during mobile UI work:
 - `uiautomator dump` fails on screens with the animated star field ("could not get idle state") and while argent's accessibility bridge is attached; use argent `describe`. If argent `gesture-tap` cannot start its simulator-server, tap with `adb shell input tap` at the `describe` frame centre (normalized x screen size).
 - Clear twilight's hc records: hc settings -> App permissions -> Twilight -> See app data -> Enter deletion -> Select all -> Delete. App data lives in `files/SQLite/twilight.db` (copy with `adb exec-out run-as com.rami.twilight.port cat files/SQLite/twilight.db` plus `-wal`).
 - Emulators need several GB of free host disk; the avd exits and refuses to start when the disk is full.
+
+## Cloud simulator (Expo Simulators)
+
+`bun run ios:cloud` runs this app on an Expo Simulators cloud device in the same way as `bun run ios`:
+
+- It makes the same Debug build. While the native fingerprint does not change, it reuses the build.
+- It runs Metro on its own port (never 8081) behind Expo's tunnel and connects the dev client, so Fast Refresh works.
+- It opens the browser preview.
+
+Ctrl+C stops Metro and the cloud device.
+
+Agents:
+
+1. Run `bun run ios:cloud -- --detach`.
+2. Drive the device with `cloudsim exec bunx agent-device@latest snapshot -i` and `press @eN`. Take screenshots with `cloudsim shot <png>`.
+3. Always finish with `cloudsim stop`. Sessions are billed.
+
+`cloudsim doctor` checks the setup. See `~/Documents/code/cloudsim/README.md` and the `eas-simulator` skill.
+
+## Over-the-air updates (EAS Update)
+
+Builds get JavaScript and asset updates from `https://u.expo.dev/fab317b8-801d-4363-a705-0cde82178c3c`. Each build profile in `eas.json` names its channel:
+
+- `development` and `development-demo` listen on channels of the same names.
+- `preview` listens on `preview`.
+- `preview-demo` and `simulator-demo` listen on `preview-demo`.
+- `production` listens on `production`.
+
+To publish, run `bun run update:preview`, `bun run update:demo` or `bun run update:production`. `EXPO_PUBLIC_DEMO_MODE` is fixed into the JavaScript bundle, and `eas update` does not read a build profile's `env`, so these scripts set it to match each channel. Never publish to `preview-demo` without `EXPO_PUBLIC_DEMO_MODE=1`.
+
+The runtime version uses the `fingerprint` policy, so an update reaches only builds with the same native code. Builds made before `expo-updates` was added (2026-11-19) cannot receive updates. To check an update on a cloud iPhone first, run `eas build --profile simulator-demo --platform ios`, start that build with `eas simulator:start --build-id <id>`, then run `bun run update:demo`.
