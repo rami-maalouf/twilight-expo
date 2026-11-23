@@ -3,6 +3,7 @@
 // export. both platforms; profiles and the scheduler do not exist in the port.
 import { type SymbolViewProps } from 'expo-symbols';
 import { Redirect, router } from 'expo-router';
+import { Observe } from 'expo-observe';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -146,7 +147,11 @@ export default function DataManagementScreen() {
   // demo data never leaves or enters through this screen (4.4)
   if (isDemoDataActive) return <Redirect href="/settings" />;
 
-  const showError = (error: unknown) => showAlert('Data Error', errorMessage(error));
+  const showError = (error: unknown) => {
+    // an ArchiveError is the user's file (not a backup, too new, unreadable); anything else is a bug
+    if (!(error instanceof ArchiveError)) Observe.reportError(error);
+    showAlert('Data Error', errorMessage(error));
+  };
 
   const onExportBackup = async () => {
     const destination = await chooseDestination(

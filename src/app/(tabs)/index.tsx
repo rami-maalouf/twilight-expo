@@ -3,6 +3,7 @@
 // picker, per-mode analytics cards (Week | Trend | Time | SRI | Score),
 // status card with streak, fadeInSlide entrances
 import { router, useFocusEffect, useScrollToTop } from 'expo-router';
+import { useObserve } from 'expo-observe';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
 import { formatDashboardDate } from '@/utils/locale-format';
@@ -72,6 +73,12 @@ function nowMinutesAndToday(): { minutes: number; today: CalendarDay } {
 
 export default function DashboardScreen() {
   const theme = useTheme();
+  // launches, widget presses and twilight:// links all land here; the sessions
+  // come from the on-device database synchronously, so mount is interactive
+  const { markInteractive } = useObserve();
+  useEffect(() => {
+    markInteractive();
+  }, [markInteractive]);
   const fixed = useFixedColor();
   const emojiGray = useAsleepEmojiStyle();
   const { width } = useWindowDimensions();

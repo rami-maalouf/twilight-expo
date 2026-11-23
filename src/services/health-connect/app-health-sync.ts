@@ -13,6 +13,7 @@ import { healthSyncStore } from './health-connect-state';
 import { healthConnect, isHealthConnectSupported } from './native-adapter';
 import { HealthSyncEngine, type SyncKind } from './sync-engine';
 import { connectionInput } from './use-health-connection';
+import { Observe } from 'expo-observe';
 
 export const healthSyncEngine = new HealthSyncEngine({
   adapter: healthConnect,
@@ -23,6 +24,7 @@ export const healthSyncEngine = new HealthSyncEngine({
   onSettingsChanged: () => useSettings.getState().refresh(),
   onStateChanged: (snapshot) => healthSyncStore.setState(snapshot),
   log: __DEV__ ? (message) => console.log(message) : undefined,
+  reportError: (error) => Observe.reportError(error),
 });
 
 healthSyncStore.setState(healthSyncEngine.snapshot());

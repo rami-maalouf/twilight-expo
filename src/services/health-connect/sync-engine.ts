@@ -90,6 +90,8 @@ export interface SyncEngineDeps {
   onSettingsChanged?: () => void;
   onStateChanged?: (snapshot: HealthSyncSnapshot) => void;
   log?: (message: string) => void;
+  // an unexpected failure (not a revoke, rate limit or missing provider), for crash reporting
+  reportError?: (error: unknown) => void;
 }
 
 // demo became active or sync was turned off while a run awaited the adapter
@@ -325,6 +327,7 @@ export class HealthSyncEngine {
       case 'E_HC_UNAVAILABLE':
         return this.error('unavailable', { detail });
       default:
+        this.deps.reportError?.(error);
         return this.error('remote', { detail });
     }
   }

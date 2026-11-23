@@ -2,6 +2,8 @@
 // health connect step as step 2 when health connect is available, the nfc
 // step is out of scope per the spec)
 import { router } from 'expo-router';
+import { useObserve } from 'expo-observe';
+import { useEffect } from 'react';
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
@@ -19,8 +21,8 @@ import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 const TRUST_CARDS: { icon: SymbolViewProps['name']; title: string; color: string }[] = [
   { icon: 'dollarsign', title: 'No subscription', color: '#4cd964' },
   { icon: 'mic.slash.fill', title: 'No recording', color: '#af52de' },
-  { icon: 'iphone.slash', title: '100% offline', color: '#5ac8fa' },
-  { icon: 'lock.fill', title: 'On-device only', color: '#ff5a5f' },
+  { icon: 'iphone.slash', title: 'Works offline', color: '#5ac8fa' },
+  { icon: 'lock.fill', title: 'Logs stay on device', color: '#ff5a5f' },
 ];
 
 // swift's fourth card, where health connect can sync
@@ -32,6 +34,11 @@ const HEALTH_CONNECT_CARD: (typeof TRUST_CARDS)[number] = {
 
 export default function WelcomeStep() {
   const theme = useTheme();
+  // a fresh install opens here: its first screen is interactive once mounted
+  const { markInteractive } = useObserve();
+  useEffect(() => {
+    markInteractive();
+  }, [markInteractive]);
   const fixed = useFixedColor();
   const { state: healthState } = useHealthConnection();
   const cards =

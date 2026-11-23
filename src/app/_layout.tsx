@@ -1,4 +1,5 @@
 import { Redirect, Stack } from 'expo-router';
+import { Observe, ObserveRoot } from 'expo-observe';
 import { StatusBar } from 'expo-status-bar';
 import { Platform, View } from 'react-native';
 import { useEffect } from 'react';
@@ -6,7 +7,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { settingsStore } from '@/data/app-db';
 import { AppAlertHost } from '@/components/common/AppAlertHost';
+import { AppCrashFallback } from '@/components/common/AppCrashFallback';
 import { DemoExitControl } from '@/components/demo/DemoExitControl';
+import { isDemoMode } from '@/demo/demo-mode';
 import { HomeWidgetSync } from '@/components/widgets/HomeWidgetSync';
 import { useHealthConnectSync } from '@/services/health-connect/use-health-connect-sync';
 import { configureForegroundNotifications, updateWindDownNotification } from '@/services/notifications';
@@ -20,6 +23,14 @@ import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 configureForegroundNotifications();
 
+// expo observe: startup, per-route and error reporting. one configure call for
+// the whole app (each call replaces the last), before any screen mounts. demo
+// builds run on seeded data, so their numbers stay out of production's
+Observe.configure({
+  integrations: { 'expo-router': true },
+  ...(isDemoMode ? { environment: 'demo' } : {}),
+});
+
 // material 3 bottom sheets use 28dp top corners; ios keeps the system sheet
 const ANDROID_SHEET = Platform.OS === 'android' ? { sheetCornerRadius: 28 } : {};
 
@@ -31,7 +42,7 @@ function ThemedStatusBar() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   // the original applies .grayscale(1.0) on the app root while sleeping;
   // the port swaps in the desaturated palette (spike 3 decision)
   const isSleeping = useSleepStore((s) => s.activeSession != null);
@@ -95,5 +106,15 @@ export default function RootLayout() {
         </View>
       </GestureHandlerRootView>
     </ThemeProvider>
+  );
+}
+
+// the root boundary records render errors with their component stack and shows
+// the fallback instead of a blank screen
+export default function ObservedRootLayout() {
+  return (
+    <ObserveRoot errorBoundaryFallback={<AppCrashFallback />}>
+      <RootLayout />
+    </ObserveRoot>
   );
 }

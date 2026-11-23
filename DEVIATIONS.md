@@ -24,7 +24,7 @@ spec-sanctioned scope cuts are listed first; implementation-time deviations foll
   optional sample-data offer); the nfc step is dropped per scope. on android
   with health connect available, a health connect step follows welcome (5
   steps, swift order); ios and android devices without health connect keep 4.
-  welcome trust card says "On-device only" instead of "Apple Health sync".
+  welcome trust card says "Logs stay on device" instead of "Apple Health sync". The third card says "Works offline" (was "100% offline"): since 2026-11-22 the app sends anonymous performance and crash diagnostics to Expo Observe, so "100% offline" and "On-device only" were no longer true.
   production is the default; demo seed requires EXPO_PUBLIC_DEMO_MODE=1 or
   Settings -> Sample Data (a port addition, since Development is dev-only
   here). while sample history is active, Settings shows the swift "Demo Data"

@@ -55,3 +55,16 @@ Builds get JavaScript and asset updates from `https://u.expo.dev/fab317b8-801d-4
 To publish, run `bun run update:preview`, `bun run update:demo` or `bun run update:production`. `EXPO_PUBLIC_DEMO_MODE` is fixed into the JavaScript bundle, and `eas update` does not read a build profile's `env`, so these scripts set it to match each channel. Never publish to `preview-demo` without `EXPO_PUBLIC_DEMO_MODE=1`.
 
 The runtime version uses the `fingerprint` policy, so an update reaches only builds with the same native code. Builds made before `expo-updates` was added (2026-11-19) cannot receive updates. To check an update on a cloud iPhone first, run `eas build --profile simulator-demo --platform ios`, start that build with `eas simulator:start --build-id <id>`, then run `bun run update:demo`.
+
+## Expo Observe (performance and error reporting)
+
+`expo-observe` reports startup and per-screen performance, JavaScript errors and native crashes from release builds to Expo Observe (project `@ramimaalouf/twilight`). Debug builds send nothing.
+
+- `src/app/_layout.tsx` holds the only `Observe.configure` call: the Expo Router integration, plus the `demo` environment for `EXPO_PUBLIC_DEMO_MODE=1` builds, which keeps seeded demo data out of production numbers. Each `configure` call replaces the previous one, so add every option there.
+- `ObserveRoot` wraps the app with `AppCrashFallback`. That fallback sits outside `ThemeProvider`, so it uses fixed colors and no theme hooks.
+- `markInteractive()` runs on the dashboard (every launch, widget press and `twilight://` link lands there) and on the onboarding welcome screen (fresh installs). Add it to any new screen a launch can open on.
+- `Observe.reportError` runs for unexpected Health Connect sync failures (the engine's `reportError` dependency, wired in `app-health-sync.ts`) and for backup, import and export failures in Data Management, except for `ArchiveError`, which means the user picked a bad file. Never put sleep data or file names in error messages.
+- The `preview` and `production` profiles upload source maps and keep `ios/build/*.app.dSYM.zip` as a build artifact. Upload that zip under Project settings > Observe debug symbols to symbolicate iOS native crashes. The `update:*` scripts pass `--upload-source-maps`.
+- To query: `eas observe:metrics-summary`, `eas observe:versions` and `eas observe:routes`, or the Expo MCP `observe_*` tools.
+
+Privacy: the welcome cards now say "Works offline" and "Logs stay on device", because the anonymous diagnostics leave the device. If you add data collection, update those cards and the App Store privacy answers too.
