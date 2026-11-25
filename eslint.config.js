@@ -7,4 +7,11 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*', 'evidence/*'],
   },
+  {
+    files: ['plugins/**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { __dirname: 'readonly' },
+    },
+  },
 ]);
