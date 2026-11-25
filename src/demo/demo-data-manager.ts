@@ -2,11 +2,21 @@ import type { SessionRepo } from '../data/session-repo';
 import type { SettingsStore } from '../data/settings-store';
 import { createDemoSleepSessions, DEMO_SESSION_ID_PREFIX } from './demo-mode';
 
+export type DemoChange = 'entered' | 'exited';
+
 export class DemoDataManager {
+  private readonly listeners = new Set<(change: DemoChange) => void>();
+
   constructor(
     private readonly sessionRepo: SessionRepo,
     private readonly settingsStore: SettingsStore
   ) {}
+
+  // health sync resumes after exit (docs/health-connect.md 4.4)
+  onChange(listener: (change: DemoChange) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
 
   importDemoData(now = Date.now()): void {
     if (!this.settingsStore.get('isDemoDataActive')) {
@@ -21,6 +31,7 @@ export class DemoDataManager {
     this.settingsStore.set('optimalWakeMinutes', 7 * 60 + 20);
     this.settingsStore.set('isDemoDataActive', true);
     this.settingsStore.set('isOnboarded', true);
+    this.listeners.forEach((listener) => listener('entered'));
   }
 
   exitDemoData(): void {
@@ -34,5 +45,6 @@ export class DemoDataManager {
 
     this.settingsStore.set('isDemoDataActive', false);
     this.settingsStore.set('isOnboarded', true);
+    this.listeners.forEach((listener) => listener('exited'));
   }
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <style name="TwilightHealthConnectRationale.FactTitle" parent="">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:fontFamily">sans-serif-medium</item>
+    <item name="android:textColor">@color/twilight_hc_text_primary</item>
+    <item name="android:textSize">16sp</item>
+  </style>
+  <style name="TwilightHealthConnectRationale.FactBody" parent="">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_marginTop">4dp</item>
+    <item name="android:lineSpacingExtra">2dp</item>
+    <item name="android:textColor">@color/twilight_hc_text_secondary</item>
+    <item name="android:textSize">14sp</item>
+  </style>
+  <style name="TwilightHealthConnectRationale.Divider" parent="">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">1dp</item>
+    <item name="android:layout_marginTop">16dp</item>
+    <item name="android:layout_marginBottom">16dp</item>
+    <item name="android:background">@color/twilight_hc_divider</item>
+  </style>
+</resources>

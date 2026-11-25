@@ -5,6 +5,7 @@
   },
   "build": {
     "development": {
+      "channel": "development",
       "developmentClient": true,
       "distribution": "internal",
       "env": {
@@ -12,21 +13,28 @@
       }
     },
     "development-demo": {
+      "channel": "development-demo",
       "extends": "development",
       "env": {
         "EXPO_PUBLIC_DEMO_MODE": "1"
       }
     },
     "preview": {
+      "channel": "preview",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
       },
       "env": {
         "EXPO_PUBLIC_DEMO_MODE": "0"
-      }
+      },
+      "uploadSourceMaps": true,
+      "buildArtifactPaths": [
+        "ios/build/*.app.dSYM.zip"
+      ]
     },
     "preview-demo": {
+      "channel": "preview-demo",
       "extends": "preview",
       "env": {
         "EXPO_PUBLIC_DEMO_MODE": "1"
@@ -39,12 +47,17 @@
       }
     },
     "production": {
+      "channel": "production",
       "android": {
         "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_DEMO_MODE": "0"
-      }
+      },
+      "uploadSourceMaps": true,
+      "buildArtifactPaths": [
+        "ios/build/*.app.dSYM.zip"
+      ]
     }
   },
   "submit": {

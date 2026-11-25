@@ -15,7 +15,6 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
@@ -33,6 +32,7 @@ import {
   snapAngle,
 } from '@/domain/circular-picker';
 import { roundedFont } from '@/theme/fonts';
+import { playHaptic } from '@/services/haptics';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
 const MOON_COLOR = '#7b68ee';
@@ -119,7 +119,7 @@ export function CircularTimePicker({
   const moonColor = fixed(MOON_COLOR);
   const sunColor = fixed(SUN_COLOR);
   const arcColors = ARC_COLORS.map(fixed);
-  const box = size + 80;
+  const box = size + 120;
   const center = box / 2;
   const radius = size / 2;
 
@@ -141,7 +141,7 @@ export function CircularTimePicker({
       if (!target) return;
       setDragging(target);
       setDragAngles({ sleep: sleepAngle, wake: wakeAngle });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      playHaptic('dial-grab');
     }
     if (!target) return;
 
@@ -150,14 +150,14 @@ export function CircularTimePicker({
     if (current[target] !== snapped) {
       const next = { ...current, [target]: snapped };
       setDragAngles(next);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      playHaptic('dial-tick');
       onChange(minutesFromAngle(next.sleep), minutesFromAngle(next.wake));
     }
   };
 
   const endDrag = () => {
     if (dragging) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      playHaptic('dial-release');
     }
     setDragging(null);
     setDragAngles(null);
@@ -267,7 +267,7 @@ export function CircularTimePicker({
                     opacity: isMainHour ? 1 : 0.7,
                   },
                 ]}>
-                {hour === 0 ? '12' : String(hour)}
+                {hour % 12 === 0 ? '12' : String(hour % 12)}
               </Text>
               <Text style={[styles.ampm, { color: theme.textSecondary }]}>
                 {hour < 12 ? 'AM' : 'PM'}

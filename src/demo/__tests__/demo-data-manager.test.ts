@@ -117,4 +117,17 @@ describe('Twilight demo data', () => {
     expect(settings.get('optimalSleepMinutes')).toBe(22 * 60 + 30);
     expect(settings.get('optimalWakeMinutes')).toBe(7 * 60 + 15);
   });
+
+  test('notifies listeners on enter and exit so health sync can pause and resume', () => {
+    const db = memoryDb();
+    migrate(db);
+    const manager = new DemoDataManager(new SessionRepo(db), new SettingsStore(memoryKv()));
+    const changes: string[] = [];
+    const off = manager.onChange((change) => changes.push(change));
+    manager.importDemoData(importedAt);
+    manager.exitDemoData();
+    off();
+    manager.importDemoData(importedAt);
+    expect(changes).toEqual(['entered', 'exited']);
+  });
 });

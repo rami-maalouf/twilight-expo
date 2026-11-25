@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- the splash / night sky background -->
+  <color name="twilight_shortcut_background">#FF0A1520</color>
+  <color name="twilight_shortcut_moon">#FF00D4FF</color>
+  <color name="twilight_shortcut_sun">#FFFFBF00</color>
+</resources>

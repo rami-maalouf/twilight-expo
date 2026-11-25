@@ -21,17 +21,15 @@ describe('angle <-> minutes mapping (0 deg = midnight at 12 o clock)', () => {
     expect(minutesFromAngle(337.5)).toBe(22 * 60 + 30);
   });
 
-  test('round-trip matches swift Int() truncation, including its lossy values', () => {
+  test('every snapped 5-minute angle round-trips exactly (swift Int() lost a minute on some)', () => {
     // swift's `Int((angle / 360) * (24 * 60))` truncates, and for some angles
-    // ieee754 lands just below the integer (e.g. 1:55 -> 114.99.. -> 1:54).
-    // the port reproduces that exact behavior: never off by more than one
-    // minute downward, and the known quirk values match.
+    // ieee754 lands just below the integer (1:55 -> 114.99.. -> 1:54); the
+    // port rounds, so the saved time is the one the picker shows
     for (let m = 0; m < 24 * 60; m += 5) {
-      const roundTripped = minutesFromAngle(snapAngle(angleFromMinutes(m)));
-      expect([m, m - 1]).toContain(roundTripped);
+      expect(minutesFromAngle(snapAngle(angleFromMinutes(m)))).toBe(m);
     }
-    expect(minutesFromAngle(snapAngle(angleFromMinutes(115)))).toBe(114);
-    expect(minutesFromAngle(snapAngle(angleFromMinutes(85)))).toBe(85);
+    expect(minutesFromAngle(snapAngle(angleFromMinutes(115)))).toBe(115);
+    expect(minutesFromAngle(360)).toBe(0);
   });
 });
 
@@ -86,6 +84,17 @@ describe('durationFromAngles', () => {
   });
   test('same angle is zero', () => {
     expect(durationFromAngles(90, 90)).toEqual({ hours: 0, minutes: 0 });
+  });
+  test('23:10 -> 06:50 is 7h 40m (truncation showed 7h 39m)', () => {
+    expect(durationFromAngles(angleFromMinutes(23 * 60 + 10), angleFromMinutes(6 * 60 + 50))).toEqual({ hours: 7, minutes: 40 });
+  });
+  test('every 5-minute pair shows the exact duration', () => {
+    for (let s = 0; s < 24 * 60; s += 5) {
+      for (let w = 0; w < 24 * 60; w += 5) {
+        const total = (w - s + 24 * 60) % (24 * 60);
+        expect(durationFromAngles(angleFromMinutes(s), angleFromMinutes(w))).toEqual({ hours: Math.floor(total / 60), minutes: total % 60 });
+      }
+    }
   });
 });
 

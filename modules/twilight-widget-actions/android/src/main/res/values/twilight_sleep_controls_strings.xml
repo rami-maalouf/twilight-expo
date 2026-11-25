@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- swift SleepModeControlWidget -->
+  <string name="twilight_tile_name">Twilight Sleep Mode</string>
+  <string name="twilight_tile_start">Start Sleep</string>
+  <string name="twilight_tile_wake">Wake Up</string>
+  <string name="twilight_tile_on">On</string>
+  <string name="twilight_tile_off">Off</string>
+  <string name="twilight_tile_description">%1$s, opens Twilight</string>
+  <!-- swift TwilightShortcuts shortTitle -->
+  <string name="twilight_shortcut_start_short">Start Sleep</string>
+  <string name="twilight_shortcut_start_long">Start Sleep Mode</string>
+  <string name="twilight_shortcut_wake">Wake Up</string>
+</resources>

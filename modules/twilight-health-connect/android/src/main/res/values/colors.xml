@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- light: twilight's sunset text tones on a warm paper background -->
+  <color name="twilight_hc_background">#FFF7F2</color>
+  <color name="twilight_hc_card">#FFFFFF</color>
+  <color name="twilight_hc_text_primary">#2D1B2E</color>
+  <color name="twilight_hc_text_secondary">#5C4B5E</color>
+  <color name="twilight_hc_accent">#2B1C40</color>
+  <color name="twilight_hc_on_accent">#FFFFFF</color>
+  <color name="twilight_hc_divider">#1F2D1B2E</color>
+</resources>

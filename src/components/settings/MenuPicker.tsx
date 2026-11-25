@@ -1,10 +1,22 @@
 // ios: compact value + chevron that opens an action sheet, matching the
 // original settings rows.
-import * as Haptics from 'expo-haptics';
-import { ActionSheetIOS, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActionSheetIOS, Text } from 'react-native';
 
 import { NativeSymbol } from '@/components/common/NativeSymbol';
+import { playHaptic } from '@/services/haptics';
 import { useTheme } from '@/theme/ThemeProvider';
+import { RowLabel, SettingsRow, settingsStyles, useSecondaryLabel } from './SettingsList';
+
+export interface MenuPickerProps<T extends string> {
+  label: string;
+  value: T;
+  options: readonly T[];
+  labels: Record<T, string>;
+  title: string;
+  onChange: (value: T) => void;
+  separator?: boolean;
+  testID?: string;
+}
 
 export function MenuPicker<T extends string>({
   label,
@@ -13,24 +25,16 @@ export function MenuPicker<T extends string>({
   labels,
   title,
   onChange,
-  rowBg,
-  style,
+  separator,
   testID,
-}: {
-  label: string;
-  value: T;
-  options: readonly T[];
-  labels: Record<T, string>;
-  title: string;
-  onChange: (value: T) => void;
-  rowBg: string;
-  style?: StyleProp<ViewStyle>;
-  testID?: string;
-}) {
+}: MenuPickerProps<T>) {
   const theme = useTheme();
+  const secondary = useSecondaryLabel();
   return (
-    <Pressable
+    <SettingsRow
       testID={testID}
+      separator={separator}
+      accessibilityLabel={`${label}, ${labels[value]}`}
       onPress={() => {
         ActionSheetIOS.showActionSheetWithOptions(
           {
@@ -40,32 +44,17 @@ export function MenuPicker<T extends string>({
           },
           (index) => {
             if (index != null && index < options.length) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              playHaptic('selection');
               onChange(options[index]);
             }
           }
         );
       }}>
-      <View style={[styles.row, { backgroundColor: rowBg }, style]}>
-        <Text style={[styles.rowLabel, { color: theme.textPrimary }]}>{label}</Text>
-        <View style={styles.spacer} />
-        <Text style={styles.rowValue}>{labels[value]}</Text>
-        <NativeSymbol name="chevron.up.chevron.down" size={12} tintColor="#98989f" />
-      </View>
-    </Pressable>
+      <RowLabel color={theme.textPrimary}>{label}</RowLabel>
+      <Text style={[settingsStyles.value, { color: secondary }]} numberOfLines={1}>
+        {labels[value]}
+      </Text>
+      <NativeSymbol name="chevron.up.chevron.down" size={12} tintColor={secondary} />
+    </SettingsRow>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  rowLabel: { fontSize: 17 },
-  rowValue: { fontSize: 17, color: '#98989f' },
-  spacer: { flex: 1 },
-});

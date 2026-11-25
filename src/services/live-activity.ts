@@ -104,19 +104,18 @@ export async function endWindDownActivity(): Promise<void> {
   }
 }
 
-// relaunch reconciliation: active session -> ensure a sleep activity exists;
-// no session -> clear stale activities (ports the restore-on-relaunch flow)
+// relaunch and settings reconciliation: active session -> exactly one sleep
+// activity with the current goal (startSleepActivity updates a running one
+// in place, so a goal or bedtime change reaches the lock screen); no session
+// -> clear stale activities (ports the restore-on-relaunch flow)
 export async function reconcileLiveActivity(activeSession: SleepSession | null): Promise<void> {
   if (!isEnabled()) {
     await endAll();
     return;
   }
-  const existing = instances();
   if (activeSession) {
-    if (existing.length === 0 || settingsStore.get('liveActivityId') !== 'sleep') {
-      await startSleepActivity(activeSession);
-    }
-  } else if (existing.length > 0 && settingsStore.get('liveActivityId') === 'sleep') {
+    await startSleepActivity(activeSession);
+  } else if (instances().length > 0 && settingsStore.get('liveActivityId') === 'sleep') {
     await endAll();
   }
 }

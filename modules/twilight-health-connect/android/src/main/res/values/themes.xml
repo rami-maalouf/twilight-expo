@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+  <style name="TwilightHealthConnectRationale" parent="android:Theme.Material.Light.NoActionBar">
+    <item name="android:windowBackground">@color/twilight_hc_background</item>
+    <item name="android:colorBackground">@color/twilight_hc_background</item>
+    <item name="android:colorAccent">@color/twilight_hc_accent</item>
+    <item name="android:statusBarColor">@color/twilight_hc_background</item>
+    <item name="android:navigationBarColor">@color/twilight_hc_background</item>
+    <item name="android:windowLightStatusBar">true</item>
+    <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+  </style>
+</resources>

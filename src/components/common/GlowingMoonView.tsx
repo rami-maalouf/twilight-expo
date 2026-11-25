@@ -1,7 +1,9 @@
 // ports: Components/Common/GlowingMoonView.swift
-// sf symbol moon with 3 breathing glow layers (native shadow = blur that follows the icon alpha)
+// sf symbol moon with 3 breathing glow layers. ios: a native shadow (a blur
+// that follows the icon alpha). android ignores those shadows, so it blurs
+// copies of the icon with a render effect, like swift's .blur(radius:).
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { NativeSymbol } from '@/components/common/NativeSymbol';
 import Animated, {
@@ -50,16 +52,31 @@ function GlowLayer({
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.center, scaleStyle]}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.center, tightStyle]}>
-        <View style={[styles.glow, { shadowColor: color, shadowRadius: radius * 0.6 }]}>
-          <MoonIcon color={color} size={size} />
-        </View>
+        <BlurredMoon color={color} size={size} blur={radius * 0.6} />
       </Animated.View>
       <Animated.View style={[StyleSheet.absoluteFill, styles.center, wideStyle]}>
-        <View style={[styles.glow, { shadowColor: color, shadowRadius: radius * 1.5 }]}>
-          <MoonIcon color={color} size={size} />
-        </View>
+        <BlurredMoon color={color} size={size} blur={radius * 1.5} />
       </Animated.View>
     </Animated.View>
+  );
+}
+
+// android draws a render effect only inside the view's bounds, so the
+// blurred copy is padded by ~2.5 standard deviations to fade out fully
+// instead of ending in a hard square
+function BlurredMoon({ color, size, blur }: { color: string; size: number; blur: number }) {
+  if (Platform.OS !== 'android') {
+    return (
+      <View style={[styles.glow, { shadowColor: color, shadowRadius: blur }]}>
+        <MoonIcon color={color} size={size} />
+      </View>
+    );
+  }
+  const pad = Math.ceil(blur * 2.5);
+  return (
+    <View pointerEvents="none" style={[styles.center, { padding: pad, margin: -pad, filter: [{ blur }] }]}>
+      <MoonIcon color={color} size={size} />
+    </View>
   );
 }
 

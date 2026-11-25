@@ -1,24 +1,20 @@
 // ports: Views/Onboarding/SleepScheduleStepView.swift (step 2)
 import { router } from 'expo-router';
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { CircularTimePicker } from '@/components/common/CircularTimePicker';
 import { FadeInSlide } from '@/components/common/FadeInSlide';
+import { ON_FILL_RIPPLE, PressableFeedback } from '@/components/common/PressableFeedback';
 import { Screen } from '@/components/common/Screen';
+import { OnboardingNavBar } from '@/components/onboarding/OnboardingNavBar';
 import { useSettings } from '@/state/settings-state';
+// swift Text(time, style: .time): follows the device 12/24-hour setting
+import { formatMinuteTime } from '@/utils/locale-format';
 import { useFixedColor, useTheme } from '@/theme/ThemeProvider';
 
 const MOON_COLOR = '#7b68ee';
 const SUN_COLOR = '#ffb347';
-
-function clockLabel(minutes: number): string {
-  const h = Math.trunc(minutes / 60);
-  const m = minutes % 60;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const display = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  return `${display}:${String(m).padStart(2, '0')} ${ampm}`;
-}
 
 export default function ScheduleStep() {
   const theme = useTheme();
@@ -29,6 +25,7 @@ export default function ScheduleStep() {
 
   return (
     <Screen starCount={35}>
+      <OnboardingNavBar />
       <View style={styles.container}>
         <FadeInSlide delay={0} slideOffset={20}>
           <View style={styles.header}>
@@ -69,7 +66,7 @@ export default function ScheduleStep() {
                     {label}
                   </Text>
                   <Text style={[styles.timeLabelValue, { color: theme.textPrimary }]}>
-                    {clockLabel(minutes)}
+                    {formatMinuteTime(minutes)}
                   </Text>
                 </View>
               </View>
@@ -78,13 +75,15 @@ export default function ScheduleStep() {
         </FadeInSlide>
         <View style={styles.spacer} />
         <FadeInSlide delay={0.32} slideOffset={18}>
-          <Pressable
+          <PressableFeedback
             testID="schedule-continue"
+            accessibilityRole="button"
+            rippleColor={ON_FILL_RIPPLE}
             onPress={() => router.push('/onboarding/notifications')}
             style={[styles.primaryButton, { backgroundColor: theme.actionPrimary }]}>
             <Text style={styles.primaryLabel}>Continue</Text>
             <SymbolView name="arrow.right" size={15} weight="semibold" tintColor="#ffffff" />
-          </Pressable>
+          </PressableFeedback>
         </FadeInSlide>
       </View>
     </Screen>
@@ -92,7 +91,7 @@ export default function ScheduleStep() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 70, paddingBottom: 28, gap: 16 },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 28, gap: 16 },
   header: { gap: 10, alignItems: 'center' },
   title: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
   subtitle: { fontSize: 15, textAlign: 'center' },

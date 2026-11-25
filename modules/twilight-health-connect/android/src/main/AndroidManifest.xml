@@ -1,0 +1,4 @@
+<!-- the health connect permissions, the <queries> entry, the rationale activity
+     and its android 14 activity-alias are added to the app manifest by
+     ../../app.plugin.js (docs/health-connect.md 2.8) -->
+<manifest />

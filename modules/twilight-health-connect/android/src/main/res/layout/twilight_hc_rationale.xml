@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+  android:id="@+id/twilight_hc_rationale_root"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:background="@color/twilight_hc_background"
+  android:clipToPadding="false"
+  android:fillViewport="true"
+  android:paddingTop="24dp"
+  android:paddingBottom="24dp">
+
+  <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp">
+
+    <ImageView
+      android:id="@+id/twilight_hc_icon"
+      android:layout_width="56dp"
+      android:layout_height="56dp"
+      android:layout_marginTop="16dp"
+      android:importantForAccessibility="no" />
+
+    <TextView
+      android:id="@+id/twilight_hc_title"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="20dp"
+      android:accessibilityHeading="true"
+      android:fontFamily="sans-serif-medium"
+      android:text="@string/twilight_hc_rationale_title"
+      android:textColor="@color/twilight_hc_text_primary"
+      android:textSize="28sp" />
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:lineSpacingExtra="2dp"
+      android:text="@string/twilight_hc_rationale_subtitle"
+      android:textColor="@color/twilight_hc_text_secondary"
+      android:textSize="16sp" />
+
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="24dp"
+      android:background="@drawable/twilight_hc_card"
+      android:orientation="vertical"
+      android:padding="20dp">
+
+      <TextView
+        style="@style/TwilightHealthConnectRationale.FactTitle"
+        android:text="@string/twilight_hc_read_title" />
+
+      <TextView
+        style="@style/TwilightHealthConnectRationale.FactBody"
+        android:text="@string/twilight_hc_read_body" />
+
+      <View style="@style/TwilightHealthConnectRationale.Divider" />
+
+      <TextView
+        style="@style/TwilightHealthConnectRationale.FactTitle"
+        android:text="@string/twilight_hc_write_title" />
+
+      <TextView
+        style="@style/TwilightHealthConnectRationale.FactBody"
+        android:text="@string/twilight_hc_write_body" />
+
+      <View style="@style/TwilightHealthConnectRationale.Divider" />
+
+      <TextView
+        style="@style/TwilightHealthConnectRationale.FactTitle"
+        android:text="@string/twilight_hc_control_title" />
+
+      <TextView
+        style="@style/TwilightHealthConnectRationale.FactBody"
+        android:text="@string/twilight_hc_control_body" />
+    </LinearLayout>
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="16dp"
+      android:paddingStart="4dp"
+      android:paddingEnd="4dp"
+      android:lineSpacingExtra="2dp"
+      android:text="@string/twilight_hc_window_note"
+      android:textColor="@color/twilight_hc_text_secondary"
+      android:textSize="14sp" />
+
+    <Space
+      android:layout_width="match_parent"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:minHeight="32dp" />
+
+    <Button
+      android:id="@+id/twilight_hc_done"
+      android:layout_width="match_parent"
+      android:layout_height="56dp"
+      android:background="@drawable/twilight_hc_button"
+      android:fontFamily="sans-serif-medium"
+      android:stateListAnimator="@null"
+      android:text="@string/twilight_hc_done"
+      android:textAllCaps="false"
+      android:textColor="@color/twilight_hc_on_accent"
+      android:textSize="16sp" />
+
+    <Button
+      android:id="@+id/twilight_hc_privacy"
+      style="?android:attr/borderlessButtonStyle"
+      android:layout_width="match_parent"
+      android:layout_height="48dp"
+      android:layout_marginTop="8dp"
+      android:fontFamily="sans-serif-medium"
+      android:text="@string/twilight_hc_privacy"
+      android:textAllCaps="false"
+      android:textColor="@color/twilight_hc_accent"
+      android:textSize="15sp" />
+  </LinearLayout>
+</ScrollView>

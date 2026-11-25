@@ -5,6 +5,7 @@
 import { openDatabaseSync } from 'expo-sqlite';
 import Storage from 'expo-sqlite/kv-store';
 
+import { ArchiveRepo } from './archive-repo';
 import { migrate } from './db';
 import { SessionRepo } from './session-repo';
 import { SettingsStore } from './settings-store';
@@ -15,6 +16,7 @@ const db = openDatabaseSync('twilight.db');
 migrate(db);
 
 const sessionRepo = new SessionRepo(db);
+const archiveRepo = new ArchiveRepo(db);
 const settingsStore = new SettingsStore(Storage);
 const demoDataManager = new DemoDataManager(sessionRepo, settingsStore);
 
@@ -24,4 +26,4 @@ if (isDemoMode) {
   settingsStore.set('windDownReminderEnabled', false);
 }
 
-export { demoDataManager, sessionRepo, settingsStore };
+export { archiveRepo, demoDataManager, sessionRepo, settingsStore };

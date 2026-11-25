@@ -1,6 +1,7 @@
 // sf pro rounded is used selectively on large numerics in the original
 // (.rounded design). ios exposes it through the system's rounded ui font
-// family name; android falls back to the default sans.
+// family name. android has no rounded system face, so it keeps roboto with
+// tabular digits, which keeps ticking and side-by-side numbers from shifting.
 import { Platform, type TextStyle } from 'react-native';
 
 export function roundedFont(weight: TextStyle['fontWeight']): TextStyle {
@@ -13,5 +14,5 @@ export function roundedFont(weight: TextStyle['fontWeight']): TextStyle {
           : 'Medium';
     return { fontFamily: `.AppleSystemUIFontRounded-${suffix}`, fontWeight: weight };
   }
-  return { fontWeight: weight };
+  return { fontWeight: weight, fontVariant: ['tabular-nums'] };
 }

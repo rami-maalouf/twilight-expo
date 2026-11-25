@@ -14,7 +14,7 @@ import {
 } from '@shopify/react-native-skia';
 import { BlurView } from 'expo-blur';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { useDerivedValue } from 'react-native-reanimated';
 
 import { useTheme } from '@/theme/ThemeProvider';
@@ -133,7 +133,7 @@ export function CardBackground({
       <BlurView
         intensity={70}
         tint={tint}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, Platform.OS === 'android' && { backgroundColor: theme.cardBackground }]}
       />
       {size.width > 0 &&
         (isActive ? (

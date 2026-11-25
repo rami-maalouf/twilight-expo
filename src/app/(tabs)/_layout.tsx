@@ -1,13 +1,28 @@
+import { BackHandler, Platform } from 'react-native';
+import { useEffect } from 'react';
 // ports: TwilightApp.swift (TabView) - standard system tab bar, tinted accent
 // native tabs follow the app theme (not only os appearance). source:
 // https://docs.expo.dev/router/advanced/native-tabs/
 // https://docs.expo.dev/versions/v58.0.0/sdk/router/native-tabs/
-import { DarkTheme, DefaultTheme, ThemeProvider as NavigationTheme } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationTheme, router, useSegments } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
 
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function TabLayout() {
+  const segments = useSegments();
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      const currentTab = segments[segments.length - 1];
+      if (currentTab === 'metrics' || currentTab === 'logs' || currentTab === 'settings') {
+        router.navigate('/(tabs)');
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [segments]);
   const theme = useTheme();
   const isLight = theme.name === 'sunset';
   const navTheme = isLight
@@ -40,6 +55,7 @@ export default function TabLayout() {
   return (
     <NavigationTheme value={navTheme}>
       <NativeTabs
+        labelVisibilityMode="labeled"
         tintColor={theme.accent}
         backgroundColor={theme.backgroundGradientEnd}
         indicatorColor={isLight ? 'rgba(45, 27, 46, 0.12)' : 'rgba(255, 255, 255, 0.12)'}

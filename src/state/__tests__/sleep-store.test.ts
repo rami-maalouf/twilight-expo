@@ -57,4 +57,37 @@ describe('sleep store', () => {
     store.getState().deleteSession(id);
     expect(store.getState().sessions).toHaveLength(0);
   });
+
+  test('resetAllSessions removes completed and active sessions', () => {
+    const { store } = setup();
+    store.getState().toggleSleep(T0);
+    store.getState().toggleSleep(T0 + 8 * HOURS);
+    store.getState().toggleSleep(T0 + 20 * HOURS);
+    expect(store.getState().sessions).toHaveLength(1);
+    expect(store.getState().activeSession).not.toBeNull();
+
+    store.getState().resetAllSessions();
+    expect(store.getState().sessions).toHaveLength(0);
+    expect(store.getState().activeSession).toBeNull();
+  });
+
+  test('completed-night changes notify health sync; starting a session does not', () => {
+    const db = memoryDb();
+    migrate(db);
+    const repo = new SessionRepo(db);
+    const changed = jest.fn();
+    const store = createSleepStore(repo, () => 'America/Denver', changed);
+    store.getState().toggleSleep(T0);
+    expect(changed).not.toHaveBeenCalled();
+    store.getState().toggleSleep(T0 + 8 * HOURS);
+    expect(changed).toHaveBeenCalledTimes(1);
+    const input = { startTime: T0 + 24 * HOURS, endTime: T0 + 32 * HOURS, startTimeZone: 'UTC', endTimeZone: 'UTC' };
+    store.getState().createManualLog(input);
+    const id = store.getState().sessions[0].id;
+    store.getState().updateSession(id, { ...input, endTime: T0 + 31 * HOURS });
+    store.getState().deleteSession(id);
+    expect(changed).toHaveBeenCalledTimes(4);
+    store.getState().resetAllSessions();
+    expect(changed).toHaveBeenCalledTimes(5);
+  });
 });

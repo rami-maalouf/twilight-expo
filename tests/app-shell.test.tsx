@@ -18,7 +18,10 @@ jest.mock('@/data/app-db', () => {
       map.set(key, value);
     },
   };
-  return { sessionRepo: new SessionRepo(db), settingsStore: new SettingsStore(kv) };
+  const { DemoDataManager } = require('@/demo/demo-data-manager');
+  const sessionRepo = new SessionRepo(db);
+  const settingsStore = new SettingsStore(kv);
+  return { sessionRepo, settingsStore, demoDataManager: new DemoDataManager(sessionRepo, settingsStore) };
 });
 
 // the skia jest mock has no CanvasKit, so path construction is stubbed;
@@ -31,6 +34,7 @@ jest.mock('@/components/charts/path-utils', () => ({
 jest.mock('expo-router', () => ({
   ...jest.requireActual('expo-router'),
   useFocusEffect: jest.fn(),
+  useScrollToTop: jest.fn(),
   router: { push: jest.fn(), back: jest.fn() },
 }));
 

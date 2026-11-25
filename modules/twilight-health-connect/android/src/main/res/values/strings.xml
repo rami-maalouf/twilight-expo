@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="twilight_hc_rationale_title">Twilight and Health Connect</string>
+  <string name="twilight_hc_rationale_subtitle">Twilight uses Health Connect only for sleep sessions. This is what it does with them.</string>
+  <string name="twilight_hc_read_title">Reads your sleep sessions</string>
+  <string name="twilight_hc_read_body">Twilight reads sleep sessions from Health Connect to import the nights your other sleep apps record.</string>
+  <string name="twilight_hc_write_title">Saves the nights you keep in Twilight</string>
+  <string name="twilight_hc_write_body">Twilight writes the nights you track or log in Twilight. It can update or delete only those entries, never the ones from other apps.</string>
+  <string name="twilight_hc_control_title">You stay in control</string>
+  <string name="twilight_hc_control_body">You can allow reading and writing separately, and change access at any time in Health Connect. Your sleep logs stay in Twilight whether or not you connect.</string>
+  <string name="twilight_hc_window_note">Without access to past data, Health Connect shares sleep from other apps back to 30 days before you connected.</string>
+  <string name="twilight_hc_privacy">Privacy policy</string>
+  <string name="twilight_hc_done">Done</string>
+</resources>

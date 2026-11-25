@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.rami.twilight'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.twilightwidgetactions"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // HeadlessJsTaskService for the session notification buttons
+  implementation 'com.facebook.react:react-android'
+}

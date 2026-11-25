@@ -1,115 +1,89 @@
-// app-side live activity lifecycle: session start/end, relaunch restore,
-// lock-screen button events (wake-up / start-sleep), wind-down window
+// app-side live activity lifecycle, shared by the ios live activity and the
+// android session notification (live-activity.ts / live-activity.android.ts):
+// session start/end, relaunch restore, settings changes (the toggle, goal and
+// bedtime), lock-screen buttons and the wind-down window
 import { useEffect, useRef } from 'react';
-import { Alert, AppState, Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { addUserInteractionListener } from 'expo-widgets';
 
-import { epochFromDayMinutes } from '../domain/editor';
-import { addDays, zonedParts } from '../domain/session-rules';
 import { appSleepStore, useSleepStore } from '../state/app-sleep-store';
 import { useSettings } from '../state/settings-state';
-import {
-  endSleepActivity,
-  endWindDownActivity,
-  reconcileLiveActivity,
-  startSleepActivity,
-  startWindDownActivity,
-} from './live-activity';
+import { endSleepActivity, startSleepActivity } from './live-activity';
 import { START_SLEEP_TARGET, WAKE_UP_TARGET } from './live-activity-targets';
+import { refreshWindDown, syncLiveActivityNow } from './live-activity-sync';
+import { showAlert } from '../components/common/app-alert';
 
-// live activities are an ios concept; every effect below no-ops elsewhere
-const SUPPORTED = Platform.OS === 'ios';
-
-function deviceTimeZone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
-}
-
-// next bedtime instant; null when outside the 3-hour wind-down window
-function windDownBedtime(optimalSleepMinutes: number, nowMs: number): number | null {
-  const tz = deviceTimeZone();
-  const p = zonedParts(nowMs, tz);
-  const today = { year: p.year, month: p.month, day: p.day };
-  let bedtime = epochFromDayMinutes(today, optimalSleepMinutes, tz);
-  if (bedtime <= nowMs) {
-    bedtime = epochFromDayMinutes(addDays(today, 1), optimalSleepMinutes, tz);
-  }
-  const msUntil = bedtime - nowMs;
-  return msUntil > 0 && msUntil <= 3 * 3600_000 ? bedtime : null;
+function warn(error: unknown) {
+  if (__DEV__) console.warn('[live activity]', error);
 }
 
 export function useLiveActivitySync() {
   const activeSession = useSleepStore((s) => s.activeSession);
   const liveActivityEnabled = useSettings((s) => s.liveActivityEnabled);
   const optimalSleepMinutes = useSettings((s) => s.optimalSleepMinutes);
+  const optimalWakeMinutes = useSettings((s) => s.optimalWakeMinutes);
   const previousSessionId = useRef<string | null>(null);
   const mounted = useRef(false);
 
-  // lock-screen buttons -> session mutations (LiveActivityIntent -> js)
+  // ios lock-screen buttons -> session mutations (LiveActivityIntent -> js).
+  // android notification buttons run natively and through the headless
+  // task in session-action-task.ts, even with the app not running
   useEffect(() => {
-    if (!SUPPORTED) return;
+    if (Platform.OS !== 'ios') return;
     const sub = addUserInteractionListener((event) => {
       const state = appSleepStore.getState();
       if (event.target === WAKE_UP_TARGET && state.activeSession) {
         const result = state.toggleSleep();
-        endSleepActivity();
+        endSleepActivity().catch(warn);
         if (result.joke && AppState.currentState === 'active') {
-          Alert.alert('Pause...', result.joke);
+          showAlert('Pause...', result.joke);
         }
       } else if (event.target === START_SLEEP_TARGET && !state.activeSession) {
         const result = state.toggleSleep();
         if (result.started) {
-          startSleepActivity(result.started);
+          startSleepActivity(result.started).catch(warn);
         }
       }
     });
     return () => sub.remove();
   }, []);
 
-  // wind-down window check on foreground
-  const maybeStartWindDown = () => {
-    const state = appSleepStore.getState();
-    if (state.activeSession) return;
-    const bedtime = windDownBedtime(optimalSleepMinutes, Date.now());
-    if (bedtime != null) {
-      startWindDownActivity(bedtime);
-    } else {
-      // outside the window: clear an expired countdown left on the lock screen
-      endWindDownActivity();
-    }
-  };
-
-  // session lifecycle -> activity lifecycle (+ initial reconcile on mount)
+  // session lifecycle -> activity lifecycle (+ relaunch reconcile on mount)
   useEffect(() => {
-    if (!SUPPORTED) return;
     if (!mounted.current) {
       mounted.current = true;
       previousSessionId.current = activeSession?.id ?? null;
-      reconcileLiveActivity(activeSession);
+      syncLiveActivityNow().catch(warn);
       return;
     }
     const previous = previousSessionId.current;
     previousSessionId.current = activeSession?.id ?? null;
     if (activeSession && activeSession.id !== previous) {
-      startSleepActivity(activeSession);
+      startSleepActivity(activeSession).catch(warn);
     } else if (!activeSession && previous) {
-      endSleepActivity().then(() => {
-        maybeStartWindDown();
-      });
+      endSleepActivity()
+        .then(() => refreshWindDown())
+        .catch(warn);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSession?.id, liveActivityEnabled]);
+  }, [activeSession?.id]);
 
+  // the toggle (off removes, on restores), the goal and the bedtime
+  const settingsKey = `${liveActivityEnabled}:${optimalSleepMinutes}:${optimalWakeMinutes}`;
+  const lastSettingsKey = useRef(settingsKey);
   useEffect(() => {
-    if (!SUPPORTED) return;
+    if (lastSettingsKey.current === settingsKey) return;
+    lastSettingsKey.current = settingsKey;
+    syncLiveActivityNow().catch(warn);
+  }, [settingsKey]);
+
+  // the wind-down window opens and closes while the app is away
+  useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active') {
-        const state = appSleepStore.getState();
-        state.refresh();
-        if (!state.activeSession) maybeStartWindDown();
-      }
+      if (next !== 'active') return;
+      appSleepStore.getState().refresh();
+      refreshWindDown().catch(warn);
     });
-    if (!activeSession) maybeStartWindDown();
     return () => sub.remove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [optimalSleepMinutes, liveActivityEnabled]);
+  }, []);
 }

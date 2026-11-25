@@ -5,7 +5,7 @@ import { BlurView } from 'expo-blur';
 import { type SymbolViewProps } from 'expo-symbols';
 
 import { NativeSymbol as SymbolView } from '@/components/common/NativeSymbol';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -28,7 +28,7 @@ export function MultiStatCard({ stats }: { stats: StatItem[] }) {
   const tint = theme.name === 'sunset' ? 'systemUltraThinMaterialLight' : 'systemUltraThinMaterialDark';
   return (
     <View style={styles.card}>
-      <BlurView intensity={70} tint={tint} style={StyleSheet.absoluteFill} />
+      <BlurView intensity={70} tint={tint} style={[StyleSheet.absoluteFill, Platform.OS === 'android' && { backgroundColor: theme.cardBackground }]} />
       <View style={styles.grid}>
         {stats.map((stat) => (
           <View key={stat.title} style={styles.gridItem}>
@@ -59,7 +59,7 @@ export function ChartCard({
   const tint = theme.name === 'sunset' ? 'systemUltraThinMaterialLight' : 'systemUltraThinMaterialDark';
   return (
     <View style={styles.card}>
-      <BlurView intensity={70} tint={tint} style={StyleSheet.absoluteFill} />
+      <BlurView intensity={70} tint={tint} style={[StyleSheet.absoluteFill, Platform.OS === 'android' && { backgroundColor: theme.cardBackground }]} />
       <View style={styles.chartCardContent}>
         <View style={styles.chartCardHeader}>
           <Text style={[styles.chartCardTitle, { color: theme.textPrimary }]}>{title}</Text>
@@ -116,11 +116,25 @@ export function MetricsEmptyState() {
   return (
     <View style={styles.card}>
       <View style={styles.empty}>
-        <SymbolView
-          name="chart.line.uptrend.xyaxis.circle.fill"
-          size={44}
-          tintColor={theme.actionPrimary}
-        />
+        {Platform.OS === 'android' ? (
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: theme.actionPrimary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <SymbolView name="chart.line.uptrend.xyaxis.circle.fill" size={26} tintColor="#ffffff" />
+          </View>
+        ) : (
+          <SymbolView
+            name="chart.line.uptrend.xyaxis.circle.fill"
+            size={44}
+            tintColor={theme.actionPrimary}
+          />
+        )}
         <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
           Not enough nights for metrics yet
         </Text>

@@ -1,0 +1,92 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`session export markdown snapshot 1`] = `
+"# Twilight Sleep Tracker - Data Export
+
+> This document contains structured sleep session data exported from the Twilight app.
+> It is formatted for use by AI agents and automated analysis tools.
+
+## Export Metadata
+
+| Field | Value |
+|-------|-------|
+| Generated At | 2026-11-03T19:00:00.000-05:00 |
+| Timezone | America/New_York |
+| Sort Order | Ascending (oldest first) |
+| Profiles Included | 1 |
+| Total Sessions | 3 |
+| Completed Sessions | 2 |
+| Sessions with Breaks | 0 |
+| Total Sleep Time | 15h 30m |
+
+## Aggregate Summary
+
+| Metric | Value |
+|--------|-------|
+| Average Session Duration | 7h 45m |
+| Longest Session | 8h |
+| Shortest Session | 7h 30m |
+| Earliest Start | 2026-11-01T17:00:00.000-05:00 |
+| Latest End | 2026-11-03T00:30:00.000-05:00 |
+
+## Profiles
+
+### Sleep
+
+| Metric | Value |
+|--------|-------|
+| Total Sessions | 3 |
+| Completed Sessions | 2 |
+| Total Sleep Time | 15h 30m |
+| Average Duration | 7h 45m |
+
+## Session Log
+
+Each session represents a single sleep period.
+
+### Session 1 - Sleep
+
+| Field | Value |
+|-------|-------|
+| Status | Completed |
+| Session ID | \`a\` |
+| Profile | Sleep |
+| Start Time | 2026-11-01T17:00:00.000-05:00 |
+| End Time | 2026-11-02T01:00:00.000-05:00 |
+| Duration | 8h |
+| Break Start | - |
+| Break End | - |
+| Break Duration | - |
+
+### Session 2 - Sleep
+
+| Field | Value |
+|-------|-------|
+| Status | Completed |
+| Session ID | \`b\` |
+| Profile | Sleep |
+| Start Time | 2026-11-02T17:00:00.000-05:00 |
+| End Time | 2026-11-03T00:30:00.000-05:00 |
+| Duration | 7h 30m |
+| Break Start | - |
+| Break End | - |
+| Break Duration | - |
+
+### Session 3 - Sleep
+
+| Field | Value |
+|-------|-------|
+| Status | In Progress |
+| Session ID | \`live\` |
+| Profile | Sleep |
+| Start Time | 2026-11-03T17:00:00.000-05:00 |
+| End Time | - |
+| Duration | - |
+| Break Start | - |
+| Break End | - |
+| Break Duration | - |
+
+---
+
+_Exported by Twilight · All timestamps are in America/New_York · ISO 8601 format_"
+`;

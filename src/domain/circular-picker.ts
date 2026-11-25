@@ -6,11 +6,11 @@ export function angleFromMinutes(minutesSinceMidnight: number): number {
   return (minutesSinceMidnight / (24 * 60)) * 360;
 }
 
-// swift truncates via Int() casts; the (24 * 60) grouping matters for ieee754
-// parity with the original's `(angle / 360) * (24 * 60)`
+// swift truncates via Int() casts, and ieee754 lands some snapped angles just
+// below the integer (1:55 -> 114.99.. -> 1:54): the saved time was a minute
+// off the one shown. the port rounds instead (DEVIATIONS.md)
 export function minutesFromAngle(angle: number): number {
-  const totalMinutes = (angle / 360) * (24 * 60);
-  return Math.trunc(totalMinutes);
+  return Math.round((angle / 360) * (24 * 60)) % (24 * 60);
 }
 
 // atan2 pointer angle mapped so up = 0, wrapped to 0..360
@@ -53,7 +53,7 @@ export function durationFromAngles(
 ): { hours: number; minutes: number } {
   let diff = wakeAngle - sleepAngle;
   if (diff < 0) diff += 360;
-  const totalMinutes = Math.trunc((diff / 360) * (24 * 60));
+  const totalMinutes = Math.round((diff / 360) * (24 * 60)) % (24 * 60);
   return { hours: Math.trunc(totalMinutes / 60), minutes: totalMinutes % 60 };
 }
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- launcher shortcut "Start Sleep Mode": swift moon.fill in rgb(0, 212, 255) on the night sky -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@color/twilight_shortcut_background" />
+  <foreground android:drawable="@drawable/twilight_shortcut_start_glyph" />
+</adaptive-icon>

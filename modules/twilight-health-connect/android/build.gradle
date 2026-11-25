@@ -1,0 +1,19 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.twilighthealthconnect'
+version = '1.0.0'
+
+android {
+  namespace 'expo.modules.twilighthealthconnect'
+  defaultConfig {
+    // connect-client 1.1.0 requires api 26 (docs/health-connect.md 2.9)
+    minSdkVersion 26
+  }
+}
+
+dependencies {
+  implementation 'androidx.health.connect:connect-client:1.1.0'
+}
